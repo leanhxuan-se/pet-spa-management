@@ -1,0 +1,36 @@
+# Build output
+**/bin/
+**/obj/
+
+# Visual Studio and .NET user files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.rsuser
+
+# Rider / ReSharper
+.idea/
+*.sln.iml
+
+# Test and coverage output
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.Local.json
+secrets.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Publish output
+publish/
+*.PublishSettings
