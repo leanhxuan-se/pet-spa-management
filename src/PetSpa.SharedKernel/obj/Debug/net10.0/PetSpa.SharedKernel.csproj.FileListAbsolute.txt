@@ -1,0 +1,12 @@
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\bin\Debug\net10.0\PetSpa.SharedKernel.deps.json
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\bin\Debug\net10.0\PetSpa.SharedKernel.dll
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\bin\Debug\net10.0\PetSpa.SharedKernel.pdb
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\obj\Debug\net10.0\PetSpa.SharedKernel.GeneratedMSBuildEditorConfig.editorconfig
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\obj\Debug\net10.0\PetSpa.SharedKernel.AssemblyInfoInputs.cache
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\obj\Debug\net10.0\PetSpa.SharedKernel.AssemblyInfo.cs
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\obj\Debug\net10.0\PetSpa.SharedKernel.csproj.CoreCompileInputs.cache
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\obj\Debug\net10.0\PetSpa.SharedKernel.sourcelink.json
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\obj\Debug\net10.0\PetSpa.SharedKernel.dll
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\obj\Debug\net10.0\refint\PetSpa.SharedKernel.dll
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\obj\Debug\net10.0\PetSpa.SharedKernel.pdb
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.SharedKernel\obj\Debug\net10.0\ref\PetSpa.SharedKernel.dll

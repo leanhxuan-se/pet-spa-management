@@ -1,0 +1,16 @@
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\bin\Debug\net10.0\PetSpa.Modules.deps.json
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\bin\Debug\net10.0\PetSpa.Modules.dll
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\bin\Debug\net10.0\PetSpa.Modules.pdb
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\bin\Debug\net10.0\PetSpa.SharedKernel.dll
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\bin\Debug\net10.0\PetSpa.SharedKernel.pdb
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\obj\Debug\net10.0\PetSpa.Modules.csproj.AssemblyReference.cache
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\obj\Debug\net10.0\PetSpa.Modules.GeneratedMSBuildEditorConfig.editorconfig
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\obj\Debug\net10.0\PetSpa.Modules.AssemblyInfoInputs.cache
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\obj\Debug\net10.0\PetSpa.Modules.AssemblyInfo.cs
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\obj\Debug\net10.0\PetSpa.Modules.csproj.CoreCompileInputs.cache
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\obj\Debug\net10.0\PetSpa.Modules.sourcelink.json
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\obj\Debug\net10.0\PetSpa.M.06C5280B.Up2Date
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\obj\Debug\net10.0\PetSpa.Modules.dll
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\obj\Debug\net10.0\refint\PetSpa.Modules.dll
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\obj\Debug\net10.0\PetSpa.Modules.pdb
+D:\UIT\PROJECTS\UIT\pet-spa-management\src\PetSpa.Modules\obj\Debug\net10.0\ref\PetSpa.Modules.dll

@@ -11,8 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Modules\Booking\PetSpa.Modules.Booking\PetSpa.Modules.Booking.csproj" />
-    <ProjectReference Include="..\Modules\PetManagement\PetSpa.Modules.PetManagement\PetSpa.Modules.PetManagement.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\PetSpa.Modules.csproj" />
   </ItemGroup>
 
 </Project>
