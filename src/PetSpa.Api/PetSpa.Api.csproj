@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PetSpa.Modules\Appointment\PetSpa.Modules.Appointment\PetSpa.Modules.Appointment.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\Billing\PetSpa.Modules.Billing\PetSpa.Modules.Billing.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\CustomerPet\PetSpa.Modules.CustomerPet\PetSpa.Modules.CustomerPet.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\IdentityStaff\PetSpa.Modules.IdentityStaff\PetSpa.Modules.IdentityStaff.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\ServiceCatalog\PetSpa.Modules.ServiceCatalog\PetSpa.Modules.ServiceCatalog.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\SpaOperations\PetSpa.Modules.SpaOperations\PetSpa.Modules.SpaOperations.csproj" />
+    <ProjectReference Include="..\PetSpa.SharedKernel\PetSpa.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>
