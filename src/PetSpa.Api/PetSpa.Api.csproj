@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PetSpa.Modules\PetSpa.Modules.csproj" />
+    <ProjectReference Include="..\PetSpa.SharedKernel\PetSpa.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>

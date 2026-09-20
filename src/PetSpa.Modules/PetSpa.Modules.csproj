@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Billing\PetSpa.Modules.Billing\**\*.cs" />
+    <ProjectReference Include="Billing\PetSpa.Modules.Billing\PetSpa.Modules.Billing.csproj" />
     <ProjectReference Include="..\PetSpa.SharedKernel\PetSpa.SharedKernel.csproj" />
   </ItemGroup>
 
