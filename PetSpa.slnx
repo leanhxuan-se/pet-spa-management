@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PetSpa.Api/PetSpa.Api.csproj" />
+    <Project Path="src/PetSpa.Modules/PetSpa.Modules.csproj" />
+    <Project Path="src/PetSpa.SharedKernel/PetSpa.SharedKernel.csproj" />
+  </Folder>
+</Solution>
