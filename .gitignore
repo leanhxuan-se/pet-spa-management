@@ -1,3 +1,4 @@
+
 # Build output
 **/bin/
 **/obj/
@@ -34,3 +35,4 @@ Thumbs.db
 # Publish output
 publish/
 *.PublishSettings
+
