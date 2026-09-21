@@ -11,12 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PetSpa.Modules\Appointment\PetSpa.Modules.Appointment\PetSpa.Modules.Appointment.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\Customer\PetSpa.Modules.Customer\PetSpa.Modules.Customer.csproj" />
     <ProjectReference Include="..\PetSpa.Modules\Billing\PetSpa.Modules.Billing\PetSpa.Modules.Billing.csproj" />
-    <ProjectReference Include="..\PetSpa.Modules\CustomerPet\PetSpa.Modules.CustomerPet\PetSpa.Modules.CustomerPet.csproj" />
-    <ProjectReference Include="..\PetSpa.Modules\IdentityStaff\PetSpa.Modules.IdentityStaff\PetSpa.Modules.IdentityStaff.csproj" />
-    <ProjectReference Include="..\PetSpa.Modules\ServiceCatalog\PetSpa.Modules.ServiceCatalog\PetSpa.Modules.ServiceCatalog.csproj" />
-    <ProjectReference Include="..\PetSpa.Modules\SpaOperations\PetSpa.Modules.SpaOperations\PetSpa.Modules.SpaOperations.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\Booking\PetSpa.Modules.Booking\PetSpa.Modules.Booking.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\Resource\PetSpa.Modules.Resource\PetSpa.Modules.Resource.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\Operation\PetSpa.Modules.Operation\PetSpa.Modules.Operation.csproj" />
     <ProjectReference Include="..\PetSpa.SharedKernel\PetSpa.SharedKernel.csproj" />
   </ItemGroup>
 
