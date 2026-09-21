@@ -7,7 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\PetSpa.SharedKernel\PetSpa.SharedKernel.csproj" />
+    <ProjectReference Include="..\Billing\PetSpa.Modules.Billing.csproj" />
   </ItemGroup>
 
 </Project>
