@@ -11,7 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PetSpa.Modules\PetSpa.Modules.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\Billing\PetSpa.Modules.Billing.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\Booking\PetSpa.Modules.Booking.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\Customer\PetSpa.Modules.Customer.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\Operation\PetSpa.Modules.Operation.csproj" />
+    <ProjectReference Include="..\PetSpa.Modules\Resource\PetSpa.Modules.Resource.csproj" />
     <ProjectReference Include="..\PetSpa.SharedKernel\PetSpa.SharedKernel.csproj" />
   </ItemGroup>
 

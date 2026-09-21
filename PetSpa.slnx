@@ -1,7 +1,11 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/PetSpa.Api/PetSpa.Api.csproj" />
-    <Project Path="src/PetSpa.Modules/PetSpa.Modules.csproj" />
+    <Project Path="src/PetSpa.Modules/Billing/PetSpa.Modules.Billing.csproj" />
+    <Project Path="src/PetSpa.Modules/Booking/PetSpa.Modules.Booking.csproj" />
+    <Project Path="src/PetSpa.Modules/Customer/PetSpa.Modules.Customer.csproj" />
+    <Project Path="src/PetSpa.Modules/Operation/PetSpa.Modules.Operation.csproj" />
+    <Project Path="src/PetSpa.Modules/Resource/PetSpa.Modules.Resource.csproj" />
     <Project Path="src/PetSpa.SharedKernel/PetSpa.SharedKernel.csproj" />
   </Folder>
 </Solution>
