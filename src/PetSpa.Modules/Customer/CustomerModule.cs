@@ -13,7 +13,7 @@ public static class CustomerModule
             options.UseNpgsql(ConnectionString, npgsql =>
             {
                 // Seperate migrations history
-                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "Customer");
+                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "customer");
             });
         });
         return services;
