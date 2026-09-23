@@ -13,7 +13,7 @@ namespace PetSpa.Modules.Customer.Domain.Entities
         public string Phone { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
         public string? Avt_Url { get; set; }
-        public string Note { get; set; } = string.Empty;
+        public string? Note { get; set; }
         public string Status { get; set; } = "Active";
         public DateTime Created_at { get; set; } = DateTime.UtcNow;
         public DateTime Updated_at { get; set; }

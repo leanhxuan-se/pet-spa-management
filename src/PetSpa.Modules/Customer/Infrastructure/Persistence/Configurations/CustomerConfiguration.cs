@@ -46,8 +46,7 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
                 .HasMaxLength(256);
 
             builder.Property(x => x.Note)
-                .HasColumnName("note")
-                .HasMaxLength(256);
+                .HasColumnName("note");
 
             builder.Property(x => x.Status) 
                 .HasColumnName("status")
