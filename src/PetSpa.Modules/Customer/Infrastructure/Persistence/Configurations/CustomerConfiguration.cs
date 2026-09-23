@@ -41,7 +41,7 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(256);
 
-            builder.Property(x => x.Avt_Url)
+            builder.Property(x => x.AvtURL)
                 .HasColumnName("avt_url")
                 .HasMaxLength(256);
 
@@ -53,15 +53,15 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(20);
 
-            builder.Property(x => x.Created_at)
+            builder.Property(x => x.CreatedAt)
                 .HasColumnName("created_at")
                 .HasColumnType("timestamp with time zone");
 
-            builder.Property(x => x.Updated_at)
+            builder.Property(x => x.CreatedAt)
                 .HasColumnName("updated_at")
                 .HasColumnType("timestamp with time zone");
 
-            builder.Property(x=> x.Last_login_at)
+            builder.Property(x=> x.LastLoginAt)
                 .HasColumnName("last_login_at")
                 .HasColumnType("timestamp with time zone");
         }
