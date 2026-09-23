@@ -42,7 +42,7 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
             builder.Property(x => x.Gender)
                 .HasColumnName("gender");
 
-            builder.Property(x => x.Date_of_Birth)
+            builder.Property(x => x.DateOfBirth)
                 .HasColumnName("date_of_birth")
                 .HasColumnType("date");
 
@@ -51,15 +51,15 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
                 .HasMaxLength(10)
                 .IsRequired();
 
-            builder.Property(x => x.Special_note)
+            builder.Property(x => x.SpecialNote)
                 .HasColumnName("special_note")
                 .HasColumnType("text");
 
-            builder.Property(x => x.Created_at)
+            builder.Property(x => x.CreatedAt)
                 .HasColumnName("created_at")
                 .HasColumnType("timestamp with time zone");
 
-            builder.Property(x => x.Updated_at)
+            builder.Property(x => x.UpdatedAt)
                 .HasColumnName("updated_at")
                 .HasColumnType("timestamp with time zone");
         }
