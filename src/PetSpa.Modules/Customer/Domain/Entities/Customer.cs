@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
+﻿
 namespace PetSpa.Modules.Customer.Domain.Entities
 {
     public class Customer
