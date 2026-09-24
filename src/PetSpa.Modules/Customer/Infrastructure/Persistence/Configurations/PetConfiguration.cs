@@ -15,6 +15,8 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
             builder.Property(x => x.CustomersId)
                 .HasColumnName("customer_id");
 
+
+            // Create 1 : N relationship Customer : Pet
             builder.HasOne(x => x.Customer)
                 .WithMany(y => y.Pets)
                 .HasForeignKey(z => z.CustomersId)

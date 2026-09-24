@@ -8,15 +8,16 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<ServiceOption> Builder)
         {
-            Builder.ToTable("service_option");
+            Builder.ToTable("service_options");
 
             Builder.HasKey(x => x.Id);
 
+            //Create 1 : N relationship Service : ServiceOptions
             Builder.HasOne(x => x.Service)
                 .WithMany(y => y.ServiceOptions)
                 .HasForeignKey(x => x.ServiceId)
                 .HasConstraintName("fk_service_option_Service")
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Cascade); // auto delete Service_option when Service is deleted
 
             Builder.Property(x => x.ServiceId)
                 .HasColumnName("service_id")
