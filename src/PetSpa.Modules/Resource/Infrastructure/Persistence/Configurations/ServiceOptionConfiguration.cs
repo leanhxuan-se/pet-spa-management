@@ -4,7 +4,7 @@ using PetSpa.Modules.Resource.Domain.Entities;
 
 namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
 {
-    internal class ServiceOptionConfiguration: IEntityTypeConfiguration<ServiceOption>
+    public class ServiceOptionConfiguration: IEntityTypeConfiguration<ServiceOption>
     {
         public void Configure(EntityTypeBuilder<ServiceOption> Builder)
         {
