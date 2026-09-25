@@ -4,7 +4,7 @@ using PetSpa.Modules.Booking.Domain.Entities;
 
 namespace PetSpa.Modules.Booking.Infrastructure.Persistence.Configurations
 {
-    internal class BookingDetailConfiguration: IEntityTypeConfiguration<BookingDetail>
+    public class BookingDetailConfiguration: IEntityTypeConfiguration<BookingDetail>
     {
         public void Configure(EntityTypeBuilder<BookingDetail> Builder)
         {
