@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using PetSpa.Modules.Booking.Domain.Entities;
+using BookingEntity = PetSpa.Modules.Booking.Domain.Entities.Booking;
 
 namespace PetSpa.Modules.Booking.Infrastructure.Persistence;
 
@@ -7,6 +9,9 @@ public class BookingDbContext : DbContext
     public BookingDbContext(DbContextOptions<BookingDbContext> options) : base(options)
     {
     }
+    public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
+    public DbSet<BookingDetail> BookingDetails => Set<BookingDetail>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

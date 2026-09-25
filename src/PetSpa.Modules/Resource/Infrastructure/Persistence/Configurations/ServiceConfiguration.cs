@@ -5,7 +5,7 @@ using PetSpa.Modules.Resource.Domain.Entities;
 
 namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
 {
-    internal class ServiceConfiguration: IEntityTypeConfiguration<Service>
+    public class ServiceConfiguration: IEntityTypeConfiguration<Service>
     {
         public void Configure(EntityTypeBuilder<Service> Builder)
         {
@@ -13,11 +13,12 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
 
             Builder.HasKey(x => x.Id);
 
+            // Create 1 : N relationship Category : Service
             Builder.HasOne(x => x.Category)
                 .WithMany(y => y.Services)
                 .HasForeignKey(z => z.CategoryId)
-                .HasConstraintName("fk_service_category")
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasConstraintName("fk_service_category") 
+                .OnDelete(DeleteBehavior.Cascade);// auto delete service when Category is deleted
 
 
             Builder.Property(x => x.CategoryId)
