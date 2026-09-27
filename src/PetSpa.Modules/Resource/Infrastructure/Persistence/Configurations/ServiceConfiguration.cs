@@ -36,6 +36,7 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
 
             Builder.Property(x => x.Status)
                 .HasColumnName("status")
+                .HasConversion<string>()
                 .IsRequired();
 
             Builder.Property(x => x.CreatedAt)

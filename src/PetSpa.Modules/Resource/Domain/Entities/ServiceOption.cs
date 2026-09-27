@@ -1,5 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿
+
+using PetSpa.Modules.Resource.Domain.Enums;
 
 namespace PetSpa.Modules.Resource.Domain.Entities
 {
@@ -8,7 +9,7 @@ namespace PetSpa.Modules.Resource.Domain.Entities
         public long Id { get; set; }
         public long ServiceId { get; set; }
         public Service Service { get; set; } = null!;
-        public string Species { get; set; } = string.Empty;
+        public Species Species { get; set; }
         public int? MinWeight { get; set; }
         public int? MaxWeight { get; set; }
         public int? DurationMinutes { get; set; }

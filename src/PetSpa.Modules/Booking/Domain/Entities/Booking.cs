@@ -1,4 +1,6 @@
 ﻿
+using PetSpa.Modules.Booking.Domain.Enums;
+
 namespace PetSpa.Modules.Booking.Domain.Entities
 {
     public class Booking
@@ -10,7 +12,7 @@ namespace PetSpa.Modules.Booking.Domain.Entities
         public DateTime? CheckIn { get; set; }
         public DateTime? CheckOut { get; set; }
         public string? Note { get; set; }
-        public string Status { get; set; } = string.Empty;
+        public BookingStatus Status { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 

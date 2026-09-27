@@ -30,6 +30,7 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.Species)
                 .HasColumnName("species")
+                .HasConversion<string>()
                 .HasMaxLength(50)
                 .IsRequired();
 
@@ -42,7 +43,8 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
                 .HasColumnName("height");
 
             builder.Property(x => x.Gender)
-                .HasColumnName("gender");
+                .HasColumnName("gender")
+                .HasConversion<string>();
 
             builder.Property(x => x.DateOfBirth)
                 .HasColumnName("date_of_birth")
@@ -50,6 +52,7 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.Status)
                 .HasColumnName("status")
+                .HasConversion<string>()
                 .HasMaxLength(10)
                 .IsRequired();
 

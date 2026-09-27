@@ -39,6 +39,7 @@ namespace PetSpa.Modules.Booking.Infrastructure.Persistence.Configurations
 
             Builder.Property(x => x.Status)
                 .HasColumnName("status")
+                .HasConversion<string>()
                 .HasMaxLength(20);
 
             Builder.Property(x => x.CreatedAt)

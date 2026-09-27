@@ -29,7 +29,8 @@ namespace PetSpa.Modules.Booking.Infrastructure.Persistence.Configurations
                 .HasColumnName("unit_price");
 
             Builder.Property(x => x.Status)
-                .HasColumnName("status");
+                .HasColumnName("status")
+                .HasConversion<string>();
         }
     }
 }

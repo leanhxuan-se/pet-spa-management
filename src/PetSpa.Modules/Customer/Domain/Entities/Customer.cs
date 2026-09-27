@@ -1,18 +1,19 @@
-﻿
+﻿using PetSpa.Modules.Customer.Domain.Enums;
+
 namespace PetSpa.Modules.Customer.Domain.Entities
 {
     public class Customer
     {
         public long Id { get; set; }
         public string FullName { get; set; } = string.Empty;
-        public string Gender { get; set; } = string.Empty;
+        public Gender Gender { get; set; }
         public DateOnly? DateOfBirth { get; set; }
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
         public string? AvtURL { get; set; }
         public string? Note { get; set; }
-        public string Status { get; set; } = "Active";
+        public CustomerStatus Status { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
         public DateTime? LastLoginAt { get; set; }
