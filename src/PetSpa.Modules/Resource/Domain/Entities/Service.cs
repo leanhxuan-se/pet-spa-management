@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using PetSpa.Modules.Resource.Domain.Enums;
 
 namespace PetSpa.Modules.Resource.Domain.Entities
 {
@@ -11,7 +10,7 @@ namespace PetSpa.Modules.Resource.Domain.Entities
         public Category Category { get; set; } = null!;
         public string ServiceName { get; set; } = null!;
         public string? Description { get; set; }
-        public string Status { get; set; } = "Active";
+        public ServiceStatus Status { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 

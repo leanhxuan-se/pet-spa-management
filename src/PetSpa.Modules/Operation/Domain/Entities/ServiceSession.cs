@@ -1,4 +1,6 @@
 ﻿
+using PetSpa.Modules.Operation.Domain.Enums;
+
 namespace PetSpa.Modules.Operation.Domain.Entities
 {
     public class ServiceSession
@@ -7,7 +9,7 @@ namespace PetSpa.Modules.Operation.Domain.Entities
         public long BookingDetailId { get; set; }
         public long RoomId { get; set; }
         public Room Room { get; set; } = null!;
-        public string? Status { get; set; }
+        public ServiceSessionStatus Status { get; set; }
         public DateTime? ExpectedStartAt { get; set; }
         public DateTime? ExpectedFinishAt { get; set; }
         public DateTime? StartedAt { get; set; }

@@ -19,11 +19,13 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 
             Builder.Property(x => x.RoomType)
                 .HasColumnName("room_type")
+                .HasConversion<string>()
                 .HasMaxLength(50)
                 .IsRequired();
 
             Builder.Property(x => x.Status)
                 .HasColumnName("status")
+                .HasConversion<string>()
                 .HasMaxLength(15);
 
             Builder.Property(x => x.CreatedAt)

@@ -25,7 +25,8 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                 .HasColumnName("room_id");
 
             Builder.Property(x => x.Status)
-                .HasColumnName("status  ");
+                .HasColumnName("status")
+                .HasConversion<string>();
 
             Builder.Property(x => x.ExpectedStartAt)
                 .HasColumnName("expected_start_at")

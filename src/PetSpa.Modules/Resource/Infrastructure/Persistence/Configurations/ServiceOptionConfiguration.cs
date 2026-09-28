@@ -25,6 +25,7 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
 
             Builder.Property(x => x.Species)
                 .HasColumnName("species")
+                .HasConversion<string>()
                 .HasMaxLength(50)
                 .IsRequired();
 
