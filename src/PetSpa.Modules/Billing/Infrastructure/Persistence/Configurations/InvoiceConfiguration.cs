@@ -56,8 +56,7 @@ public class InvoiceConfiguration
 
         builder.Property(x => x.FinishedAt)
             .HasColumnName("finished_at")
-            .HasColumnType("timestamp with time zone")
-            .IsRequired();
+            .HasColumnType("timestamp with time zone");
 
         // Invoice 1 - N InvoiceItem
         builder.HasMany(x => x.Items)
