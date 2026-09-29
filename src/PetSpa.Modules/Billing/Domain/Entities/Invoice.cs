@@ -21,7 +21,7 @@ public class Invoice
 
     public DateTime UpdatedAt { get; set; }
 
-    public DateTime FinishedAt { get; set; }
+    public DateTime? FinishedAt { get; set; }
 
     // Navigation trong Billing module
     public ICollection<InvoiceItem> Items { get; set; }

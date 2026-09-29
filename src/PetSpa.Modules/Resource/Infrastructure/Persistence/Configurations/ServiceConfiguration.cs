@@ -9,16 +9,9 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<Service> Builder)
         {
-            Builder.ToTable("service");
+            Builder.ToTable("service", "resource");
 
             Builder.HasKey(x => x.Id);
-
-            // Create 1 : N relationship Category : Service
-            Builder.HasOne(x => x.Category)
-                .WithMany(y => y.Services)
-                .HasForeignKey(z => z.CategoryId)
-                .HasConstraintName("fk_service_category") 
-                .OnDelete(DeleteBehavior.Cascade);// auto delete service when Category is deleted
 
 
             Builder.Property(x => x.CategoryId)
@@ -27,6 +20,7 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
 
             Builder.Property(x => x.ServiceName)
                 .HasColumnName("service_name")
+                .HasColumnType("character varying")
                 .HasMaxLength(256)
                 .IsRequired();
 
@@ -37,15 +31,23 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
             Builder.Property(x => x.Status)
                 .HasColumnName("status")
                 .HasConversion<string>()
+                .HasColumnType("character varying")
                 .IsRequired();
 
             Builder.Property(x => x.CreatedAt)
                 .HasColumnName("created_at")
-                .HasColumnType("timestamp with time zone");
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
 
             Builder.Property(x => x.UpdatedAt)
                 .HasColumnName("updated_at")
-                .HasColumnType("timestamp with time zone");
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
+
+            Builder .HasMany(x=> x.ServiceOptions)
+                .WithOne(x => x.Service)
+                .HasForeignKey(x=> x.ServiceId)
+                .OnDelete(DeleteBehavior.Restrict);
                 
         }
     }
