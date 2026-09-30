@@ -2,8 +2,7 @@
 
 public enum StaffPosition
 {
-    GROOMER,
-    BATHER,
-    RECEPTIONIST,
-    VET_ASSISTANT
+    MANAGER,
+    REEPTIONIST,
+    STAFF
 }

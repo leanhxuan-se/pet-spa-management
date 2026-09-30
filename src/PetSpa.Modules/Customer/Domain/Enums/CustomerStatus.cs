@@ -3,6 +3,5 @@
 public enum CustomerStatus
 {
     ACTIVE,
-    BLOCK,
-    DELETED
+    INACTIVE
 }

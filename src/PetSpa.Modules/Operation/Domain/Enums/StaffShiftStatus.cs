@@ -4,6 +4,5 @@ public enum StaffShiftStatus
 {
     SCHEDULED, // THE SHIFT IS scheduled
     COMPLETED,
-    ABSENT,
     CANCELLED
 }

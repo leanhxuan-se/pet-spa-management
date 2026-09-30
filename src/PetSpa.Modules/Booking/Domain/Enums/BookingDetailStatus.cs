@@ -2,7 +2,6 @@
 
 public enum BookingDetailStatus
 {
-    IN_PROGRES,
-    COMPLETED,
+    ACTIVE, 
     CANCELLED
 }
