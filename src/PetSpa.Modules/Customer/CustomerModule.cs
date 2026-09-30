@@ -29,6 +29,7 @@ public static class CustomerModule
     public static IEndpointRouteBuilder MapCustomerModuleEndpoint(this IEndpointRouteBuilder app) // Register Module's Endpoints
     {
         //...
+        app.MapCustomerEndpoint();
 
         return app;
     }

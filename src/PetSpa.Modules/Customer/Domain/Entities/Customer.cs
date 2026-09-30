@@ -5,12 +5,12 @@ namespace PetSpa.Modules.Customer.Domain.Entities
     public class Customer
     {
         public long Id { get; set; }
-        public string FullName { get; set; } = string.Empty;
-        public Gender Gender { get; set; }
+        public string FullName { get; set; } = null!;
+        public Gender? Gender { get; set; }
         public DateOnly? DateOfBirth { get; set; }
-        public string Email { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string PasswordHash { get; set; } = string.Empty;
+        public string? Email { get; set; }
+        public string Phone { get; set; } = null!;
+        public string? PasswordHash { get; set; }
         public string? AvtURL { get; set; }
         public string? Note { get; set; }
         public CustomerStatus Status { get; set; }

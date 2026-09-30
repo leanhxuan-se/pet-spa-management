@@ -6,6 +6,7 @@ using System.Text;
 namespace PetSpa.Modules.Customer.Endpoints.Responses
 {
     public record CustomerResponse(
+         long Id,
          string FullName,
          Gender? Gender,
          DateOnly? DateOfBirth,
