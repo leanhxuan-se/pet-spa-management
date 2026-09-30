@@ -11,7 +11,11 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
 
-  <ItemGroup>
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
     <ProjectReference Include="..\..\PetSpa.SharedKernel\PetSpa.SharedKernel.csproj" />
     <ProjectReference Include="..\Billing\PetSpa.Modules.Billing.csproj" />
   </ItemGroup>

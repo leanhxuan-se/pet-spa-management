@@ -17,6 +17,7 @@ builder.Services.AddCustomerModule(connectionString);
 builder.Services.AddOperationModule(connectionString);
 builder.Services.AddResourceModule(connectionString);
 
+
 //Register CORS (cross-origin system) to allow fetching api
 builder.Services.AddCors(options =>
 {
@@ -44,6 +45,10 @@ if (app.Environment.IsDevelopment())
 
 // Activate HTTPS
 app.UseHttpsRedirection();
+
+//Register EndpointMap
+
+app.MapCustomerModuleEndpoint();
 
 // Activate CORS
 app.UseCors();
