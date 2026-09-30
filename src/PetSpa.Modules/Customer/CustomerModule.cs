@@ -22,7 +22,7 @@ public static class CustomerModule
                 npgsql.MigrationsAssembly("PetSpa.Modules.Customer");
 
                 // Seperate migrations history
-                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "customer");
+                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "Customer");
             });
         });
         // Find UpdateCustomerRequestValidator and regis all the class that inherit AbstractValidator<T>
