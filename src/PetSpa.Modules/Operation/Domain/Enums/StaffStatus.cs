@@ -3,7 +3,5 @@
 public enum StaffStatus
 {
     ACTIVE,
-    ON_LEAVE,
-    PROBATION,
-    RESIGNED
+    INACTIVE
 }
