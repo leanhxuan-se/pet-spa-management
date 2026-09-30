@@ -1,7 +1,4 @@
 ﻿using PetSpa.Modules.Customer.Domain.Enums;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PetSpa.Modules.Customer.Endpoints.Responses
 {
@@ -14,6 +11,7 @@ namespace PetSpa.Modules.Customer.Endpoints.Responses
          string Phone,
          string? AvtURL,
          string? Note,
+         ICollection<PetResponse>? Pets,
          CustomerStatus Status = CustomerStatus.ACTIVE
     );
 }

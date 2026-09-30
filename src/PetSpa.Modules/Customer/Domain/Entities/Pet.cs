@@ -11,13 +11,13 @@ namespace PetSpa.Modules.Customer.Domain.Entities
         public Customer Customer { get; set; } = null!;
         public string Name { get; set; } = string.Empty;
         public Species Species { get; set; }
-        public double? Weight { get; set; }
-        public int? Height { get; set; }
+        public decimal? Weight { get; set; }
+        public decimal? Height { get; set; }
         public Gender Gender { get; set; }
         public DateOnly? DateOfBirth { get; set; }
         public PetStatus Status { get; set; }
         public string? SpecialNote { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }

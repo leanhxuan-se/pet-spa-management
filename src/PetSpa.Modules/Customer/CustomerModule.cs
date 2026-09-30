@@ -4,6 +4,8 @@ using PetSpa.Modules.Customer.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Customer.Endpoints;
+using FluentValidation;
+using PetSpa.Modules.Customer.Application.Validators;
 
 
 namespace PetSpa.Modules.Customer;
@@ -23,6 +25,8 @@ public static class CustomerModule
                 npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "customer");
             });
         });
+        // Find UpdateCustomerRequestValidator and regis all the class that inherit AbstractValidator<T>
+        services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>();
         return services;
     }
 
