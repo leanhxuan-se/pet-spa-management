@@ -1,7 +1,10 @@
 
-# Build output
+# .NET build output and packages
 **/bin/
 **/obj/
+artifacts/
+*.nupkg
+*.snupkg
 
 # Visual Studio and .NET user files
 .vs/
@@ -9,24 +12,38 @@
 *.suo
 *.userosscache
 *.rsuser
+*.sln.docstates
 
 # Rider / ReSharper
 .idea/
 *.sln.iml
+*.DotSettings.user
+_ReSharper*/
 
 # Test and coverage output
 TestResults/
 coverage/
 *.coverage
 *.coveragexml
+*.trx
+coverage*.xml
 
 # Local environment and secrets
 .env
 .env.*
 !.env.example
-appsettings.Local.json
-appsettings.*.Local.json
+appsettings*.json
+!appsettings.example.json
 secrets.json
+*.pfx
+*.p12
+
+# Runtime files
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
 
 # OS files
 .DS_Store
@@ -35,3 +52,5 @@ Thumbs.db
 # Publish output
 publish/
 *.PublishSettings
+*.pubxml
+*.pubxml.user
