@@ -81,7 +81,7 @@ public static class CustomerEndpoints
     public static async Task<IResult> UpdateCustomerAsync(
         long id,
         UpdateCustomerRequest req,
-        IValidator<UpdateCustomerRequest> validator,
+        [FromServices]IValidator<UpdateCustomerRequest> validator,
         CustomerDbContext db,
         CancellationToken ct)
     {

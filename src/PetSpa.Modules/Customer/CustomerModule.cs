@@ -27,6 +27,8 @@ public static class CustomerModule
         });
         // Find UpdateCustomerRequestValidator and regis all the class that inherit AbstractValidator<T>
         services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>();
+        services.AddValidatorsFromAssembly(typeof(CustomerDbContext).Assembly);
+
         return services;
     }
 

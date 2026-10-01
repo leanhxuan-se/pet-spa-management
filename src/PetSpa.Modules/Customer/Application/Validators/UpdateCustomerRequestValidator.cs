@@ -1,9 +1,6 @@
 ﻿using FluentValidation;
 using Microsoft.Extensions.Options;
 using PetSpa.Modules.Customer.Endpoints.Requests;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PetSpa.Modules.Customer.Application.Validators
 {
