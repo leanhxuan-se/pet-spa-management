@@ -15,9 +15,9 @@ public class Payment
 
     public PaymentStatus Status { get; set; }
 
-    public string TransactionReference { get; set; } = string.Empty;
+    public string? TransactionReference { get; set; } = string.Empty;
 
-    public DateTime PaidAt { get; set; }
+    public DateTime? PaidAt { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

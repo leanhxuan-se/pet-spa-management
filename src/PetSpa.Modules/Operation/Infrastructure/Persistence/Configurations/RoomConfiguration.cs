@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Operation.Domain.Entities;
+using PetSpa.Modules.Operation.Domain.Enums;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 {
@@ -8,33 +9,43 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<Room> Builder)
         {
-            Builder.ToTable("room");
+            Builder.ToTable("room", table =>
+                table.HasCheckConstraint("ck_room_status", "status IN ('AVAILABLE', 'UNAVAILABLE', 'MAINTENANCE')"));
 
             Builder.HasKey(x => x.Id);
 
+            Builder.Property(x => x.Id)
+                .HasColumnName("id")
+                .HasColumnType("bigint")
+                .UseIdentityByDefaultColumn();
+
             Builder.Property(x => x.RoomName)
                 .HasColumnName("room_name")
-                .HasMaxLength(50)
+                .HasMaxLength(100)
                 .IsRequired();
+
+            Builder.HasIndex(x => x.RoomName).IsUnique();
 
             Builder.Property(x => x.RoomType)
                 .HasColumnName("room_type")
-                .HasConversion<string>()
-                .HasMaxLength(50)
-                .IsRequired();
+                .HasMaxLength(50);
 
             Builder.Property(x => x.Status)
                 .HasColumnName("status")
                 .HasConversion<string>()
-                .HasMaxLength(15);
+                .HasDefaultValue(RoomStatus.AVAILABLE)
+                .IsRequired()
+                .HasMaxLength(30);
 
             Builder.Property(x => x.CreatedAt)
                 .HasColumnName("created_at")
-                .HasColumnType("timestamp with time zone");
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("NOW()");
 
             Builder.Property(x => x.UpdatedAt)
                 .HasColumnName("updated_at")
-                .HasColumnType("timestamp with time zone");
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("NOW()");
 
         }
     }

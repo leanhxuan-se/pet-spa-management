@@ -10,9 +10,9 @@ namespace PetSpa.Modules.Operation.Domain.Entities
         public DateOnly ShiftDate { get; set; }
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
-        public StaffShiftStatus Status { get; set; }
+        public StaffShiftStatus Status { get; set; } = StaffShiftStatus.SCHEDULED;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
        
     }
 }
