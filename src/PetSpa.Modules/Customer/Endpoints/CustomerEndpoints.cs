@@ -1,6 +1,5 @@
 using FluentValidation;
 using Mapster;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -82,7 +81,7 @@ public static class CustomerEndpoints
     public static async Task<IResult> UpdateCustomerAsync(
         long id,
         UpdateCustomerRequest req,
-        [FromServices]IValidator<UpdateCustomerRequest> validator,
+        IValidator<UpdateCustomerRequest> validator,
         CustomerDbContext db,
         CancellationToken ct)
     {

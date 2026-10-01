@@ -4,7 +4,7 @@ using PetSpa.Modules.Customer.Endpoints.Requests;
 
 namespace PetSpa.Modules.Customer.Application.Validators
 {
-    internal class UpdateCustomerRequestValidator: AbstractValidator<UpdateCustomerRequest>
+    public class UpdateCustomerRequestValidator: AbstractValidator<UpdateCustomerRequest>
     {
         public UpdateCustomerRequestValidator() {
 
