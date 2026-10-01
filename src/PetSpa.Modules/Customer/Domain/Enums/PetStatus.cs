@@ -2,7 +2,6 @@
 
 public enum PetStatus
 {
-    HEALTHY,    // PET IS HEALTHY
-    TREATMENT,  // PET IS IN SPECIAL TREATMENT
-    DECEASED  // PET GONE
+    ACTIVE, 
+    INACTIVE
 }

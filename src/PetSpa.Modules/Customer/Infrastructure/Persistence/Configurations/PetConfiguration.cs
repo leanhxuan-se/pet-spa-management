@@ -37,10 +37,12 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
             // No minValue so we will validate value later in Application.validator
 
             builder.Property(x => x.Weight)
-                .HasColumnName("weight");
+                .HasColumnName("weight")
+                .HasPrecision(6,2);
 
             builder.Property(x => x.Height)
-                .HasColumnName("height");
+                .HasColumnName("height")
+                .HasPrecision(6, 2);
 
             builder.Property(x => x.Gender)
                 .HasColumnName("gender")
