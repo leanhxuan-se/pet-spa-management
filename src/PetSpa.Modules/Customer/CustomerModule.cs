@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PetSpa.Modules.Customer.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Customer.Endpoints;
 using FluentValidation;
@@ -27,6 +26,7 @@ public static class CustomerModule
         });
         // Find UpdateCustomerRequestValidator and regis all the class that inherit AbstractValidator<T>
         services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>();
+
         return services;
     }
 
