@@ -115,7 +115,7 @@ public static class CustomerEndpoints
 
         var response = Customer.Adapt<CustomerResponse>();
 
-        return Results.Ok(Customer);
+        return Results.Ok(response);
     }
 }
 

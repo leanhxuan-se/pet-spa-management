@@ -45,6 +45,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 
             Builder.Property(x => x.Phone)
                 .HasColumnName("phone")
+                .IsRequired()
                 .HasMaxLength(30);
             Builder.HasIndex(x => x.Phone).IsUnique();
 

@@ -3,7 +3,7 @@ using PetSpa.Modules.Booking;
 using PetSpa.Modules.Customer;
 using PetSpa.Modules.Operation;
 using PetSpa.Modules.Resource;
-
+using PetSpa.Api.Composition;
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -17,6 +17,8 @@ builder.Services.AddCustomerModule(connectionString);
 builder.Services.AddOperationModule(connectionString);
 builder.Services.AddResourceModule(connectionString);
 
+// Register Authentication Service 
+builder.Services.AddAuthenticationServices(builder.Configuration);
 
 //Register CORS (cross-origin system) to allow fetching api
 builder.Services.AddCors(options =>
@@ -46,11 +48,13 @@ if (app.Environment.IsDevelopment())
 // Activate HTTPS
 app.UseHttpsRedirection();
 
-//Register EndpointMap
-
-app.MapCustomerModuleEndpoint();
-
 // Activate CORS
-app.UseCors();
+app.UseCors("AllowAll");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+//Register EndpointMap
+app.MapCustomerModuleEndpoint();
 
 app.Run();

@@ -10,7 +10,7 @@ namespace PetSpa.Modules.Operation.Domain.Entities
         public Gender? Gender { get; set; }
         public DateOnly? DateOfBirth { get; set; }
         public string Email { get; set; } = null!;
-        public string? Phone { get; set; }
+        public string Phone { get; set; } = null!;
         public string Position { get; set; } = null!;
         public StaffRole Role { get; set; } = StaffRole.STAFF;
         public DateOnly? HiredDate { get; set; }
