@@ -63,7 +63,7 @@ public static class CustomerEndpoints
         ClaimsPrincipal currentUser,
         CancellationToken ct)
     { 
-        var currentUserId = currentUser.FindFirst("customerId")?.Value;
+        var currentUserId = currentUser.FindFirst("customer_id")?.Value;
 
         var customer = await customerService.UpdateAsync(Convert.ToInt64(currentUserId), req, ct);
 
@@ -74,7 +74,7 @@ public static class CustomerEndpoints
             case ResultStatus.ValidationFailed:
                 return Results.ValidationProblem(customer?.Errors);
             default:
-                return Results.BadRequest(new { Message = "Không thể tạo khách hàng" });
+                return Results.BadRequest(new { errors = customer.Errors });
         }
 
     }
