@@ -8,7 +8,6 @@ using StaffTable = PetSpa.Modules.Operation.Domain.Entities.Staff;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Operation.Endpoints;
 using FluentValidation;
-using PetSpa.Modules.Operation.Application.Validators;
 using PetSpa.Modules.Operation.Application.Abstractions;
 using PetSpa.Modules.Operation.Application.Services;
 using PetSpa.Modules.Operation.Domain.Repositories;
