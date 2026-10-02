@@ -29,18 +29,17 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.Email)
                 .HasColumnName("email")
-                .IsRequired()
                 .HasMaxLength(50);
             builder.HasIndex(x => x.Email).IsUnique();
 
             builder.Property(x => x.Phone)
                 .HasColumnName("phone")
+                .IsRequired()
                 .HasMaxLength(20);
             builder.HasIndex(x => x.Phone).IsUnique();
 
             builder.Property(x => x.PasswordHash)
                 .HasColumnName("password_hash")
-                .IsRequired()
                 .HasMaxLength(128);
 
             builder.Property(x => x.AvtURL)

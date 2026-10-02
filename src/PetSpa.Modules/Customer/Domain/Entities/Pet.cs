@@ -13,7 +13,7 @@ namespace PetSpa.Modules.Customer.Domain.Entities
         public Species Species { get; set; }
         public decimal? Weight { get; set; }
         public decimal? Height { get; set; }
-        public Gender Gender { get; set; }
+        public Gender? Gender { get; set; }
         public DateOnly? DateOfBirth { get; set; }
         public PetStatus Status { get; set; }
         public string? SpecialNote { get; set; }
