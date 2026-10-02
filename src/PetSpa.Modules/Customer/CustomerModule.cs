@@ -33,6 +33,9 @@ public static class CustomerModule
         });
         // Find UpdateCustomerRequestValidator and regis all the class that inherit AbstractValidator<T>
         services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>();
+
+        // Đăng ký các interface và dịch vụ liên quan đến CustomerModule
+        services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IPasswordHasher<CustomerTable>, PasswordHasher<CustomerTable>>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IPasswordService, IdentityPasswordService>();

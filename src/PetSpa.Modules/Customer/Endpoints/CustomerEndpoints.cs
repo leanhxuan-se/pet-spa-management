@@ -1,16 +1,11 @@
-using FluentValidation;
-using Mapster;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
-using PetSpa.Modules.Customer.Application.Validators;
-using PetSpa.Modules.Customer.Domain.Entities;
+using PetSpa.Modules.Customer.Application.Abstractions;
 using PetSpa.Modules.Customer.Endpoints.Requests;
 using PetSpa.Modules.Customer.Endpoints.Responses;
-using PetSpa.Modules.Customer.Infrastructure.Persistence;
-
-using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
+using System.Security.Claims;
+using PetSpa.SharedKernel.Application.Abstractions;
 
 namespace PetSpa.Modules.Customer.Endpoints;
 
@@ -18,104 +13,70 @@ public static class CustomerEndpoints
 {
     public static IEndpointRouteBuilder MapCustomerEndpoint(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/customer").WithTags("Customers"); // withtag to group these Endpoint handler in a swagger called "Customers"
+        var group = app.MapGroup("/api/customer").WithTags("Customers"); // gom nhóm các endpoint liên quan đến customer lại ở swagger
 
-        group.MapGet("{id:long}", GetCustomerByIdAsync).WithName("GetCustomerById");
-        group.MapPost("/create", CreateCustomerAsync).WithName("CreateCustomer");
-        group.MapPut("/update/{id:long}/", UpdateCustomerAsync).WithName("UpdateCustomer");
+        group.MapGet("/{id:long}", GetCustomerByIdAsync).WithName("GetCustomerById").RequireAuthorization();
+        group.MapPost("/create", CreateCustomerAsync).WithName("CreateCustomer").RequireAuthorization();
+        group.MapPut("/update", UpdateCustomerAsync).WithName("UpdateCustomer").RequireAuthorization();
 
         return app;
     }
 
     public static async Task<IResult> GetCustomerByIdAsync(
         long id,
-        CustomerDbContext db,
+        ICustomerService customerService,
         CancellationToken ct
     )
     {
-                                                                 // Query database and take matched field to CustomerResponse
-        var Customer = await db.Customers.Where(x => x.Id == id).ProjectToType<CustomerResponse>().FirstOrDefaultAsync(ct);
+        var Customer = await customerService.GetByIdAsync(id, ct);
 
-        if(Customer is null)
+        if (Customer.Status == ResultStatus.NotFound)
         {
-            return Results.NotFound(new {Message = $"Không tìm thấy khách hàng với Id {id}" });
+            return Results.NotFound(new { Message = $"Không tìm thấy khách hàng với Id {id}" });
         }
 
-        return Results.Ok<CustomerResponse>(Customer);
+        return Results.Ok<CustomerResponse>(Customer.Value);
     }
 
     public static async Task<IResult> CreateCustomerAsync(
         CreateCustomerRequest req,
-        CustomerDbContext db,
-        IValidator<CreateCustomerRequest> validator,
+        ICustomerService customerService,
         CancellationToken ct)
     {
-        var validate = await validator.ValidateAsync(req, ct);
-
-        if (!validate.IsValid)
+        var customer = await customerService.CreateAsync(req, ct);
+        
+        switch(customer.Status)
         {
-            //return validation error store in validate 
-            return Results.ValidationProblem(validate.ToDictionary());
+            case ResultStatus.Success:
+                return Results.CreatedAtRoute("GetCustomerById", new { id = customer?.Value?.Id }, customer?.Value);
+            case ResultStatus.ValidationFailed:
+                return Results.ValidationProblem(customer?.Errors);
+            default:
+                return Results.BadRequest(new { Message = "Không thể tạo khách hàng" });
         }
 
-        var Customer = new CustomerTable
-        {
-            FullName = req.FullName.Trim(),
-            Phone = req.Phone.Trim(),
-            Email = string.IsNullOrWhiteSpace(req.Email) ? null : req.Email.Trim(),
-            Gender = req.Gender.HasValue ? req.Gender : null,
-            DateOfBirth = req.DateOfBirth.HasValue ? req.DateOfBirth : null
-
-        };
-
-        db.Customers.Add(Customer);
-        await db.SaveChangesAsync(ct);
-
-        var Response = Customer.Adapt<CustomerResponse>();
-
-        // Send back 201 Created and Response with header /api/customers/{id}
-        return Results.CreatedAtRoute("GetCustomerById", new { id = Customer.Id }, Response);
     }
 
-    //Take id directly from path parameter, change to take id from current_user later after authentication is build
     public static async Task<IResult> UpdateCustomerAsync(
-        long id,
         UpdateCustomerRequest req,
-        IValidator<UpdateCustomerRequest> validator,
-        CustomerDbContext db,
+        ICustomerService customerService,
+        ClaimsPrincipal currentUser,
         CancellationToken ct)
-    {
+    { 
+        var currentUserId = currentUser.FindFirst("customerId")?.Value;
 
-        var validate = await validator.ValidateAsync(req, ct);
+        var customer = await customerService.UpdateAsync(Convert.ToInt64(currentUserId), req, ct);
 
-        if(!validate.IsValid)
+        switch (customer.Status)
         {
-            return Results.ValidationProblem(validate.ToDictionary());
+            case ResultStatus.Success:
+                return Results.CreatedAtRoute("GetCustomerById", new { id = customer?.Value?.Id }, customer?.Value);
+            case ResultStatus.ValidationFailed:
+                return Results.ValidationProblem(customer?.Errors);
+            default:
+                return Results.BadRequest(new { Message = "Không thể tạo khách hàng" });
         }
 
-        var Customer = await db.Customers.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
-
-        if(Customer is null)
-        {
-            return Results.NotFound(new { Message = $"Customer with id {id} not found" });
-        }
-
-        Customer.Gender = req.Gender ?? Customer.Gender;
-        Customer.DateOfBirth = req.DateOfBirth ?? Customer.DateOfBirth;
-        Customer.Status = req.Status ?? Customer.Status;
-
-        Customer.FullName = string.IsNullOrWhiteSpace(req.FullName) ? Customer.FullName : req.FullName.Trim();
-        Customer.Phone = string.IsNullOrWhiteSpace(req.Phone) ? Customer.Phone : req.Phone.Trim();
-        Customer.Email = string.IsNullOrWhiteSpace(req.Phone) ? Customer.Email : req.Phone.Trim();
-        Customer.Note = string.IsNullOrWhiteSpace(req.Note) ? Customer.Note : req.Note;
-
-        Customer.UpdatedAt = DateTime.UtcNow;
-
-        await db.SaveChangesAsync(ct);
-
-        var response = Customer.Adapt<CustomerResponse>();
-
-        return Results.Ok(response);
     }
 }
 
