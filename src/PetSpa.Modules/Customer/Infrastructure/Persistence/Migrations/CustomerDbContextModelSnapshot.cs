@@ -69,6 +69,7 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Migrations
                         .HasColumnName("note");
 
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
                         .HasColumnName("password_hash");
