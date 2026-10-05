@@ -18,7 +18,8 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
         public async Task<Result<PetResponse>> GetByIdAsync(long userId, long petId, CancellationToken ct)
         {
             var pet = await db.Pets
-                .Join()
+                .Include(c => c.Customer)
+                .Where(p=> p.CustomersId == userId && p.Id == petId)
                 .FirstOrDefaultAsync(ct);
             if (pet is null)
             {
@@ -27,7 +28,20 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
             var petResponse = pet.Adapt<PetResponse>();
             return Result<PetResponse>.Success(petResponse);
         }
-        Task<Result<PetResponse>> GetAllPetsByIdAsync(long id, CancellationToken ct);
+        public async Task<Result<PetResponse>> GetAllPetsByIdAsync(long id, CancellationToken ct)
+        {
+            var pets = await db.Pets
+                .Where(c => c.CustomersId == id)
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            if (pets is null)
+            {
+                return Result<PetResponse>.NotFound($" user {id} does not have any pet");
+            }
+            var petResponse = pets.Adapt<PetResponse>();
+            return Result<PetResponse>.Success(petResponse);
+        }
         Task<Result<PetResponse>> CreatePetAsync(CreatePetRequest req, CancellationToken ct);
         Task<Result<PetResponse>> UpdatePetAsync(UpdatePetRequest req, long petId, CancellationToken ct);
 
