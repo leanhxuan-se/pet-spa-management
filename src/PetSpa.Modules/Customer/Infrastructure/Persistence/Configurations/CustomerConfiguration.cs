@@ -40,6 +40,7 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.PasswordHash)
                 .HasColumnName("password_hash")
+                .IsRequired()
                 .HasMaxLength(128);
 
             builder.Property(x => x.AvtURL)
