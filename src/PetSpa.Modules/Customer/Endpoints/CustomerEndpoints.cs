@@ -35,7 +35,10 @@ public static class CustomerEndpoints
 
         if (currentRole != "MANAGER" && currentRole != "RECEPTIONIST" && currentUserId != id)
         {
-            return Results.Forbid();
+            return Results.Json(
+                new { message = "Bạn không có quyền xem thông tin khách hàng" },
+                statusCode: StatusCodes.Status403Forbidden
+            );
         }
 
         var Customer = await customerService.GetByIdAsync(id, ct);
@@ -59,7 +62,10 @@ public static class CustomerEndpoints
 
         if(currentRole != "MANAGER" && currentRole != "RECEPTIONIST")
         {
-            return Results.Forbid();
+            return Results.Json(
+                new { message = "Bạn không có quyền tạo khách hàng" },
+                statusCode: StatusCodes.Status403Forbidden
+            );
         }
 
         var customer = await customerService.CreateAsync(req, ct);

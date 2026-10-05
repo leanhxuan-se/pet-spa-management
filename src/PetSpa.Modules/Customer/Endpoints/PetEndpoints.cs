@@ -15,16 +15,16 @@ public static class PetEndpoints
     {
         var group = app.MapGroup("/api/pet").WithTags("Pets"); // gom nhóm các endpoint liên quan đến pet lại ở swagger
             
-        group.MapGet("/my_pets/{id:long}", GetPetByIdAsync).WithName("GetPetById").RequireAuthorization();
-        group.MapGet("/my_pets", GetAllPetsAsync).WithName("GetMyPets").RequireAuthorization();
-        group.MapPost("/create", CreatePetAsync).WithName("CreatePet").RequireAuthorization();
-        group.MapPut("/update/{id:long}", UpdatePetAsync).WithName("UpdatePet").RequireAuthorization();
+        group.MapGet("/all_pets/{id:long}", GetAllPetsAsync).WithName("GetAllPets").RequireAuthorization();
+        group.MapGet("/{customerId:long}/{petId:long}", GetPetByIdAsync).WithName("GetPet").RequireAuthorization();
+        group.MapPost("/create/{id:long}", CreatePetAsync).WithName("CreatePet").RequireAuthorization();
+        group.MapPut("/update/{customerId:long}/{petId:long}", UpdatePetAsync).WithName("UpdatePet").RequireAuthorization();
 
         return app;
     }
 
     public static async Task<IResult> GetPetByIdAsync(
-        long id,
+        long customerId,
         long petId,
         ClaimsPrincipal currentUser,
         IPetServices petServices,
@@ -35,15 +35,15 @@ public static class PetEndpoints
         var currentUserId = Convert.ToInt64(currentUser.FindFirst("customer_id")?.Value);
         var currentUserRole = currentUser.FindFirst("role")?.Value;
 
-        if (!(currentUserId == id || currentUserRole == "MANAGER" || currentUserRole == "RECEPTIONIST"))
+        if (!(currentUserId == customerId || currentUserRole == "MANAGER" || currentUserRole == "RECEPTIONIST"))
         {
             return Results.BadRequest(new { Message = $"Bạn không có quyền truy cập pet của user khác" });
         }
 
-        var pet = await petServices.GetByIdAsync(currentUserId, petId, ct);
+        var pet = await petServices.GetByIdAsync(petId, ct);
         if (pet.Status == ResultStatus.NotFound)
         {
-            return Results.NotFound(new { Message = $"Pet với id {petId} không tồn tại" });
+            return Results.NotFound(pet.Errors);
         }
         return Results.Ok<PetResponse>(pet.Value);
     }   
@@ -96,7 +96,7 @@ public static class PetEndpoints
         switch (pet.Status)
         {
             case ResultStatus.Success:
-                return Results.CreatedAtRoute("GetPetById", new { id = pet?.Value?.Id }, pet?.Value);
+                return Results.CreatedAtRoute("GetPet", new { CustomerId = pet?.Value?.CustomersId, PetId = pet?.Value?.Id }, pet?.Value);
             case ResultStatus.ValidationFailed:
                 return Results.ValidationProblem(pet?.Errors);
             default:
@@ -106,7 +106,8 @@ public static class PetEndpoints
     }
 
     public static async Task<IResult> UpdatePetAsync(
-        long id,
+        long petId,
+        long customerId,
         UpdatePetRequest req,
         IPetServices petServices,
         ClaimsPrincipal currentUser,
@@ -116,18 +117,20 @@ public static class PetEndpoints
         var currentUserId = Convert.ToInt64(currentUser.FindFirst("customer_id")?.Value);
         var currentUserRole = currentUser.FindFirst("role")?.Value;
 
-        if (!(currentUserId == id || currentUserRole == "MANAGER" || currentUserRole == "RECEPTIONIST"))
+        if (!(currentUserId == customerId || currentUserRole == "MANAGER" || currentUserRole == "RECEPTIONIST"))
         {
             return Results.BadRequest(new { Message = $"Bạn không có quyền cập nhật pet của user khác" });
         }
-        var pet = await petServices.UpdateAsync(id, req, ct);
+        var pet = await petServices.UpdateAsync(petId, req, ct);
 
         switch (pet.Status)
         {
             case ResultStatus.Success:
-                return Results.CreatedAtRoute("GetPetById", new { id = pet?.Value?.Id }, pet?.Value);
+                return Results.CreatedAtRoute("GetPet", new { CustomerId = pet?.Value?.CustomersId, PetId = pet?.Value?.Id }, pet?.Value);
             case ResultStatus.ValidationFailed:
                 return Results.ValidationProblem(pet?.Errors);
+            case ResultStatus.NotFound:
+                return Results.NotFound(pet.Errors);
             default:
                 return Results.BadRequest(new { errors = pet.Errors });
         }

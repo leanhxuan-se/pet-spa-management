@@ -1,9 +1,11 @@
+using PetSpa.Api.Composition;
 using PetSpa.Modules.Billing;
 using PetSpa.Modules.Booking;
 using PetSpa.Modules.Customer;
 using PetSpa.Modules.Operation;
 using PetSpa.Modules.Resource;
-using PetSpa.Api.Composition;
+using System.Text.Json.Serialization;
+
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -32,7 +34,16 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddSwaggerGen();
+
+
 builder.Services.AddOpenApi();
+
+
+//serializer chuyển enum sang string để trả về cho FE, tránh trả về số
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 var app = builder.Build();
 

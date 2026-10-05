@@ -12,7 +12,7 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
 {
     public class PetServices(
         CustomerDbContext db,
-        ServiceProvider serviceProvider): IPetServices
+        IServiceProvider serviceProvider): IPetServices
     {
         public async Task<Result<PetResponse>> GetByIdAsync(long petId, CancellationToken ct)
         {
@@ -33,10 +33,6 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
                 .AsNoTracking()
                 .ToListAsync(ct);
 
-            if (pets.Count == 0)
-            {
-                return Result<List<PetResponse>>.NotFound($" user {id} does not have any pet");
-            }
             var petResponse = pets.Adapt<List<PetResponse>>();
 
             return Result<List<PetResponse>>.Success(petResponse);
@@ -80,7 +76,6 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
             }
 
             var pet = await db.Pets
-                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == petId, ct);
             if (pet is null)
             {

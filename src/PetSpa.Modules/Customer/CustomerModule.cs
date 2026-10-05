@@ -11,6 +11,8 @@ using PetSpa.Modules.Customer.Application.Services;
 using PetSpa.Modules.Customer.Domain.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Persistence.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Services;
+
+
 using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
 
 
@@ -46,9 +48,10 @@ public static class CustomerModule
 
     public static IEndpointRouteBuilder MapCustomerModuleEndpoint(this IEndpointRouteBuilder app) // Register Module's Endpoints
     {
-        //...
-        app.MapCustomerEndpoint();
+        //....
         app.MapCustomerAuthEndpoints();
+        app.MapCustomerEndpoint();
+        app.MapPetEndpoint();
 
         return app;
     }

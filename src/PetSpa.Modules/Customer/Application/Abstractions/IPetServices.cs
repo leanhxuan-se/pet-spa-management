@@ -7,7 +7,7 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
     public interface IPetServices
     {
         Task<Result<PetResponse>> GetByIdAsync(
-            long petId, 
+            long id, 
             CancellationToken ct);
 
         Task<Result<List<PetResponse>>> GetAllByIdAsync(
@@ -19,7 +19,7 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
             CancellationToken ct);
 
         Task<Result<PetResponse>> UpdateAsync(
-            long petId, 
+            long id, 
             UpdatePetRequest req, 
             CancellationToken ct);
     }
