@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using Mapster;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PetSpa.Modules.Customer.Application.Abstractions;
