@@ -35,6 +35,7 @@ public static class CustomerModule
         services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>();
 
         // Đăng ký các interface và dịch vụ liên quan đến CustomerModule
+        services.AddScoped<IPetServices, PetServices>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IPasswordHasher<CustomerTable>, PasswordHasher<CustomerTable>>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();

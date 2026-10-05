@@ -6,11 +6,21 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
 {
     public interface IPetServices
     {
-        Task<Result<PetResponse>> GetByIdAsync(long userId, long petId, CancellationToken ct);
-        Task<Result<PetResponse>> GetAllByIdAsync(long id, CancellationToken ct);
-        Task<Result<PetResponse>> CreateAsync(CreatePetRequest req, CancellationToken ct);
-        Task<Result<PetResponse>> UpdateAsync(UpdatePetRequest req, long petId, CancellationToken ct);
+        Task<Result<PetResponse>> GetByIdAsync(
+            long petId, 
+            CancellationToken ct);
 
+        Task<Result<List<PetResponse>>> GetAllByIdAsync(
+            long id, 
+            CancellationToken ct);
 
+        Task<Result<PetResponse>> CreateAsync(
+            CreatePetRequest req, 
+            CancellationToken ct);
+
+        Task<Result<PetResponse>> UpdateAsync(
+            long petId, 
+            UpdatePetRequest req, 
+            CancellationToken ct);
     }
 }
