@@ -2,53 +2,57 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Resource.Domain.Entities;
 
-
 namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
 {
-    public class ServiceConfiguration: IEntityTypeConfiguration<Service>
+    public class ServiceConfiguration : IEntityTypeConfiguration<Service>
     {
-        public void Configure(EntityTypeBuilder<Service> Builder)
+        public void Configure(EntityTypeBuilder<Service> builder)
         {
-            Builder.ToTable("service", "resource");
+            builder.ToTable("service", "resource");
 
-            Builder.HasKey(x => x.Id);
+            builder.HasKey(x => x.Id);
 
+            builder.Property(x => x.Id)
+                .HasColumnName("id")
+                .HasColumnType("bigint")
+                .ValueGeneratedOnAdd();
 
-            Builder.Property(x => x.CategoryId)
+            builder.Property(x => x.CategoryId)
                 .HasColumnName("category_id")
+                .HasColumnType("bigint")
                 .IsRequired();
 
-            Builder.Property(x => x.ServiceName)
+            builder.Property(x => x.ServiceName)
                 .HasColumnName("service_name")
                 .HasColumnType("character varying")
                 .HasMaxLength(256)
                 .IsRequired();
 
-            Builder.Property(x => x.Description)
+            builder.Property(x => x.Description)
                 .HasColumnName("description")
                 .HasColumnType("text");
 
-            Builder.Property(x => x.Status)
+            builder.Property(x => x.Status)
                 .HasColumnName("status")
                 .HasConversion<string>()
                 .HasColumnType("character varying")
                 .IsRequired();
 
-            Builder.Property(x => x.CreatedAt)
+            builder.Property(x => x.CreatedAt)
                 .HasColumnName("created_at")
                 .HasColumnType("timestamp with time zone")
                 .IsRequired();
 
-            Builder.Property(x => x.UpdatedAt)
+            builder.Property(x => x.UpdatedAt)
                 .HasColumnName("updated_at")
                 .HasColumnType("timestamp with time zone")
                 .IsRequired();
 
-            Builder .HasMany(x=> x.ServiceOptions)
-                .WithOne(x => x.Service)
-                .HasForeignKey(x=> x.ServiceId)
+            builder.HasOne(x => x.Category)
+                .WithMany(y => y.Services)
+                .HasForeignKey(x => x.CategoryId)
+                .HasConstraintName("fk_service_Category")
                 .OnDelete(DeleteBehavior.Restrict);
-                
         }
     }
 }

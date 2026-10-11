@@ -1,0 +1,80 @@
+@host = http://localhost:5052
+@staffToken = paste-staff-bearer-token-here
+
+### Danh sách danh mục
+GET {{host}}/api/resource/categories
+
+### Tạo danh mục
+# @name createCategory
+POST {{host}}/api/resource/categories
+Authorization: Bearer {{staffToken}}
+Content-Type: application/json
+
+{
+  "name": "Chăm sóc thú cưng",
+  "description": "Danh mục dịch vụ spa",
+  "status": "ACTIVE"
+}
+
+###
+@categoryId = {{createCategory.response.body.$.id}}
+
+### Bấm vào danh mục
+GET {{host}}/api/resource/categories/{{categoryId}}/services
+
+### Tạo dịch vụ
+# @name createService
+POST {{host}}/api/resource/services
+Authorization: Bearer {{staffToken}}
+Content-Type: application/json
+
+{
+  "categoryId": {{categoryId}},
+  "serviceName": "Tắm và sấy",
+  "description": "Tắm, vệ sinh và sấy lông",
+  "status": "ACTIVE"
+}
+
+###
+@serviceId = {{createService.response.body.$.id}}
+
+### Bấm vào dịch vụ
+GET {{host}}/api/resource/services/{{serviceId}}/options
+
+### Tạo tùy chọn dịch vụ
+# @name createOption
+POST {{host}}/api/resource/service-options
+Authorization: Bearer {{staffToken}}
+Content-Type: application/json
+
+{
+  "serviceId": {{serviceId}},
+  "species": "DOG",
+  "minWeight": 0,
+  "maxWeight": 5,
+  "durationMinutes": 30,
+  "unitPrice": 150000,
+  "status": "ACTIVE"
+}
+
+###
+@optionId = {{createOption.response.body.$.id}}
+
+### Cập nhật tùy chọn
+PUT {{host}}/api/resource/service-options/{{optionId}}
+Authorization: Bearer {{staffToken}}
+Content-Type: application/json
+
+{
+  "serviceId": {{serviceId}},
+  "species": "DOG",
+  "minWeight": 0,
+  "maxWeight": 5,
+  "durationMinutes": 45,
+  "unitPrice": 180000,
+  "status": "ACTIVE"
+}
+
+### Xóa tùy chọn
+DELETE {{host}}/api/resource/service-options/{{optionId}}
+Authorization: Bearer {{staffToken}}

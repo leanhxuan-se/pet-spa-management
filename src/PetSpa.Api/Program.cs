@@ -61,11 +61,16 @@ app.UseHttpsRedirection();
 
 // Activate CORS
 app.UseCors("AllowAll");
+app.UseCors("AllowAll");
+
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 //Register EndpointMap
 app.MapCustomerModuleEndpoint();
+app.MapOperationModuleEndpoint();
+app.MapResourceModuleEndpoint();
+
 
 app.Run();

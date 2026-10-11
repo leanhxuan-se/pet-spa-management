@@ -5,11 +5,10 @@ namespace PetSpa.Modules.Resource.Domain.Entities
     public class Service
     {
         public long Id { get; set; }
-        // relationship with Category 1 : N services
         public long CategoryId { get; set; }
         public string ServiceName { get; set; } = null!;
         public string? Description { get; set; }
-        public ServiceStatus Status { get; set; }
+        public ResourceStatus Status { get; set; } = ResourceStatus.ACTIVE;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         // Navigation trong Resource module

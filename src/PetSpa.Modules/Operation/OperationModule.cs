@@ -24,9 +24,9 @@ public static class OperationModule
         {
             options.UseNpgsql(ConnectionString, npgsql =>
             {
-                npgsql.MigrationsAssembly("PetSpa.Modules.Operation");
-                // Seperate migrations history
-                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "Operation");
+                npgsql.MigrationsAssembly(typeof(OperationDbContext).Assembly.FullName);
+                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "operation");
+
             });
         });
 
@@ -35,5 +35,13 @@ public static class OperationModule
         services.AddScoped<IPasswordService, IdentityPasswordService>();
         services.AddScoped<StaffLoginService>();
         return services;
+    }
+     public static IEndpointRouteBuilder MapOperationModuleEndpoint(this IEndpointRouteBuilder app) // Register Operation's Endpoints
+    {
+        //...
+       
+        app.MapOperationAuthEndpoints();
+
+        return app;
     }
 }
