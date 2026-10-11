@@ -46,6 +46,18 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Activate CORS
+<<<<<<< Updated upstream
 app.UseCors();
+=======
+app.UseCors("AllowAll");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+//Register EndpointMap
+app.MapCustomerModuleEndpoint();
+app.MapOperationModuleEndpoint();
+app.MapResourceModuleEndpoint();
+>>>>>>> Stashed changes
 
 app.Run();

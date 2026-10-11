@@ -4,42 +4,72 @@ using PetSpa.Modules.Resource.Domain.Entities;
 
 namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
 {
-    public class ServiceOptionConfiguration: IEntityTypeConfiguration<ServiceOption>
+    public class ServiceOptionConfiguration : IEntityTypeConfiguration<ServiceOption>
     {
-        public void Configure(EntityTypeBuilder<ServiceOption> Builder)
+        public void Configure(EntityTypeBuilder<ServiceOption> builder)
         {
-            Builder.ToTable("service_options");
+            builder.ToTable("service_options", "resource");
 
-            Builder.HasKey(x => x.Id);
+            builder.HasKey(x => x.Id);
 
-            //Create 1 : N relationship Service : ServiceOptions
-            Builder.HasOne(x => x.Service)
-                .WithMany(y => y.ServiceOptions)
-                .HasForeignKey(x => x.ServiceId)
-                .HasConstraintName("fk_service_option_Service")
-                .OnDelete(DeleteBehavior.Cascade); // auto delete Service_option when Service is deleted
-
-            Builder.Property(x => x.ServiceId)
-                .HasColumnName("service_id")
+            builder.Property(x => x.Status)
+                .HasColumnName("status")
+                .HasConversion<string>()
+                .HasColumnType("character varying")
                 .IsRequired();
 
-            Builder.Property(x => x.Species)
+            builder.Property(x => x.Id)
+                .HasColumnName("id")
+                .HasColumnType("bigint")
+                .ValueGeneratedOnAdd();
+
+            builder.Property(x => x.ServiceId)
+                .HasColumnName("service_id")
+                .HasColumnType("bigint")
+                .IsRequired();
+
+            builder.Property(x => x.Species)
                 .HasColumnName("species")
                 .HasConversion<string>()
+                .HasColumnType("character varying")
                 .HasMaxLength(50)
                 .IsRequired();
 
-            Builder.Property(x => x.MinWeight)
-                .HasColumnName("min_weight");
+            builder.Property(x => x.MinWeight)
+                .HasColumnName("min_weight")
+                .HasColumnType("numeric")
+                .IsRequired(false);
 
-            Builder.Property(x => x.MaxWeight)
-                .HasColumnName("max_weight");
+            builder.Property(x => x.MaxWeight)
+                .HasColumnName("max_weight")
+                .HasColumnType("numeric")
+                .IsRequired(false);
 
-            Builder.Property(x => x.DurationMinutes)
-                .HasColumnName("duration_minutes");
+            builder.Property(x => x.DurationMinutes)
+                .HasColumnName("duration_minutes")
+                .HasColumnType("integer")
+                .IsRequired();
 
-            Builder.Property(x => x.UnitPrice)
-                .HasColumnName("unit_price");
+            builder.Property(x => x.UnitPrice)
+                .HasColumnName("unit_price")
+                .HasColumnType("numeric")
+                .IsRequired();
+
+            builder.Property(x => x.CreatedAt)
+                .HasColumnName("created_at")
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
+
+            builder.Property(x => x.UpdatedAt)
+                .HasColumnName("updated_at")
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
+
+            builder.HasOne(x => x.Service)
+                .WithMany(y => y.ServiceOptions)
+                .HasForeignKey(x => x.ServiceId)
+                .HasConstraintName("fk_service_option_Service")
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
