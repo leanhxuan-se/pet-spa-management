@@ -11,6 +11,8 @@ using PetSpa.Modules.Customer.Application.Services;
 using PetSpa.Modules.Customer.Domain.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Persistence.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Services;
+
+
 using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
 
 
@@ -35,6 +37,7 @@ public static class CustomerModule
         services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>();
 
         // Đăng ký các interface và dịch vụ liên quan đến CustomerModule
+        services.AddScoped<IPetServices, PetServices>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IPasswordHasher<CustomerTable>, PasswordHasher<CustomerTable>>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
@@ -45,9 +48,10 @@ public static class CustomerModule
 
     public static IEndpointRouteBuilder MapCustomerModuleEndpoint(this IEndpointRouteBuilder app) // Register Module's Endpoints
     {
-        //...
-        app.MapCustomerEndpoint();
+        //....
         app.MapCustomerAuthEndpoints();
+        app.MapCustomerEndpoint();
+        app.MapPetEndpoint();
 
         return app;
     }

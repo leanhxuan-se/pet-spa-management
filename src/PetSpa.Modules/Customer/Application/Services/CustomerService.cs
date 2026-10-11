@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using Mapster;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PetSpa.Modules.Customer.Application.Abstractions;
@@ -18,16 +17,19 @@ namespace PetSpa.Modules.Customer.Application.Services
     {
         public async Task<Result<CustomerResponse>> GetByIdAsync(long id, CancellationToken ct)
         {
-            var customer = await db.Customers.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
+            var customer = await db.Customers
+                .Where(x => x.Id == id)
+                .AsNoTracking()
+                .ProjectToType<CustomerResponse>()
+                .FirstOrDefaultAsync(ct);
 
             if (customer is null)
             {
                 return Result<CustomerResponse>.NotFound("Customer not found");
             }
 
-            var response = customer.Adapt<CustomerResponse>();
 
-            return Result<CustomerResponse>.Success(response);
+            return Result<CustomerResponse>.Success(customer);
         }
 
         public async Task<Result<CustomerResponse>> CreateAsync(CreateCustomerRequest req, CancellationToken ct)
