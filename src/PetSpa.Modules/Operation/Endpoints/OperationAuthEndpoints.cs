@@ -13,7 +13,7 @@ namespace PetSpa.Modules.Operation.Endpoints;
 
 public static class OperationAuthEndpoints
 {
-    public static IEndpointRouteBuilder MapOperationAuthEndpoints(
+    public static IEndpointRouteBuilder MapCustomerAuthEndpoints(
         this IEndpointRouteBuilder app)
     {
         app.MapPost("/api/staff/login", LoginAsync)

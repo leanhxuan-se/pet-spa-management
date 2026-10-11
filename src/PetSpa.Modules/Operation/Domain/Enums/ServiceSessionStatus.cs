@@ -2,7 +2,7 @@
 
 public enum ServiceSessionStatus
 {
-    PENDING,
+    WAITING,
     IN_PROGRESS,
     COMPLETED,
     CANCELLED

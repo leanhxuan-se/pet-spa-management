@@ -9,6 +9,6 @@ namespace PetSpa.Modules.Operation.Domain.Entities
         public ServiceSession ServiceSession { get; set; } = null!;
         public long StaffId { get; set; }
         public Staff Staff { get; set; } = null!;
-        public DateTime? AssignedAt { get; set; }
+        public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
     }
 }
