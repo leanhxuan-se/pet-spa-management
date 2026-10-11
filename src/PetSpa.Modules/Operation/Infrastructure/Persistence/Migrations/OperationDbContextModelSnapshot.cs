@@ -8,7 +8,7 @@ using PetSpa.Modules.Operation.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Migrations
+namespace PetSpa.Modules.Operation.Migrations
 {
     [DbContext(typeof(OperationDbContext))]
     partial class OperationDbContextModelSnapshot : ModelSnapshot
@@ -205,7 +205,6 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Migrations
                         .HasColumnName("password_hash");
 
                     b.Property<string>("Phone")
-                        .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("phone");

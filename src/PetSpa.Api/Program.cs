@@ -1,8 +1,10 @@
+using PetSpa.Api.Composition;
 using PetSpa.Modules.Billing;
 using PetSpa.Modules.Booking;
 using PetSpa.Modules.Customer;
 using PetSpa.Modules.Operation;
 using PetSpa.Modules.Resource;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +19,9 @@ builder.Services.AddCustomerModule(connectionString);
 builder.Services.AddOperationModule(connectionString);
 builder.Services.AddResourceModule(connectionString);
 
+// Register Authentication Service 
+builder.Services.AddAuthenticationServices(builder.Configuration);
+
 //Register CORS (cross-origin system) to allow fetching api
 builder.Services.AddCors(options =>
 {
@@ -29,7 +34,16 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddSwaggerGen();
+
+
 builder.Services.AddOpenApi();
+
+
+//serializer chuyển enum sang string để trả về cho FE, tránh trả về số
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 var app = builder.Build();
 
@@ -46,10 +60,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Activate CORS
-<<<<<<< Updated upstream
-app.UseCors();
-=======
 app.UseCors("AllowAll");
+app.UseCors("AllowAll");
+
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -58,6 +71,6 @@ app.UseAuthorization();
 app.MapCustomerModuleEndpoint();
 app.MapOperationModuleEndpoint();
 app.MapResourceModuleEndpoint();
->>>>>>> Stashed changes
+
 
 app.Run();

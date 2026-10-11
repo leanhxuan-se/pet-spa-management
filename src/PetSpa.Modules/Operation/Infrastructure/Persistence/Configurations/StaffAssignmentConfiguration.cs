@@ -12,6 +12,17 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 
             Builder.HasKey(x => x.Id);
 
+            Builder.Property(x => x.Id)
+                .HasColumnName("id")
+                .HasColumnType("bigint")
+                .UseIdentityByDefaultColumn();
+
+            // Một nhân viên chỉ được phân công vào một lượt dịch vụ một lần
+            Builder.HasIndex(x => new { x.ServiceSessionId, x.StaffId })
+                .IsUnique();
+            Builder.HasIndex(x => x.ServiceSessionId);
+            Builder.HasIndex(x => x.StaffId);
+
             Builder.Property(x => x.ServiceSessionId)
                 .HasColumnName("service_session_id");
 
@@ -19,7 +30,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                 .WithMany(y => y.StaffAssignments)
                 .HasForeignKey(z => z.ServiceSessionId)
                 .HasConstraintName("fk_staff_assignment_service_session")
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             Builder.Property(x => x.StaffId)
                 .HasColumnName("staff_id");
@@ -28,11 +39,12 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                 .WithMany(y => y.StaffAssignments)
                 .HasForeignKey(z => z.StaffId)
                 .HasConstraintName("fk_staff_assignment_staff")
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             Builder.Property(x => x.AssignedAt)
                 .HasColumnName("assigned_at")
-                .HasColumnType("timestamp with time zone");
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("NOW()");
 
 
         }
