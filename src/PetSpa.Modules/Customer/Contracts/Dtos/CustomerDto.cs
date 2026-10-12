@@ -15,7 +15,7 @@ public record CustomerDto
     public string? Note { get; init; }
     public CustomerStatus Status { get; init; } = CustomerStatus.ACTIVE;
 
-    public IReadOnlyList<PetResponse>? Pets { get; init; } = [];
+    public IReadOnlyList<PetDto>? Pets { get; init; } = [];
 
 
 }

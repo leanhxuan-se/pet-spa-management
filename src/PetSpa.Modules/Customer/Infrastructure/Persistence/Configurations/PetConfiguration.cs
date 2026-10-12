@@ -4,7 +4,7 @@ using PetSpa.Modules.Customer.Domain.Entities;
 
 namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
 {
-    public class PetConfiguration: IEntityTypeConfiguration<Pet>
+    internal class PetConfiguration: IEntityTypeConfiguration<Pet>
     {
         public void Configure(EntityTypeBuilder<Pet> builder)
         {
