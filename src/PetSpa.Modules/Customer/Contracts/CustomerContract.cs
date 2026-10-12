@@ -8,22 +8,15 @@ using System.Text;
 
 namespace PetSpa.Modules.Customer.Contracts
 {
-    public class CustomerContract: ICustomerContract
-    {
-        public readonly ICustomerService _customerService;
-        public readonly IPetServices _petServices;
-
-        public CustomerContract(
+    public class CustomerContract (
         ICustomerService customerService,
-        IPetServices petService)
-        {
-            _customerService = customerService;
-            _petServices = petService;
-        }
+        IPetServices petServices) : ICustomerContract
+    {
+
 
         public async Task<Result<CustomerDto>> GetCustomerByIdAsync(long id, CancellationToken ct)
         {
-            var customer = await _customerService.GetByIdAsync(id, ct);
+            var customer = await customerService.GetByIdAsync(id, ct);
 
             var customerDto = customer.Adapt<CustomerDto>();
 
@@ -31,7 +24,7 @@ namespace PetSpa.Modules.Customer.Contracts
         }
         public async Task<Result<PetDto>> GetPetByIdAsync(long id, CancellationToken ct)
         {
-            var pet = await _petServices.GetByIdAsync(id, ct);
+            var pet = await petServices.GetByIdAsync(id, ct);
 
             var petDto = pet.Adapt<PetDto>();
 
@@ -40,7 +33,7 @@ namespace PetSpa.Modules.Customer.Contracts
 
         public async Task<Result<List<PetDto>>> GetPetsByCustomerIdAsync(long id, CancellationToken ct)
         {
-            var pets = await _petServices.GetAllByIdAsync(id, ct);
+            var pets = await petServices.GetAllByIdAsync(id, ct);
 
             var petDtos = pets.Adapt<List<PetDto>>();
 
