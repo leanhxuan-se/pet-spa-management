@@ -1,5 +1,6 @@
 namespace PetSpa.Modules.Operation.Endpoints;
 
-public static class OperationEndpoints
+internal static class OperationEndpoints
 {
+
 }

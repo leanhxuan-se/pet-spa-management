@@ -11,9 +11,9 @@ using PetSpa.SharedKernel.Application.Abstractions;
 
 namespace PetSpa.Modules.Operation.Endpoints;
 
-public static class OperationAuthEndpoints
+internal static class OperationAuthEndpoints
 {
-    public static IEndpointRouteBuilder MapCustomerAuthEndpoints(
+    public static IEndpointRouteBuilder MapOperationAuthEndpoints(
         this IEndpointRouteBuilder app)
     {
         app.MapPost("/api/staff/login", LoginAsync)

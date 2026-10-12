@@ -16,7 +16,7 @@ using PetSpa.Modules.Operation.Infrastructure.Services;
 
 namespace PetSpa.Modules.Operation;
 
-public static class OperationModule
+internal static class OperationModule
 {
     public static IServiceCollection AddOperationModule(this IServiceCollection services, string ConnectionString)
     {

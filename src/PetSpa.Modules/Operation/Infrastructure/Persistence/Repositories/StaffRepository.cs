@@ -4,7 +4,7 @@ using StaffTable = PetSpa.Modules.Operation.Domain.Entities.Staff;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories;
 
-public class StaffRepository(OperationDbContext db) : IStaffRepository
+internal class StaffRepository(OperationDbContext db) : IStaffRepository
 {
     public Task<StaffTable?> GetByPhoneAsync(string phone, CancellationToken ct)
     {

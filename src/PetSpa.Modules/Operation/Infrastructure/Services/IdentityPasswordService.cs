@@ -4,7 +4,7 @@ using StaffTable = PetSpa.Modules.Operation.Domain.Entities.Staff;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Services;
 
-public class IdentityPasswordService(
+internal class IdentityPasswordService(
     IPasswordHasher<StaffTable> passwordHasher) : IPasswordService
 {
     public string HashPassword(StaffTable staff, string password)

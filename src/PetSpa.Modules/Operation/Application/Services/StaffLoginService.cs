@@ -5,7 +5,7 @@ using PetSpa.Modules.Operation.Domain.Repositories;
 
 namespace PetSpa.Modules.Operation.Application.Services;
 
-public class StaffLoginService(
+internal class StaffLoginService(
     IStaffRepository staffs,
     IPasswordService passwordService)
 {

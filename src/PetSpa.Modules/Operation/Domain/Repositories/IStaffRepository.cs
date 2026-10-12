@@ -1,8 +1,7 @@
 using StaffTable = PetSpa.Modules.Operation.Domain.Entities.Staff;
-
 namespace PetSpa.Modules.Operation.Domain.Repositories;
 
-public interface IStaffRepository
+internal interface IStaffRepository
 {
     Task<StaffTable?> GetByPhoneAsync(string phone, CancellationToken ct);
 
