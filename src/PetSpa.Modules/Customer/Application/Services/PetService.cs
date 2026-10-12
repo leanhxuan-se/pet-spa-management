@@ -3,6 +3,7 @@ using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PetSpa.Modules.Customer.Domain.Entities;
+using PetSpa.Modules.Customer.Domain.Enums;
 using PetSpa.Modules.Customer.Endpoints.Requests;
 using PetSpa.Modules.Customer.Endpoints.Responses;
 using PetSpa.Modules.Customer.Infrastructure.Persistence;
@@ -10,7 +11,7 @@ using PetSpa.SharedKernel.Application.Abstractions;
 
 namespace PetSpa.Modules.Customer.Application.Abstractions
 {
-    public class PetServices(
+    internal class PetServices(
         CustomerDbContext db,
         IServiceProvider serviceProvider): IPetServices
     {
@@ -44,6 +45,19 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
             if (!validationResult.IsValid)
             {
                 return Result<PetResponse>.ValidationFailed(validationResult.ToDictionary());
+            }         
+            
+            var customer = await db.Customers
+                .FirstOrDefaultAsync(x => x.Id == req.CustomersId, ct);
+
+            if(customer is null)
+            {
+                return Result<PetResponse>.NotFound($"Customer with id {req.CustomersId} not found");
+            }
+
+            if (customer?.Status == CustomerStatus.INACTIVE)
+            {
+                return Result<PetResponse>.UnActive("CustomerInactive", $"Customer with id {req.CustomersId} is inactive");
             }
 
             var pet = new Pet

@@ -9,7 +9,8 @@ namespace PetSpa.SharedKernel.Application.Abstractions
     {
         Success,
         NotFound,
-        ValidationFailed
+        ValidationFailed,
+        UnActive
     }
 
     public class Result<T>
@@ -37,5 +38,9 @@ namespace PetSpa.SharedKernel.Application.Abstractions
 
         public static Result<T> ValidationFailed(IDictionary<string, string[]> errors) =>
             new(errors, ResultStatus.ValidationFailed);
+
+        public static Result<T> UnActive(string key, string message) =>
+            new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.UnActive);
+        
     }
 }
