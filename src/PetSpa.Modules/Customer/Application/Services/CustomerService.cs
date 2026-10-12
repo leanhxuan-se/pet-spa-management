@@ -11,7 +11,7 @@ using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
 
 namespace PetSpa.Modules.Customer.Application.Services
 {
-    public class CustomerService(
+    internal class CustomerService(
         CustomerDbContext db,
         IServiceProvider serviceProvider) : ICustomerService
     {

@@ -5,7 +5,7 @@ using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
 
 namespace PetSpa.Modules.Customer.Infrastructure.Persistence;
 
-public class CustomerDbContext : DbContext
+internal class CustomerDbContext : DbContext
 {
     public CustomerDbContext(DbContextOptions<CustomerDbContext> options) : base(options)
     {
