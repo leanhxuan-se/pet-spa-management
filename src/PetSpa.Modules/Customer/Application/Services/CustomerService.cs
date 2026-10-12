@@ -7,6 +7,7 @@ using PetSpa.Modules.Customer.Endpoints.Requests;
 using PetSpa.Modules.Customer.Endpoints.Responses;
 using PetSpa.Modules.Customer.Infrastructure.Persistence;
 using PetSpa.SharedKernel.Application.Abstractions;
+
 using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
 
 namespace PetSpa.Modules.Customer.Application.Services
@@ -70,7 +71,10 @@ namespace PetSpa.Modules.Customer.Application.Services
                 return Result<CustomerResponse>.ValidationFailed(validation.ToDictionary());
             }
 
-            var customer = await db.Customers.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
+            var customer = await db.Customers
+                .Include(x => x.Pets)
+                .Where(x => x.Id == id)
+                .FirstOrDefaultAsync(ct);
 
             if (customer is null)
             {

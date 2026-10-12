@@ -96,7 +96,7 @@ public static class CustomerEndpoints
         var customer = await customerService.UpdateAsync(id, req, ct);
 
         return customer.ToHttpResult(
-            "getCustomerById",
+            "GetCustomerById",
             p => new { id = p?.Id }
         );
     }
