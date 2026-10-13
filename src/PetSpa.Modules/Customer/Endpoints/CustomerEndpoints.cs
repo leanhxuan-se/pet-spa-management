@@ -19,7 +19,7 @@ public static class CustomerEndpoints
         group.MapPost("/create", CreateCustomerAsync).WithName("CreateCustomer").RequireAuthorization();
         group.MapPut("/update/{id:long}", UpdateCustomerAsync).WithName("UpdateCustomer").RequireAuthorization();
 
-        return app;
+        return app;     
     }
 
     public static async Task<IResult> GetCustomerByIdAsync(
@@ -70,15 +70,10 @@ public static class CustomerEndpoints
 
         var customer = await customerService.CreateAsync(req, ct);
         
-        switch(customer.Status)
-        {
-            case ResultStatus.Success:
-                return Results.CreatedAtRoute("GetCustomerById", new { id = customer?.Value?.Id }, customer?.Value);
-            case ResultStatus.ValidationFailed:
-                return Results.ValidationProblem(customer?.Errors);
-            default:
-                return Results.BadRequest(new { Message = "Không thể tạo khách hàng" });
-        }
+        return customer.ToHttpResult(
+            "getCustomerById",
+            p => new { id = p?.Id }
+        );
 
     }
 
@@ -100,16 +95,10 @@ public static class CustomerEndpoints
 
         var customer = await customerService.UpdateAsync(id, req, ct);
 
-        switch (customer.Status)
-        {
-            case ResultStatus.Success:
-                return Results.CreatedAtRoute("GetCustomerById", new { id = customer?.Value?.Id }, customer?.Value);
-            case ResultStatus.ValidationFailed:
-                return Results.ValidationProblem(customer?.Errors);
-            default:
-                return Results.BadRequest(new { errors = customer.Errors });
-        }
-
+        return customer.ToHttpResult(
+            "GetCustomerById",
+            p => new { id = p?.Id }
+        );
     }
 }
 

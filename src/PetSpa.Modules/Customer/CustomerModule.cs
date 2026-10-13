@@ -14,6 +14,7 @@ using PetSpa.Modules.Customer.Infrastructure.Services;
 
 
 using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
+using PetSpa.Modules.Customer.Contracts;
 
 
 namespace PetSpa.Modules.Customer;
@@ -37,6 +38,7 @@ public static class CustomerModule
         services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>();
 
         // Đăng ký các interface và dịch vụ liên quan đến CustomerModule
+        services.AddScoped<ICustomerContract, CustomerContract>();
         services.AddScoped<IPetServices, PetServices>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IPasswordHasher<CustomerTable>, PasswordHasher<CustomerTable>>();
