@@ -4,7 +4,7 @@ using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
 
 namespace PetSpa.Modules.Customer.Infrastructure.Services;
 
-public class IdentityPasswordService(
+internal class IdentityPasswordService(
     IPasswordHasher<CustomerTable> passwordHasher) : IPasswordService
 {
     public string HashPassword(CustomerTable customer, string password)
