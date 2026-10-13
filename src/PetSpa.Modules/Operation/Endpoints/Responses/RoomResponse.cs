@@ -6,6 +6,7 @@ namespace PetSpa.Modules.Operation.Endpoints.Responses
 {
     internal record RoomResponse
     (
+        long Id,
         string RoomName,
         string RoomType
     );
