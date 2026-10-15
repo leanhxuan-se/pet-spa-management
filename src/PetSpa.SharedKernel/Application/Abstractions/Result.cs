@@ -12,7 +12,8 @@ namespace PetSpa.SharedKernel.Application.Abstractions
         ValidationFailed,
         TimeError,
         UnActive,
-        BadRequest
+        BadRequest,
+        Duplicate,
     }
 
     public class Result<T>
@@ -49,6 +50,9 @@ namespace PetSpa.SharedKernel.Application.Abstractions
 
         public static Result<T> BadRequest(string key, string message) =>
             new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.BadRequest);
+
+        public static Result<T> Duplicate(string key, string message) =>
+            new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.Duplicate);
         
     }
 }

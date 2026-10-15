@@ -43,6 +43,13 @@ namespace PetSpa.Modules.Customer.Application.Services
                 return Result<CustomerResponse>.ValidationFailed(validation.ToDictionary());
             }
 
+            var AvailCus = db.Customers.Where(x => x.Phone == req.Phone.Trim()).FirstOrDefaultAsync(ct);
+
+            if(AvailCus is not null)
+            {
+                return Result<CustomerResponse>.Duplicate("message", "Số điện thoại đã được tạo tài khoản, vui lòng mở hồ sơ hiện có");
+            }
+
             var customer = new CustomerTable
             {
                 FullName = req.FullName.Trim(),
