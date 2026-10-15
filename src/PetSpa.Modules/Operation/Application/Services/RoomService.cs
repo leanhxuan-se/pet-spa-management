@@ -8,9 +8,14 @@ namespace PetSpa.Modules.Operation.Application.Services
 {
     internal class RoomService(IRoomRepository roomRepository)
     {
-        public async Task<Result<AvailableRoomListResponse>> AvailableRoom(DateTime startTime, DateTime endTime)
+        public async Task<Result<AvailableRoomListResponse>> AvailableRoom(DateTime startTime, DateTime endTime, CancellationToken ct)
         {
-            var response = await roomRepository.GetAvailableAsync(startTime, endTime);
+            if(startTime > endTime)
+            {
+                return Result<AvailableRoomListResponse>.TimeError("Thời gian bắt đầu không được lớn hơn thời gian kết thúc!");
+            }
+
+            var response = await roomRepository.GetAvailableAsync(startTime, endTime, ct);
 
             return Result<AvailableRoomListResponse>.Success(response);
         }

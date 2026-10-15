@@ -28,10 +28,10 @@ public static class OperationModule
             });
         });
 
-
-
-        services.AddScoped<IPasswordHasher<StaffTable>, PasswordHasher<StaffTable>>();
         services.AddScoped<IStaffRepository, StaffRepository>();
+        services.AddScoped<IRoomRepository, RoomRepository>();
+        services.AddScoped<IPasswordHasher<StaffTable>, PasswordHasher<StaffTable>>();
+        services.AddScoped<IStaffAuthRepository, StaffAuthRepository>();
         services.AddScoped<IPasswordService, IdentityPasswordService>();
         services.AddScoped<StaffLoginService>();
         return services;

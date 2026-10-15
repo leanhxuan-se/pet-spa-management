@@ -23,7 +23,8 @@ namespace PetSpa.Modules.Operation.Endpoints
         public async static Task<IResult> GetAvailableRoomAsync(
             [FromQuery] DateTime startTime,
             [FromQuery] DateTime endTime,
-            RoomService service)
-        => (await service.AvailableRoom(startTime, endTime)).ToHttpResult();
+            RoomService service,
+            CancellationToken ct)
+        => (await service.AvailableRoom(startTime, endTime, ct)).ToHttpResult();
     }
 }

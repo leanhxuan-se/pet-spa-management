@@ -1,18 +1,31 @@
+﻿using PetSpa.Modules.Operation.Application.Abstractions;
+using PetSpa.Modules.Operation.Endpoints.Responses;
+using PetSpa.Modules.Operation.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-using PetSpa.Modules.Operation.Domain.Repositories;
-using StaffTable = PetSpa.Modules.Operation.Domain.Entities.Staff;
 
-namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories;
 
-internal class StaffRepository(OperationDbContext db) : IStaffRepository
+namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
 {
-    public Task<StaffTable?> GetByPhoneAsync(string phone, CancellationToken ct)
+    internal class StaffRepository(
+        OperationDbContext db): IStaffRepository
     {
-        return db.Staffs.SingleOrDefaultAsync(x => x.Phone == phone, ct);
-    }
-
-    public async Task SaveAsync(CancellationToken ct)
-    {
-        await db.SaveChangesAsync(ct);
+        public async Task<List<StaffResponse>> GetAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
+        {
+            var availSession = await db.ServiceSessions
+                .AsNoTracking()
+                .Where(x =>
+                    x.Status != ServiceSessionStatus.CANCELLED
+                    && x.ExpectedStartAt <= endTime
+                    && x.ExpectedFinishAt >= startTime)
+                .SelectMany(x => x.StaffAssignments.Select(st => new StaffResponse(
+                    st.Staff.Id,
+                    st.Staff.FullName,
+                    st.Staff.Position,
+                    st.Staff.AvatarUrl)).ToList())
+                .Distinct()
+                .ToListAsync(ct);
+            
+            return availSession;
+        }
     }
 }

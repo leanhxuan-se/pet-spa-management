@@ -4,16 +4,18 @@ using PetSpa.Modules.Operation.Domain.Enums;
 using PetSpa.Modules.Operation.Endpoints.Responses;
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
 {
-    internal class RoomRepository (CancellationToken ct, OperationDbContext db): IRoomRepository
+    internal class RoomRepository (OperationDbContext db): IRoomRepository
     {
-        public async Task<AvailableRoomListResponse> GetAvailableAsync(DateTime startTime, DateTime endTime)
+        public async Task<AvailableRoomListResponse> GetAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
         {
             var AllRoom = await db.Rooms
+                .AsNoTracking()
                 .Where(x => x.Status == RoomStatus.AVAILABLE)
                 .Select(x => new RoomResponse (x.Id, x.RoomName, x.RoomType ))
                 .ToListAsync(ct);
 
             var MatchServiceSession = await db.ServiceSessions
+                .AsNoTracking()
                 .Where(
                     x => x.Status == ServiceSessionStatus.WAITING &&
                     x.ExpectedStartAt < endTime &&

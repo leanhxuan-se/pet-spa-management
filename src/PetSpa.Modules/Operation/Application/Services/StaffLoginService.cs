@@ -6,7 +6,7 @@ using PetSpa.Modules.Operation.Domain.Repositories;
 namespace PetSpa.Modules.Operation.Application.Services;
 
 internal class StaffLoginService(
-    IStaffRepository staffs,
+    IStaffAuthRepository staffs,
     IPasswordService passwordService)
 {
     public async Task<StaffLoginResult?> LoginAsync(

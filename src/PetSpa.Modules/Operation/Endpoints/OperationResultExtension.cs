@@ -6,7 +6,7 @@ using System.Text;
 
 namespace PetSpa.Modules.Customer.Endpoints
 {
-    internal static class RoomResultExtensions
+    internal static class OperationResultExtensions
     {
         public static IResult ToHttpResult<T>(
             this Result<T> result,
