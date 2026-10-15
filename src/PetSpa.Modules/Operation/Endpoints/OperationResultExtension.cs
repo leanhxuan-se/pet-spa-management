@@ -23,6 +23,7 @@ namespace PetSpa.Modules.Customer.Endpoints
                 ResultStatus.NotFound => Results.NotFound(result?.Errors),
                 ResultStatus.UnActive => Results.BadRequest(result?.Errors),
                 ResultStatus.TimeError => Results.BadRequest(result.Errors),
+                ResultStatus.BadRequest => Results.BadRequest(result.Errors),
                 _ => Results.BadRequest(result?.Errors)
             };
         }

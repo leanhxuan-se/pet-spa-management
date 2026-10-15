@@ -11,7 +11,8 @@ namespace PetSpa.SharedKernel.Application.Abstractions
         NotFound,
         ValidationFailed,
         TimeError,
-        UnActive
+        UnActive,
+        BadRequest
     }
 
     public class Result<T>
@@ -45,6 +46,9 @@ namespace PetSpa.SharedKernel.Application.Abstractions
 
         public static Result<T> UnActive(string key, string message) =>
             new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.UnActive);
+
+        public static Result<T> BadRequest(string key, string message) =>
+            new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.BadRequest);
         
     }
 }

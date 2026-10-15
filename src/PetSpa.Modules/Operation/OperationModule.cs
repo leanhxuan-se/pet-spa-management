@@ -41,6 +41,9 @@ public static class OperationModule
         //...
        
         app.MapOperationAuthEndpoints();
+        app.MapRoomEndpoint();
+        app.MapStaffEndpoint();
+        //app.MapServiceSessionEndpoint();
 
         return app;
     }
