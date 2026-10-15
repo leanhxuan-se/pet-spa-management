@@ -13,9 +13,10 @@ namespace PetSpa.Modules.Operation.Endpoints
     {
         public static IEndpointRouteBuilder MapStaffEndpoint(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/api/staff").WithTags("Staff"); // gom nhóm các endpoint liên quan đến room lại ở swagger
+            var group = app.MapGroup("/api/staff").WithTags("Staff"); // gom nhóm các endpoint liên quan đến staff lại ở swagger
 
             group.MapGet("/availability", GetAvailableStaffAsync).WithName("GetAvailableStaffs").RequireAuthorization();
+            group.MapGet("/unavailability", GetUnAvailableStaffAsync).WithName("GetAvailableStaffs").RequireAuthorization();
 
             return app;
         }
@@ -26,5 +27,11 @@ namespace PetSpa.Modules.Operation.Endpoints
             StaffService service,
             CancellationToken ct)
         => (await service.GetAvailableStaffsAsync(startTime, endTime, ct)).ToHttpResult();
+        public async static Task<IResult> GetUnAvailableStaffAsync(
+            [FromQuery] DateTime startTime,
+            [FromQuery] DateTime endTime,
+            StaffService service,
+            CancellationToken ct)
+        => (await service.GetUnAvailableStaffsAsync(startTime, endTime, ct)).ToHttpResult();
     }
 }

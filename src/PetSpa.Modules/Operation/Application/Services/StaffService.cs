@@ -21,11 +21,28 @@ namespace PetSpa.Modules.Operation.Application.Services
 
             if(availStaff is [] or null)
             {
-                return Result<List<StaffResponse>>.NotFound("Hiện tại không có nhân viên nào đang rảnh!");
+                return Result<List<StaffResponse>>.NotFound("Không có nhân viên nào đang rảnh ở khoảng thời gian đã chọn!");
 
             }
 
             return Result<List<StaffResponse>>.Success(availStaff);
+        }
+        public async Task<Result<List<StaffResponse>>> GetUnAvailableStaffsAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
+        {
+            if(startTime > endTime)
+            {
+                return Result<List<StaffResponse>>.TimeError("Thời gian bắt đầu không được lớn hơn thời gian kết thúc!");
+
+            }
+
+            var unAvailStaff = await  _staffRepository.GetAvailableAsync(startTime, endTime, ct);
+
+            if(unAvailStaff is [] or null)
+            {
+                return Result<List<StaffResponse>>.NotFound("Không có nhân viên nào đang bận ở khoảng thời gian đã chọn!");
+            }
+
+            return Result<List<StaffResponse>>.Success(unAvailStaff);
         }
     }
 }
