@@ -9,6 +9,6 @@
     <Project Path="src/PetSpa.SharedKernel/PetSpa.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/PetSpa.IntegrationTests/PetSpa.ResourceSmokeTests.csproj" />
+    <Project Path="tests/PetSpa.BookingSmokeTests/PetSpa.BookingSmokeTests.csproj" />
   </Folder>
 </Solution>
