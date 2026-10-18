@@ -4,7 +4,7 @@ using PetSpa.Modules.Customer.Infrastructure.Persistence;
 
 namespace PetSpa.Modules.Customer.Infrastructure.Services;
 
-public sealed class CustomerModuleContract(CustomerDbContext db) : ICustomerModule
+internal sealed class CustomerModuleContract(CustomerDbContext db) : ICustomerModule
 {
     public Task<bool> PetBelongsToCustomerAsync(long petId, long customerId, CancellationToken ct)
         => db.Pets.AsNoTracking().AnyAsync(

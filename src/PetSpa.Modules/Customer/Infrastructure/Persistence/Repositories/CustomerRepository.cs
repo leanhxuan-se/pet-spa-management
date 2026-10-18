@@ -4,7 +4,7 @@ using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
 
 namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Repositories;
 
-public class CustomerRepository(CustomerDbContext db) : ICustomerRepository
+internal class CustomerRepository(CustomerDbContext db) : ICustomerRepository
 {
     public Task<CustomerTable?> GetByPhoneAsync(string phone, CancellationToken ct)
     {

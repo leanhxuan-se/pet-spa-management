@@ -5,7 +5,7 @@ using PetSpa.Modules.Customer.Domain.Repositories;
 
 namespace PetSpa.Modules.Customer.Application.Services;
 
-public class CustomerLoginService(
+internal class CustomerLoginService(
     ICustomerRepository customers,
     IPasswordService passwordService)
 {

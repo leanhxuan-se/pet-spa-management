@@ -93,15 +93,10 @@ public static class PetEndpoints
         var pet = await petServices.CreateAsync(req, ct);
 
 
-        switch (pet.Status)
-        {
-            case ResultStatus.Success:
-                return Results.CreatedAtRoute("GetPet", new { CustomerId = pet?.Value?.CustomersId, PetId = pet?.Value?.Id }, pet?.Value);
-            case ResultStatus.ValidationFailed:
-                return Results.ValidationProblem(pet?.Errors);
-            default:
-                return Results.BadRequest(new { Message = "Không thể tạo khách hàng" });
-        }
+        return pet.ToHttpResult(
+            "GetPet",
+            p => new { CustomerId = p?.CustomersId, PetId = p?.Id }
+        );
 
     }
 

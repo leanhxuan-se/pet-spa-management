@@ -5,7 +5,7 @@ using PetSpa.Modules.Customer.Infrastructure.Persistence;
 
 namespace PetSpa.Modules.Customer.Application.Validators
 {
-    public class CreateCustomerRequestValidator: AbstractValidator<CreateCustomerRequest>
+    internal class CreateCustomerRequestValidator: AbstractValidator<CreateCustomerRequest>
     {
         public CreateCustomerRequestValidator(CustomerDbContext db)
         {
