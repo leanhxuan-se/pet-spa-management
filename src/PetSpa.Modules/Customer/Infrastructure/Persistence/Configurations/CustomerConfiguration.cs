@@ -5,7 +5,7 @@ using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
 
 namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
 {
-    public class CustomerConfiguration : IEntityTypeConfiguration<CustomerTable>
+    internal class CustomerConfiguration : IEntityTypeConfiguration<CustomerTable>
     {
         public void Configure(EntityTypeBuilder<CustomerTable> builder)
         {

@@ -37,6 +37,7 @@ public static class CustomerModule
         services.AddScoped<IValidator<CustomerLoginRequest>, LoginRequestValidator<CustomerLoginRequest>>();
 
         // Đăng ký các interface và dịch vụ liên quan đến CustomerModule
+        services.AddScoped<ICustomerContract, CustomerContract>();
         services.AddScoped<IPetServices, PetServices>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();

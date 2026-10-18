@@ -6,7 +6,7 @@ using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
 
 namespace PetSpa.Modules.Customer.Application.Services;
 
-public class CustomerLoginService(
+internal class CustomerLoginService(
     ICustomerRepository customers,
     IPasswordService<CustomerTable> passwordService)
 {

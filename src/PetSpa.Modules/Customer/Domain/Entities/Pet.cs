@@ -2,7 +2,7 @@
 
 namespace PetSpa.Modules.Customer.Domain.Entities
 {
-    public class Pet
+    internal class Pet
     {
         public long Id { get; set; }
 
