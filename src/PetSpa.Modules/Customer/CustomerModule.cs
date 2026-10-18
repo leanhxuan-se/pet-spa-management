@@ -5,16 +5,14 @@ using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Customer.Endpoints;
 using FluentValidation;
 using PetSpa.Modules.Customer.Application.Validators;
-using Microsoft.AspNetCore.Identity;
 using PetSpa.Modules.Customer.Application.Abstractions;
 using PetSpa.Modules.Customer.Application.Services;
 using PetSpa.Modules.Customer.Domain.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Persistence.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Services;
 using PetSpa.Modules.Customer.Contracts;
-
-
-using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
+using PetSpa.Modules.Customer.Endpoints.Requests;
+using PetSpa.SharedKernel.Application.Validators;
 
 
 namespace PetSpa.Modules.Customer;
@@ -36,13 +34,12 @@ public static class CustomerModule
         });
         // Find UpdateCustomerRequestValidator and regis all the class that inherit AbstractValidator<T>
         services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>();
+        services.AddScoped<IValidator<CustomerLoginRequest>, LoginRequestValidator<CustomerLoginRequest>>();
 
         // Đăng ký các interface và dịch vụ liên quan đến CustomerModule
         services.AddScoped<IPetServices, PetServices>();
         services.AddScoped<ICustomerService, CustomerService>();
-        services.AddScoped<IPasswordHasher<CustomerTable>, PasswordHasher<CustomerTable>>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
-        services.AddScoped<IPasswordService, IdentityPasswordService>();
         services.AddScoped<CustomerLoginService>();
         services.AddScoped<ICustomerModule, CustomerModuleContract>();
         return services;

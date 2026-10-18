@@ -1,4 +1,4 @@
-namespace PetSpa.Modules.Customer.Application.Abstractions;
+namespace PetSpa.SharedKernel.Application.Abstractions;
 
 public enum PasswordCheckResult
 {

@@ -1,13 +1,14 @@
-using PetSpa.Modules.Customer.Application.Abstractions;
+using PetSpa.SharedKernel.Application.Abstractions;
 using PetSpa.Modules.Customer.Application.Dtos;
 using PetSpa.Modules.Customer.Domain.Enums;
 using PetSpa.Modules.Customer.Domain.Repositories;
+using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
 
 namespace PetSpa.Modules.Customer.Application.Services;
 
 public class CustomerLoginService(
     ICustomerRepository customers,
-    IPasswordService passwordService)
+    IPasswordService<CustomerTable> passwordService)
 {
     public async Task<CustomerLoginResult?> LoginAsync(
         string phone,
