@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Customer.Endpoints;
 using PetSpa.Modules.Operation.Application.Services;
+using System.Security.Claims;
 
 
 
@@ -24,14 +25,16 @@ namespace PetSpa.Modules.Operation.Endpoints
         public async static Task<IResult> GetAvailableStaffAsync(
             [FromQuery] DateTime startTime,
             [FromQuery] DateTime endTime,
+            ClaimsPrincipal currentUser,
             StaffService service,
             CancellationToken ct)
-        => (await service.GetAvailableStaffsAsync(startTime, endTime, ct)).ToHttpResult();
+        => (await service.GetAvailableStaffsAsync(startTime, endTime, currentUser.FindFirst("account_role")?.Value, ct)).ToHttpResult();
         public async static Task<IResult> GetUnAvailableStaffAsync(
             [FromQuery] DateTime startTime,
             [FromQuery] DateTime endTime,
+            ClaimsPrincipal currentUser,
             StaffService service,
             CancellationToken ct)
-        => (await service.GetUnAvailableStaffsAsync(startTime, endTime, ct)).ToHttpResult();
+        => (await service.GetUnAvailableStaffsAsync(startTime, endTime, currentUser.FindFirst("account_role")?.Value, ct)).ToHttpResult();
     }
 }

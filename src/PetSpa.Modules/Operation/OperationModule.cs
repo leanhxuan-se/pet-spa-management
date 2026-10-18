@@ -34,6 +34,8 @@ public static class OperationModule
         services.AddScoped<IStaffAuthRepository, StaffAuthRepository>();
         services.AddScoped<IPasswordService, IdentityPasswordService>();
         services.AddScoped<StaffLoginService>();
+        services.AddScoped<RoomService>();
+        services.AddScoped<StaffService>();
         return services;
     }
      public static IEndpointRouteBuilder MapOperationModuleEndpoint(this IEndpointRouteBuilder app) // Register Operation's Endpoints

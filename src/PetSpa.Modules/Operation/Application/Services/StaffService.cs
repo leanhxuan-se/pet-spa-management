@@ -9,9 +9,16 @@ namespace PetSpa.Modules.Operation.Application.Services
 {
     internal class StaffService(IStaffRepository _staffRepository)
     {
-        public async Task<Result<List<StaffResponse>>> GetAvailableStaffsAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
+        public async Task<Result<List<StaffResponse>>> GetAvailableStaffsAsync(DateTime startTime, DateTime endTime, string currentRole, CancellationToken ct)
         {
-            if(startTime > endTime)
+
+            if (!(currentRole == "MANAGER" || currentRole == "RECEPTIONIST"))
+            {
+
+                return Result<List<StaffResponse>>.BadRequest("message", "khách hàng và staff Không có quyền xem thông tin phòng ");
+            }
+
+            if (startTime > endTime)
             {
                 return Result<List<StaffResponse>>.TimeError("Thời gian bắt đầu không được lớn hơn thời gian kết thúc!");
 
@@ -27,9 +34,16 @@ namespace PetSpa.Modules.Operation.Application.Services
 
             return Result<List<StaffResponse>>.Success(availStaff);
         }
-        public async Task<Result<List<StaffResponse>>> GetUnAvailableStaffsAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
+        public async Task<Result<List<StaffResponse>>> GetUnAvailableStaffsAsync(DateTime startTime, DateTime endTime, string currentRole, CancellationToken ct)
         {
-            if(startTime > endTime)
+
+
+            if (!(currentRole == "MANAGER" || currentRole == "RECEPTIONIST"))
+            {
+
+                return Result<List<StaffResponse>>.BadRequest("message", "khách hàng và staff Không có quyền xem thông tin phòng ");
+            }
+            if (startTime > endTime)
             {
                 return Result<List<StaffResponse>>.TimeError("Thời gian bắt đầu không được lớn hơn thời gian kết thúc!");
 
