@@ -8,7 +8,4 @@
     <Project Path="src/PetSpa.Modules/Resource/PetSpa.Modules.Resource.csproj" />
     <Project Path="src/PetSpa.SharedKernel/PetSpa.SharedKernel.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/PetSpa.BookingSmokeTests/PetSpa.BookingSmokeTests.csproj" />
-  </Folder>
 </Solution>

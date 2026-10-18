@@ -1,13 +1,14 @@
-using PetSpa.Modules.Operation.Application.Abstractions;
+using PetSpa.SharedKernel.Application.Abstractions;
 using PetSpa.Modules.Operation.Application.Dtos;
 using PetSpa.Modules.Operation.Domain.Enums;
 using PetSpa.Modules.Operation.Domain.Repositories;
+using PetSpa.Modules.Operation.Domain.Entities;
 
 namespace PetSpa.Modules.Operation.Application.Services;
 
 public class StaffLoginService(
     IStaffRepository staffs,
-    IPasswordService passwordService)
+    IPasswordService<Staff> passwordService)
 {
     public async Task<StaffLoginResult?> LoginAsync(
         string phone,
