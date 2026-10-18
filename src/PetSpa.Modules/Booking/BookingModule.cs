@@ -1,6 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using PetSpa.Modules.Booking.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Routing;
+using PetSpa.Modules.Booking.Application.Abstractions;
+using PetSpa.Modules.Booking.Application.Services;
+using PetSpa.Modules.Booking.Endpoints;
+using PetSpa.Modules.Booking.Infrastructure.Repositories;
 
 namespace PetSpa.Modules.Booking;
 
@@ -12,10 +17,15 @@ public static class BookingModule
         {
             options.UseNpgsql(ConnectionString, npgsql =>
             {
-                // Seperate migrations history
-                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "Booking");
+                npgsql.MigrationsAssembly(typeof(BookingDbContext).Assembly.FullName);
+                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "booking");
             });
         });
+        services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<BookingService>();
         return services;
     }
+
+    public static IEndpointRouteBuilder MapBookingModuleEndpoint(this IEndpointRouteBuilder app)
+        => app.MapBookingEndpoints();
 }

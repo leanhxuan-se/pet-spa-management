@@ -11,10 +11,10 @@ using PetSpa.Modules.Customer.Application.Services;
 using PetSpa.Modules.Customer.Domain.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Persistence.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Services;
+using PetSpa.Modules.Customer.Contracts;
 
 
 using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
-using PetSpa.Modules.Customer.Contracts;
 
 
 namespace PetSpa.Modules.Customer;
@@ -45,6 +45,7 @@ public static class CustomerModule
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IPasswordService, IdentityPasswordService>();
         services.AddScoped<CustomerLoginService>();
+        services.AddScoped<ICustomerModule, CustomerModuleContract>();
         return services;
     }
 

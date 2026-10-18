@@ -1,5 +1,6 @@
 using PetSpa.Modules.Resource.Application.Abstractions;
 using PetSpa.Modules.Resource.Application.Dtos;
+using PetSpa.Modules.Resource.Application.Validators;
 using PetSpa.Modules.Resource.Domain.Entities;
 using PetSpa.Modules.Resource.Domain.Enums;
 
@@ -31,26 +32,29 @@ public class ServiceCatalogService(IServiceRepository repository, ICategoryRepos
     public async Task<ResourceResult<ServiceDto>> CreateAsync(
         long categoryId, string serviceName, string? description, ResourceStatus status, CancellationToken ct)
     {
-        var errors = ResourceValidation.NameAndStatus(serviceName, "ServiceName", 256, status);
+        var errors = ResourceValidation.NameAndStatus(serviceName, "ServiceName", 150, status);
         ResourceValidation.ParentId(categoryId, "CategoryId", errors);
         if (errors.Count > 0)
             return ResourceResult<ServiceDto>.Invalid(errors);
         if (await categories.GetByIdAsync(categoryId, ct) is null)
             return ResourceResult<ServiceDto>.NotFound("Không tìm thấy danh mục.");
+        if (await repository.NameExistsAsync(categoryId, serviceName.Trim(), null, ct))
+            return ResourceResult<ServiceDto>.Conflict("Tên dịch vụ đã tồn tại trong danh mục.");
 
         var service = new Service
         {
             CategoryId = categoryId, ServiceName = serviceName.Trim(), Description = description, Status = status
         };
         repository.Add(service);
-        await repository.SaveChangesAsync(ct);
+        if (!await repository.TrySaveChangesAsync(ct))
+            return ResourceResult<ServiceDto>.Conflict("Tên dịch vụ đã tồn tại trong danh mục.");
         return ResourceResult<ServiceDto>.Success(ToDto(service));
     }
 
     public async Task<ResourceResult<ServiceDto>> UpdateAsync(
         long id, long categoryId, string serviceName, string? description, ResourceStatus status, CancellationToken ct)
     {
-        var errors = ResourceValidation.NameAndStatus(serviceName, "ServiceName", 256, status);
+        var errors = ResourceValidation.NameAndStatus(serviceName, "ServiceName", 150, status);
         ResourceValidation.ParentId(categoryId, "CategoryId", errors);
         if (errors.Count > 0)
             return ResourceResult<ServiceDto>.Invalid(errors);
@@ -60,13 +64,16 @@ public class ServiceCatalogService(IServiceRepository repository, ICategoryRepos
             return ResourceResult<ServiceDto>.NotFound("Không tìm thấy dịch vụ.");
         if (await categories.GetByIdAsync(categoryId, ct) is null)
             return ResourceResult<ServiceDto>.NotFound("Không tìm thấy danh mục.");
+        if (await repository.NameExistsAsync(categoryId, serviceName.Trim(), id, ct))
+            return ResourceResult<ServiceDto>.Conflict("Tên dịch vụ đã tồn tại trong danh mục.");
 
         service.CategoryId = categoryId;
         service.ServiceName = serviceName.Trim();
         service.Description = description;
         service.Status = status;
         service.UpdatedAt = DateTime.UtcNow;
-        await repository.SaveChangesAsync(ct);
+        if (!await repository.TrySaveChangesAsync(ct))
+            return ResourceResult<ServiceDto>.Conflict("Tên dịch vụ đã tồn tại trong danh mục.");
         return ResourceResult<ServiceDto>.Success(ToDto(service));
     }
 
@@ -76,7 +83,7 @@ public class ServiceCatalogService(IServiceRepository repository, ICategoryRepos
         if (service is null)
             return ResourceResult<bool>.NotFound("Không tìm thấy dịch vụ.");
 
-        service.Status = ResourceStatus.DELETED;
+        service.Status = ResourceStatus.INACTIVE;
         service.UpdatedAt = DateTime.UtcNow;
         await repository.SaveChangesAsync(ct);
         return ResourceResult<bool>.Success(true);

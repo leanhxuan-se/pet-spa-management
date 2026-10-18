@@ -2,6 +2,8 @@
 
 public enum BookingDetailStatus
 {
-    ACTIVE, 
+    ASSIGNED,
+    WORKING,
+    COMPLETED,
     CANCELLED
 }

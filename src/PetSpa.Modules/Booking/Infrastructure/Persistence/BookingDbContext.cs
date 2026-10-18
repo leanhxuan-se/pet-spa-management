@@ -17,7 +17,7 @@ public class BookingDbContext : DbContext
         base.OnModelCreating(modelBuilder);
         //Add all table to booking schema to prevent table name conflicts with other modules
         modelBuilder.HasDefaultSchema("booking");
-        //Apply all column configurations in the future 
+        // Apply configurations owned by this module.
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BookingDbContext).Assembly);
     }
 }
