@@ -10,5 +10,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/PetSpa.IntegrationTests/PetSpa.ResourceSmokeTests.csproj" />
+    <Project Path="tests/PetSpa.OperationSmokeTests/PetSpa.OperationSmokeTests.csproj" />
   </Folder>
 </Solution>

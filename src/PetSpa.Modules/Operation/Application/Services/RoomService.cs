@@ -20,9 +20,9 @@ namespace PetSpa.Modules.Operation.Application.Services
                 return Result<List<RoomResponse>>.BadRequest("message", "khách hàng và staff Không có quyền xem thông tin phòng ");
             }
 
-            if (startTime > endTime)
+            if (startTime >= endTime)
             {
-                return Result<List<RoomResponse>>.TimeError("Thời gian bắt đầu không được lớn hơn thời gian kết thúc!");
+                return Result<List<RoomResponse>>.TimeError("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!");
             }
 
             var response = await roomRepository.GetAvailableAsync(startTime, endTime, ct);
@@ -38,12 +38,12 @@ namespace PetSpa.Modules.Operation.Application.Services
                 return Result<List<RoomResponse>>.BadRequest("message", "khách hàng và staff Không có quyền xem thông tin phòng ");
             }
 
-            if (startTime > endTime)
+            if (startTime >= endTime)
             {
-                return Result<List<RoomResponse>>.TimeError("Thời gian bắt đầu không được lớn hơn thời gian kết thúc!");
+                return Result<List<RoomResponse>>.TimeError("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!");
             }
 
-            var response = await roomRepository.GetAvailableAsync(startTime, endTime, ct);
+            var response = await roomRepository.GetUnAvailableAsync(startTime, endTime, ct);
 
             return Result<List<RoomResponse>>.Success(response);
         }

@@ -18,9 +18,9 @@ namespace PetSpa.Modules.Operation.Application.Services
                 return Result<List<StaffResponse>>.BadRequest("message", "khách hàng và staff Không có quyền xem thông tin phòng ");
             }
 
-            if (startTime > endTime)
+            if (startTime >= endTime)
             {
-                return Result<List<StaffResponse>>.TimeError("Thời gian bắt đầu không được lớn hơn thời gian kết thúc!");
+                return Result<List<StaffResponse>>.TimeError("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!");
 
             }
 
@@ -43,13 +43,13 @@ namespace PetSpa.Modules.Operation.Application.Services
 
                 return Result<List<StaffResponse>>.BadRequest("message", "khách hàng và staff Không có quyền xem thông tin phòng ");
             }
-            if (startTime > endTime)
+            if (startTime >= endTime)
             {
-                return Result<List<StaffResponse>>.TimeError("Thời gian bắt đầu không được lớn hơn thời gian kết thúc!");
+                return Result<List<StaffResponse>>.TimeError("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!");
 
             }
 
-            var unAvailStaff = await  _staffRepository.GetAvailableAsync(startTime, endTime, ct);
+            var unAvailStaff = await _staffRepository.GetUnAvailableAsync(startTime, endTime, ct);
 
             if(unAvailStaff is [] or null)
             {

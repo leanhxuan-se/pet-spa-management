@@ -17,7 +17,7 @@ namespace PetSpa.Modules.Operation.Endpoints
             var group = app.MapGroup("/api/staff").WithTags("Staff"); // gom nhóm các endpoint liên quan đến staff lại ở swagger
 
             group.MapGet("/availability", GetAvailableStaffAsync).WithName("GetAvailableStaffs").RequireAuthorization();
-            group.MapGet("/unavailability", GetUnAvailableStaffAsync).WithName("GetAvailableStaffs").RequireAuthorization();
+            group.MapGet("/unavailability", GetUnAvailableStaffAsync).WithName("GetUnavailableStaffs").RequireAuthorization();
 
             return app;
         }
