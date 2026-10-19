@@ -1,14 +1,17 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
 using PetSpa.Modules.Operation.Infrastructure.Persistence;
+
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Operation.Endpoints;
 using PetSpa.Modules.Operation.Application.Abstractions;
+using FluentValidation;
+
 using PetSpa.Modules.Operation.Application.Services;
 using PetSpa.Modules.Operation.Domain.Repositories;
 using PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories;
-using PetSpa.Modules.Operation.Infrastructure.Services;
+using PetSpa.Modules.Operation.Endpoints.Requests;
+using PetSpa.SharedKernel.Application.Validators;
 
 using StaffTable = PetSpa.Modules.Operation.Domain.Entities.Staff;
 
@@ -33,6 +36,7 @@ public static class OperationModule
         services.AddScoped<IPasswordHasher<StaffTable>, PasswordHasher<StaffTable>>();
         services.AddScoped<IStaffAuthRepository, StaffAuthRepository>();
         services.AddScoped<IPasswordService, IdentityPasswordService>();
+        services.AddScoped<IValidator<StaffLoginRequest>, LoginRequestValidator<StaffLoginRequest>>();
         services.AddScoped<StaffLoginService>();
         services.AddScoped<RoomService>();
         services.AddScoped<StaffService>();

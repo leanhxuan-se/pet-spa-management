@@ -1,6 +1,6 @@
 using PetSpa.Modules.Resource.Domain.Enums;
 
-namespace PetSpa.Modules.Resource.Application.Services;
+namespace PetSpa.Modules.Resource.Application.Validators;
 
 internal static class ResourceValidation
 {
@@ -19,8 +19,8 @@ internal static class ResourceValidation
 
     public static void Status(ResourceStatus status, Dictionary<string, string[]> errors)
     {
-        if (!Enum.IsDefined(status) || status == ResourceStatus.DELETED)
-            errors["Status"] = ["Trạng thái phải là ACTIVE, MAINTAINED hoặc INACTIVE. Dùng DELETE để xóa."];
+        if (!Enum.IsDefined(status))
+            errors["Status"] = ["Trạng thái phải là ACTIVE hoặc INACTIVE."];
     }
 
     public static void ParentId(long id, string field, Dictionary<string, string[]> errors)

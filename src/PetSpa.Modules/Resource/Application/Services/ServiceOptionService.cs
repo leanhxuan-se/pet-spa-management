@@ -1,5 +1,6 @@
 using PetSpa.Modules.Resource.Application.Abstractions;
 using PetSpa.Modules.Resource.Application.Dtos;
+using PetSpa.Modules.Resource.Application.Validators;
 using PetSpa.Modules.Resource.Domain.Entities;
 using PetSpa.Modules.Resource.Domain.Enums;
 
@@ -80,7 +81,7 @@ public class ServiceOptionService(IServiceOptionRepository repository, IServiceR
         if (option is null)
             return ResourceResult<bool>.NotFound("Không tìm thấy tùy chọn dịch vụ.");
 
-        option.Status = ResourceStatus.DELETED;
+        option.Status = ResourceStatus.INACTIVE;
         option.UpdatedAt = DateTime.UtcNow;
         await repository.SaveChangesAsync(ct);
         return ResourceResult<bool>.Success(true);
@@ -95,16 +96,18 @@ public class ServiceOptionService(IServiceOptionRepository repository, IServiceR
         ResourceValidation.Status(status, errors);
         if (!Enum.IsDefined(species))
             errors["Species"] = ["Loài thú cưng không hợp lệ."];
-        if (minWeight < 0)
-            errors["MinWeight"] = ["Cân nặng tối thiểu không được âm."];
-        if (maxWeight < 0)
-            errors["MaxWeight"] = ["Cân nặng tối đa không được âm."];
+        if (minWeight is < 0 or > 9999.99m ||
+            (minWeight.HasValue && decimal.Round(minWeight.Value, 2) != minWeight.Value))
+            errors["MinWeight"] = ["Cân nặng phải từ 0 đến 9999.99 kg và tối đa 2 chữ số thập phân."];
+        if (maxWeight is < 0 or > 9999.99m ||
+            (maxWeight.HasValue && decimal.Round(maxWeight.Value, 2) != maxWeight.Value))
+            errors["MaxWeight"] = ["Cân nặng phải từ 0 đến 9999.99 kg và tối đa 2 chữ số thập phân."];
         if (minWeight.HasValue && maxWeight.HasValue && minWeight.Value > maxWeight.Value)
             errors["MaxWeight"] = ["Cân nặng tối đa phải lớn hơn hoặc bằng cân nặng tối thiểu."];
         if (durationMinutes <= 0)
             errors["DurationMinutes"] = ["Thời lượng phải lớn hơn 0 phút."];
-        if (unitPrice < 0)
-            errors["UnitPrice"] = ["Đơn giá không được âm."];
+        if (unitPrice is < 0 or > 9999999999999999.99m || decimal.Round(unitPrice, 2) != unitPrice)
+            errors["UnitPrice"] = ["Đơn giá phải từ 0 đến 9999999999999999.99 VND và tối đa 2 chữ số thập phân."];
         return errors;
     }
 }

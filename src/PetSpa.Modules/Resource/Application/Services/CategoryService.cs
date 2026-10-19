@@ -1,5 +1,6 @@
 using PetSpa.Modules.Resource.Application.Abstractions;
 using PetSpa.Modules.Resource.Application.Dtos;
+using PetSpa.Modules.Resource.Application.Validators;
 using PetSpa.Modules.Resource.Domain.Entities;
 using PetSpa.Modules.Resource.Domain.Enums;
 
@@ -24,7 +25,7 @@ public class CategoryService(ICategoryRepository repository)
     public async Task<ResourceResult<CategoryDto>> CreateAsync(
         string name, string? description, ResourceStatus status, CancellationToken ct)
     {
-        var errors = ResourceValidation.NameAndStatus(name, "Name", 50, status);
+        var errors = ResourceValidation.NameAndStatus(name, "Name", 100, status);
         if (errors.Count > 0)
             return ResourceResult<CategoryDto>.Invalid(errors);
         if (await repository.NameExistsAsync(name.Trim(), null, ct))
@@ -41,7 +42,7 @@ public class CategoryService(ICategoryRepository repository)
     public async Task<ResourceResult<CategoryDto>> UpdateAsync(
         long id, string name, string? description, ResourceStatus status, CancellationToken ct)
     {
-        var errors = ResourceValidation.NameAndStatus(name, "Name", 50, status);
+        var errors = ResourceValidation.NameAndStatus(name, "Name", 100, status);
         if (errors.Count > 0)
             return ResourceResult<CategoryDto>.Invalid(errors);
 
@@ -67,7 +68,7 @@ public class CategoryService(ICategoryRepository repository)
         if (category is null)
             return ResourceResult<bool>.NotFound("Không tìm thấy danh mục.");
 
-        category.Status = ResourceStatus.DELETED;
+        category.Status = ResourceStatus.INACTIVE;
         category.UpdatedAt = DateTime.UtcNow;
         if (!await repository.TrySaveChangesAsync(ct))
             return ResourceResult<bool>.Conflict("Không thể lưu thay đổi danh mục.");

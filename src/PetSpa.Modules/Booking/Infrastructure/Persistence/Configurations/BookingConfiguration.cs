@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PetSpa.Modules.Booking.Domain.Enums;
 
 using BookingEntity = PetSpa.Modules.Booking.Domain.Entities.Booking;
 
@@ -9,10 +10,20 @@ namespace PetSpa.Modules.Booking.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<BookingEntity> Builder)
         {
-            Builder.ToTable("booking");
+            Builder.ToTable("booking", table =>
+            {
+                table.HasCheckConstraint("ck_booking_status",
+                    "status IN ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'COMPLETED', 'CANCELLED')");
+                table.HasCheckConstraint("ck_booking_check_out_order",
+                    "check_out IS NULL OR check_in IS NULL OR check_out >= check_in");
+            });
 
             Builder.HasKey(x => x.Id);
 
+            Builder.Property(x => x.Id)
+                .HasColumnName("id")
+                .UseIdentityByDefaultColumn();
+            
             Builder.Property(x => x.CustomerId)
                 .HasColumnName("customer_id")
                 .IsRequired();
@@ -40,15 +51,19 @@ namespace PetSpa.Modules.Booking.Infrastructure.Persistence.Configurations
             Builder.Property(x => x.Status)
                 .HasColumnName("status")
                 .HasConversion<string>()
-                .HasMaxLength(20);
+                .HasMaxLength(30)
+                .HasDefaultValue(BookingStatus.PENDING)
+                .IsRequired();
 
             Builder.Property(x => x.CreatedAt)
                 .HasColumnName("created_at")
-                .HasColumnType("timestamp with time zone");
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("NOW()");
 
             Builder.Property(x => x.UpdatedAt)
                 .HasColumnName("updated_at")
-                .HasColumnType("timestamp with time zone");
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("NOW()");
 
         }
     }

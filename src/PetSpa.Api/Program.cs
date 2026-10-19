@@ -75,6 +75,7 @@ app.UseAuthorization();
 app.MapCustomerModuleEndpoint();
 app.MapOperationModuleEndpoint();
 app.MapResourceModuleEndpoint();
+app.MapBookingModuleEndpoint();
 
 
 app.Run();

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Resource.Domain.Entities;
+using PetSpa.Modules.Resource.Domain.Enums;
 
 namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
 {
@@ -8,19 +9,19 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<Category> builder)
         {
-            builder.ToTable("category", "resource");
+            builder.ToTable("category", "resource", table =>
+                table.HasCheckConstraint("ck_category_status", "status IN ('ACTIVE', 'INACTIVE')"));
 
             builder.HasKey(x => x.Id);
 
             builder.Property(x => x.Id)
                 .HasColumnName("id")
                 .HasColumnType("bigint")
-                .ValueGeneratedOnAdd();
+                .UseIdentityByDefaultColumn();
 
             builder.Property(x => x.Name)
                 .HasColumnName("name")
-                .HasColumnType("character varying")
-                .HasMaxLength(50)
+                .HasMaxLength(100)
                 .IsRequired();
 
             builder.HasIndex(x => x.Name).IsUnique();
@@ -28,7 +29,8 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
             builder.Property(x => x.Status)
                 .HasColumnName("status")
                 .HasConversion<string>()
-                .HasColumnType("character varying")
+                .HasMaxLength(30)
+                .HasDefaultValue(ResourceStatus.ACTIVE)
                 .IsRequired();
 
             builder.Property(x => x.Description)
@@ -38,11 +40,13 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
             builder.Property(x => x.CreatedAt)
                 .HasColumnName("created_at")
                 .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("NOW()")
                 .IsRequired();
 
             builder.Property(x => x.UpdatedAt)
                 .HasColumnName("updated_at")
                 .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("NOW()")
                 .IsRequired();
 
 

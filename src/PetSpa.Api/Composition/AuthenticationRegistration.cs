@@ -5,6 +5,7 @@ using PetSpa.Api.Authentication;
 using PetSpa.Api.Configuration;
 using PetSpa.SharedKernel.Application.Abstractions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -33,6 +34,8 @@ public static class AuthenticationRegistration
                 "Jwt:SigningKey phải có ít nhất 32 byte khi đọc bằng UTF-8.")
             .ValidateOnStart();
 
+        services.AddScoped(typeof(IPasswordHasher<>), typeof(PasswordHasher<>));
+        services.AddScoped(typeof(IPasswordService<>), typeof(IdentityPasswordService<>));
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
 

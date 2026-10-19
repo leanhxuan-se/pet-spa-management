@@ -17,7 +17,7 @@ public class ResourceDbContext: DbContext
         base.OnModelCreating(modelBuilder);
         //Add all table to resource schema to prevent table name conflicts with other modules
         modelBuilder.HasDefaultSchema("resource");
-        //Apply all column configurations in the future 
+        // Apply configurations owned by this module.
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ResourceDbContext).Assembly);
     }
 }
