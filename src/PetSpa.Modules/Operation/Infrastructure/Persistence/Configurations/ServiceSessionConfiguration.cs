@@ -5,7 +5,7 @@ using PetSpa.Modules.Operation.Domain.Enums;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 {
-    public class ServiceSessionConfiguration: IEntityTypeConfiguration<ServiceSession>
+    internal class ServiceSessionConfiguration: IEntityTypeConfiguration<ServiceSession>
     {
         public void Configure(EntityTypeBuilder<ServiceSession> Builder)
         {

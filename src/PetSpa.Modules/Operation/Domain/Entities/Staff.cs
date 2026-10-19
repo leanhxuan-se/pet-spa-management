@@ -3,7 +3,7 @@ using PetSpa.Modules.Operation.Domain.Enums;
 
 namespace PetSpa.Modules.Operation.Domain.Entities
 {
-    public class Staff
+    internal class Staff
     {
         public long Id { get; set; }
         public string FullName { get; set; } = null!;

@@ -4,7 +4,7 @@ using PetSpa.Modules.Operation.Domain.Entities;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 {
-    public class StaffAssignmentConfiguration : IEntityTypeConfiguration<StaffAssignment>
+    internal class StaffAssignmentConfiguration : IEntityTypeConfiguration<StaffAssignment>
     {
         public void Configure(EntityTypeBuilder<StaffAssignment> Builder)
         {

@@ -2,7 +2,7 @@
 
 namespace PetSpa.Modules.Operation.Domain.Entities
 {
-    public class StaffAssignment
+    internal class StaffAssignment
     {
         public long Id { get; set; }
         public long ServiceSessionId { get; set; }

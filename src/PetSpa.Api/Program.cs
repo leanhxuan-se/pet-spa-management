@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using PetSpa.Api.Composition;
 using PetSpa.Modules.Billing;
 using PetSpa.Modules.Booking;
@@ -33,7 +34,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(option =>
+{
+    option.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+});
 
 
 builder.Services.AddOpenApi();

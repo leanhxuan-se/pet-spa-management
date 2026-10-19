@@ -9,7 +9,7 @@ using PetSpa.SharedKernel.Application.Abstractions;
 
 namespace PetSpa.Modules.Customer.Endpoints;
 
-public static class CustomerEndpoints
+internal static class CustomerEndpoints
 {
     public static IEndpointRouteBuilder MapCustomerEndpoint(this IEndpointRouteBuilder app)
     {

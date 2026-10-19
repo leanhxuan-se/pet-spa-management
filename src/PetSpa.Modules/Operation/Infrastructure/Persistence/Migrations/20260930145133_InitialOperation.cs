@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PetSpa.Modules.Operation.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialOperation : Migration
+    internal partial class InitialOperation : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

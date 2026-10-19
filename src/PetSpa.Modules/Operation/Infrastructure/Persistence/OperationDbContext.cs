@@ -3,7 +3,7 @@ using PetSpa.Modules.Operation.Domain.Entities;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence;
 
-public class OperationDbContext: DbContext
+internal class OperationDbContext: DbContext
 {
     public OperationDbContext(DbContextOptions<OperationDbContext> options) : base(options)
     {

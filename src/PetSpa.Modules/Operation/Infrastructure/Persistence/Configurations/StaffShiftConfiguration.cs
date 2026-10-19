@@ -5,7 +5,7 @@ using PetSpa.Modules.Operation.Domain.Enums;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 {
-    public class StaffShiftConfiguration : IEntityTypeConfiguration<StaffShift>
+    internal class StaffShiftConfiguration : IEntityTypeConfiguration<StaffShift>
     {
         public void Configure(EntityTypeBuilder<StaffShift> Builder)
         {

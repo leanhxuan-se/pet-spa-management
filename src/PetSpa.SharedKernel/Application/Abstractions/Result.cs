@@ -10,7 +10,10 @@ namespace PetSpa.SharedKernel.Application.Abstractions
         Success,
         NotFound,
         ValidationFailed,
-        UnActive
+        TimeError,
+        UnActive,
+        BadRequest,
+        Duplicate,
     }
 
     public class Result<T>
@@ -34,13 +37,22 @@ namespace PetSpa.SharedKernel.Application.Abstractions
         public static Result<T> Success(T value) => new(value);
 
         public static Result<T> NotFound(string message) =>
-            new(new Dictionary<string, string[]> { { "Customer", [message] } }, ResultStatus.NotFound);
+            new(new Dictionary<string, string[]> { { "message", [message] } }, ResultStatus.NotFound);
+
+        public static Result<T> TimeError(string message) =>
+            new(new Dictionary<string, string[]> { { "message", [message] } }, ResultStatus.TimeError);
 
         public static Result<T> ValidationFailed(IDictionary<string, string[]> errors) =>
             new(errors, ResultStatus.ValidationFailed);
 
         public static Result<T> UnActive(string key, string message) =>
             new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.UnActive);
+
+        public static Result<T> BadRequest(string key, string message) =>
+            new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.BadRequest);
+
+        public static Result<T> Duplicate(string key, string message) =>
+            new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.Duplicate);
         
     }
 }

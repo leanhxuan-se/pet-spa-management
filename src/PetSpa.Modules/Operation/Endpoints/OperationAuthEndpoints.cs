@@ -11,7 +11,7 @@ using PetSpa.SharedKernel.Application.Abstractions;
 
 namespace PetSpa.Modules.Operation.Endpoints;
 
-public static class OperationAuthEndpoints
+internal static class OperationAuthEndpoints
 {
     public static IEndpointRouteBuilder MapOperationAuthEndpoints(
         this IEndpointRouteBuilder app)
@@ -26,20 +26,10 @@ public static class OperationAuthEndpoints
 
     private static async Task<IResult> LoginAsync(
         StaffLoginRequest request,
-        IValidator<StaffLoginRequest> validator,
         StaffLoginService loginService,
         ITokenService tokenService,
         CancellationToken ct)
     {
-        // 1. Kiểm tra dữ liệu đầu vào.
-        var validation = await validator.ValidateAsync(request, ct);
-
-        if (!validation.IsValid)
-        {
-            return Results.ValidationProblem(validation.ToDictionary());
-        }
-
-        // 2. Kiểm tra tài khoản và mật khẩu.
         var staff = await loginService.LoginAsync(
             request.Phone,
             request.Password,

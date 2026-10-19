@@ -1,0 +1,40 @@
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
+using PetSpa.Modules.Customer.Endpoints;
+using PetSpa.Modules.Operation.Application.Services;
+using System.Security.Claims;
+
+
+
+namespace PetSpa.Modules.Operation.Endpoints
+{
+    internal static class StaffEndpoint
+    {
+        public static IEndpointRouteBuilder MapStaffEndpoint(this IEndpointRouteBuilder app)
+        {
+            var group = app.MapGroup("/api/staff").WithTags("Staff"); // gom nhóm các endpoint liên quan đến staff lại ở swagger
+
+            group.MapGet("/availability", GetAvailableStaffAsync).WithName("GetAvailableStaffs").RequireAuthorization();
+            group.MapGet("/unavailability", GetUnAvailableStaffAsync).WithName("GetUnavailableStaffs").RequireAuthorization();
+
+            return app;
+        }
+
+        public async static Task<IResult> GetAvailableStaffAsync(
+            [FromQuery] DateTime startTime,
+            [FromQuery] DateTime endTime,
+            ClaimsPrincipal currentUser,
+            StaffService service,
+            CancellationToken ct)
+        => (await service.GetAvailableStaffsAsync(startTime, endTime, currentUser.FindFirst("account_role")?.Value, ct)).ToHttpResult();
+        public async static Task<IResult> GetUnAvailableStaffAsync(
+            [FromQuery] DateTime startTime,
+            [FromQuery] DateTime endTime,
+            ClaimsPrincipal currentUser,
+            StaffService service,
+            CancellationToken ct)
+        => (await service.GetUnAvailableStaffsAsync(startTime, endTime, currentUser.FindFirst("account_role")?.Value, ct)).ToHttpResult();
+    }
+}

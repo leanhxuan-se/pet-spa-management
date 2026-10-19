@@ -6,9 +6,11 @@ using PetSpa.Modules.Operation.Domain.Entities;
 
 namespace PetSpa.Modules.Operation.Application.Services;
 
-public class StaffLoginService(
-    IStaffRepository staffs,
-    IPasswordService<Staff> passwordService)
+
+internal class StaffLoginService(
+    IStaffAuthRepository staffs,
+    IPasswordService passwordService)
+
 {
     public async Task<StaffLoginResult?> LoginAsync(
         string phone,
