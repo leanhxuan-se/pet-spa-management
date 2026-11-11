@@ -1,0 +1,918 @@
+openapi: "3.0.3"
+info:
+  title: "Pet Spa API"
+  version: "1.0.0"
+  description: "API đăng nhập, quản lý khách hàng, thú cưng, danh mục dịch vụ và lịch hẹn. Thời điểm lịch hẹn dùng UTC với hậu tố Z."
+servers:
+  - url: "http://localhost:5052"
+    description: "Profile http"
+  - url: "https://localhost:7297"
+    description: "Profile https"
+security:
+  - bearerAuth: []
+paths:
+  /api/customer/login:
+    post:
+      tags: ["Đăng nhập"]
+      summary: "Đăng nhập khách hàng"
+      operationId: CustomerLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerLoginResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/staff/login:
+    post:
+      tags: ["Đăng nhập"]
+      summary: "Đăng nhập nhân viên"
+      operationId: StaffLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffLoginResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/customer/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: ["Khách hàng"]
+      summary: "Xem hồ sơ khách hàng"
+      operationId: GetCustomerById
+      description: "Chủ hồ sơ hoặc nhân viên có vai trò MANAGER hay RECEPTIONIST."
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Customer" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/customer/create:
+    post:
+      tags: ["Khách hàng"]
+      summary: "Tạo hồ sơ khách hàng"
+      operationId: CreateCustomer
+      description: "Dành cho MANAGER và RECEPTIONIST. Mã 201 mô tả nhánh thành công của handler. Luồng lưu hiện chưa gán password_hash, trong khi cấu hình database yêu cầu giá trị này."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateCustomerRequest" }
+      responses:
+        "201":
+          description: "Trả về đối tượng sau khi lưu."
+          headers:
+            Location:
+              description: "Đường dẫn chi tiết của đối tượng."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Customer" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/customer/update/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: ["Khách hàng"]
+      summary: "Cập nhật hồ sơ khách hàng"
+      operationId: UpdateCustomer
+      description: "Chủ hồ sơ hoặc nhân viên có vai trò MANAGER hay RECEPTIONIST."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateCustomerRequest" }
+      responses:
+        "201":
+          description: "Trả về đối tượng sau khi lưu."
+          headers:
+            Location:
+              description: "Đường dẫn chi tiết của đối tượng."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Customer" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/pet/all_pets/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: ["Thú cưng"]
+      summary: "Liệt kê thú cưng của khách hàng"
+      operationId: GetAllPets
+      description: "Yêu cầu token khách hàng của chủ hồ sơ. Handler Pet hiện đọc claim role, còn token đăng nhập nhân viên phát account_role."
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Pet" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/pet/{customerId}/{petId}:
+    parameters:
+      - $ref: "#/components/parameters/CustomerId"
+      - $ref: "#/components/parameters/PetId"
+    get:
+      tags: ["Thú cưng"]
+      summary: "Xem chi tiết thú cưng"
+      operationId: GetPet
+      description: "Yêu cầu token khách hàng của chủ hồ sơ. Handler Pet hiện đọc claim role, còn token đăng nhập nhân viên phát account_role."
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pet" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/pet/create/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: ["Thú cưng"]
+      summary: "Tạo hồ sơ thú cưng"
+      operationId: CreatePet
+      description: "Yêu cầu token khách hàng của chủ hồ sơ. Handler Pet hiện đọc claim role, còn token đăng nhập nhân viên phát account_role. Dùng cùng ID khách hàng cho id trên URL và customersId trong body."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreatePetRequest" }
+      responses:
+        "201":
+          description: "Trả về đối tượng sau khi lưu."
+          headers:
+            Location:
+              description: "Đường dẫn chi tiết của đối tượng."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pet" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/pet/update/{customerId}/{petId}:
+    parameters:
+      - $ref: "#/components/parameters/CustomerId"
+      - $ref: "#/components/parameters/PetId"
+    put:
+      tags: ["Thú cưng"]
+      summary: "Cập nhật hồ sơ thú cưng"
+      operationId: UpdatePet
+      description: "Yêu cầu token khách hàng của chủ hồ sơ. Handler Pet hiện đọc claim role, còn token đăng nhập nhân viên phát account_role."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdatePetRequest" }
+      responses:
+        "201":
+          description: "Trả về đối tượng sau khi lưu."
+          headers:
+            Location:
+              description: "Đường dẫn chi tiết của đối tượng."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pet" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/resource/categories:
+    get:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Liệt kê danh mục"
+      operationId: GetCategories
+      security: []
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Category" }
+    post:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Tạo danh mục"
+      operationId: CreateCategory
+      description: "Yêu cầu token nhân viên có account_type=staff."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveCategoryRequest" }
+      responses:
+        "201":
+          description: "Trả về đối tượng sau khi lưu."
+          headers:
+            Location:
+              description: "Đường dẫn chi tiết của đối tượng."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/resource/categories/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Xem chi tiết danh mục"
+      operationId: GetCategoryById
+      security: []
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Cập nhật danh mục"
+      operationId: UpdateCategory
+      description: "Yêu cầu token nhân viên có account_type=staff."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveCategoryRequest" }
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Xóa danh mục"
+      operationId: DeleteCategory
+      description: "Yêu cầu token nhân viên có account_type=staff. Chuyển trạng thái sang DELETED."
+      responses:
+        "204":
+          description: "Đã xóa."
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/resource/services:
+    get:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Liệt kê dịch vụ"
+      operationId: SearchServices
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CategoryFilter"
+        - $ref: "#/components/parameters/Keyword"
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Service" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Tạo dịch vụ"
+      operationId: CreateService
+      description: "Yêu cầu token nhân viên có account_type=staff."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveServiceRequest" }
+      responses:
+        "201":
+          description: "Trả về đối tượng sau khi lưu."
+          headers:
+            Location:
+              description: "Đường dẫn chi tiết của đối tượng."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Service" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/resource/services/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Xem chi tiết dịch vụ"
+      operationId: GetServiceById
+      security: []
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Service" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Cập nhật dịch vụ"
+      operationId: UpdateService
+      description: "Yêu cầu token nhân viên có account_type=staff."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveServiceRequest" }
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Service" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Xóa dịch vụ"
+      operationId: DeleteService
+      description: "Yêu cầu token nhân viên có account_type=staff. Chuyển trạng thái sang DELETED."
+      responses:
+        "204":
+          description: "Đã xóa."
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/resource/service-options:
+    get:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Liệt kê tùy chọn dịch vụ"
+      operationId: GetServiceOptions
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ServiceFilter"
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ServiceOption" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Tạo tùy chọn dịch vụ"
+      operationId: CreateServiceOption
+      description: "Yêu cầu token nhân viên có account_type=staff."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveServiceOptionRequest" }
+      responses:
+        "201":
+          description: "Trả về đối tượng sau khi lưu."
+          headers:
+            Location:
+              description: "Đường dẫn chi tiết của đối tượng."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceOption" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/resource/service-options/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Xem chi tiết tùy chọn dịch vụ"
+      operationId: GetServiceOptionById
+      security: []
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceOption" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Cập nhật tùy chọn dịch vụ"
+      operationId: UpdateServiceOption
+      description: "Yêu cầu token nhân viên có account_type=staff."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveServiceOptionRequest" }
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceOption" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Xóa tùy chọn dịch vụ"
+      operationId: DeleteServiceOption
+      description: "Yêu cầu token nhân viên có account_type=staff. Chuyển trạng thái sang DELETED."
+      responses:
+        "204":
+          description: "Đã xóa."
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/resource/categories/{categoryId}/services:
+    parameters:
+      - $ref: "#/components/parameters/CategoryId"
+    get:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Liệt kê dịch vụ theo danh mục"
+      operationId: GetServicesByCategory
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Keyword"
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Service" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/resource/services/{serviceId}/options:
+    parameters:
+      - $ref: "#/components/parameters/ServiceId"
+    get:
+      tags: ["Danh mục dịch vụ"]
+      summary: "Liệt kê tùy chọn theo dịch vụ"
+      operationId: GetOptionsByService
+      security: []
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ServiceOption" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/bookings:
+    post:
+      tags: ["Lịch hẹn"]
+      summary: "Tạo lịch hẹn"
+      operationId: CreateBooking
+      description: "Nhân viên có thể thao tác cho khách hàng. Khách hàng thao tác trên lịch hẹn của mình."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateBookingRequest" }
+      responses:
+        "201":
+          description: "Trả về đối tượng sau khi lưu."
+          headers:
+            Location:
+              description: "Đường dẫn chi tiết của đối tượng."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/bookings/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: ["Lịch hẹn"]
+      summary: "Xem lịch hẹn"
+      operationId: GetBookingById
+      description: "Nhân viên có thể thao tác cho khách hàng. Khách hàng thao tác trên lịch hẹn của mình."
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: ["Lịch hẹn"]
+      summary: "Cập nhật thông tin lịch hẹn"
+      operationId: UpdateBooking
+      description: "Nhân viên có thể thao tác cho khách hàng. Khách hàng thao tác trên lịch hẹn của mình. Chỉ nhân viên được thay đổi status, checkIn, checkOut hoặc chuyển lịch hẹn sang khách hàng khác."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateBookingRequest" }
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/bookings/{id}/services:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: ["Lịch hẹn"]
+      summary: "Thay toàn bộ tùy chọn dịch vụ của lịch hẹn"
+      operationId: ReplaceBookingServices
+      description: "Nhân viên có thể thao tác cho khách hàng. Khách hàng thao tác trên lịch hẹn của mình. Lịch hẹn phải ở trạng thái PENDING hoặc CONFIRMED."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReplaceBookingServicesRequest" }
+      responses:
+        "200":
+          description: "Thành công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    PetId:
+      name: petId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    CategoryId:
+      name: categoryId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    ServiceId:
+      name: serviceId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    CategoryFilter:
+      name: categoryId
+      in: query
+      schema:
+        type: integer
+        format: int64
+    ServiceFilter:
+      name: serviceId
+      in: query
+      schema:
+        type: integer
+        format: int64
+    Keyword:
+      name: keyword
+      in: query
+      schema:
+        type: string
+  responses:
+    BadRequest:
+      description: "Request không hợp lệ. Route Pet cũng trả mã này khi từ chối quyền. Lỗi binding có thể có body rỗng."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ValidationProblem" }
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
+    Unauthorized:
+      description: "Thiếu token hợp lệ hoặc thông tin đăng nhập không được chấp nhận."
+    Forbidden:
+      description: "Tài khoản thiếu quyền thực hiện thao tác."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Message" }
+    NotFound:
+      description: "Không tìm thấy đối tượng."
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
+    Conflict:
+      description: "Dữ liệu xung đột hoặc trạng thái hiện tại không cho phép thao tác."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Message" }
+  schemas:
+    LoginRequest:
+      type: object
+      required: [phone, password]
+      properties:
+        phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001" }
+        password: { type: string, format: password, minLength: 1, example: example-password }
+    CustomerLoginResponse:
+      type: object
+      required: [accessToken, tokenType, expiresAtUtc, customer]
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, enum: [Bearer] }
+        expiresAtUtc: { type: string, format: date-time }
+        customer:
+          type: object
+          required: [id, fullName, phone]
+          properties:
+            id: { type: integer, format: int64 }
+            fullName: { type: string }
+            phone: { type: string }
+    StaffLoginResponse:
+      type: object
+      required: [accessToken, tokenType, expiresAtUtc, staff]
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, enum: [Bearer] }
+        expiresAtUtc: { type: string, format: date-time }
+        staff:
+          type: object
+          required: [id, fullName, phone, role]
+          properties:
+            id: { type: integer, format: int64 }
+            fullName: { type: string }
+            phone: { type: string }
+            role: { type: string, enum: [STAFF, RECEPTIONIST, MANAGER] }
+    CreateCustomerRequest:
+      type: object
+      required: [fullName, phone]
+      properties:
+        fullName: { type: string, minLength: 1, maxLength: 100 }
+        gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001" }
+        status: { type: string, enum: [ACTIVE, INACTIVE], default: ACTIVE, description: "Handler hiện tạo khách hàng ở trạng thái ACTIVE." }
+    UpdateCustomerRequest:
+      type: object
+      minProperties: 1
+      properties:
+        fullName: { type: string, minLength: 1, maxLength: 100, nullable: true }
+        gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001", nullable: true }
+        avtURL: { type: string, description: "Handler hiện chưa lưu thay đổi trường này.", nullable: true }
+        note: { type: string, nullable: true }
+        status: { type: string, enum: [ACTIVE, INACTIVE, null], nullable: true }
+    Customer:
+      type: object
+      required: [id, fullName, gender, dateOfBirth, email, phone, avtURL, note, pets, status]
+      properties:
+        id: { type: integer, format: int64 }
+        fullName: { type: string, minLength: 1, maxLength: 100 }
+        gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001" }
+        avtURL: { type: string, nullable: true }
+        note: { type: string, nullable: true }
+        pets: { type: array, items: { $ref: "#/components/schemas/Pet" }, nullable: true }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+    CreatePetRequest:
+      type: object
+      required: [customersId, name, species]
+      properties:
+        customersId: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        species: { $ref: "#/components/schemas/Species" }
+        gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
+        weight: { type: number, nullable: true }
+        height: { type: number, nullable: true }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        specialNote: { type: string, nullable: true }
+        status: { type: string, enum: [ACTIVE, INACTIVE], default: ACTIVE }
+    UpdatePetRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100, nullable: true }
+        species: { type: string, enum: [DOG, CAT, CHICKEN, FISH, OTHER, null], nullable: true }
+        gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
+        weight: { type: number, nullable: true }
+        height: { type: number, nullable: true }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        specialNote: { type: string, nullable: true }
+        status: { type: string, enum: [ACTIVE, INACTIVE, null], nullable: true }
+    Pet:
+      type: object
+      required: [id, customersId, name, species, gender, weight, height, dateOfBirth, specialNote, status]
+      properties:
+        id: { type: integer, format: int64 }
+        customersId: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        species: { $ref: "#/components/schemas/Species" }
+        gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
+        weight: { type: number, nullable: true }
+        height: { type: integer, format: int32, nullable: true }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        specialNote: { type: string, nullable: true }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+    Species: { type: string, enum: [DOG, CAT, CHICKEN, FISH, OTHER] }
+    WritableResourceStatus: { type: string, enum: [ACTIVE, MAINTAINED, INACTIVE], default: ACTIVE }
+    ResourceStatus: { type: string, enum: [ACTIVE, MAINTAINED, INACTIVE, DELETED] }
+    SaveCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 50 }
+        description: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/WritableResourceStatus" }
+    Category:
+      type: object
+      required: [id, name, description, status]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string, minLength: 1, maxLength: 50 }
+        description: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/ResourceStatus" }
+    SaveServiceRequest:
+      type: object
+      required: [categoryId, serviceName]
+      properties:
+        categoryId: { type: integer, format: int64, minimum: 1 }
+        serviceName: { type: string, minLength: 1, maxLength: 256 }
+        description: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/WritableResourceStatus" }
+    Service:
+      type: object
+      required: [id, categoryId, serviceName, description, status]
+      properties:
+        id: { type: integer, format: int64 }
+        categoryId: { type: integer, format: int64, minimum: 1 }
+        serviceName: { type: string, minLength: 1, maxLength: 256 }
+        description: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/ResourceStatus" }
+    SaveServiceOptionRequest:
+      type: object
+      required: [serviceId, species, durationMinutes, unitPrice]
+      properties:
+        serviceId: { type: integer, format: int64, minimum: 1 }
+        species: { $ref: "#/components/schemas/Species" }
+        minWeight: { type: number, minimum: 0, nullable: true }
+        maxWeight: { type: number, minimum: 0, nullable: true }
+        durationMinutes: { type: integer, format: int32, minimum: 1 }
+        unitPrice: { type: number, minimum: 0 }
+        status: { $ref: "#/components/schemas/WritableResourceStatus" }
+    ServiceOption:
+      type: object
+      required: [id, serviceId, species, minWeight, maxWeight, durationMinutes, unitPrice, status]
+      properties:
+        id: { type: integer, format: int64 }
+        serviceId: { type: integer, format: int64, minimum: 1 }
+        species: { $ref: "#/components/schemas/Species" }
+        minWeight: { type: number, minimum: 0, nullable: true }
+        maxWeight: { type: number, minimum: 0, nullable: true }
+        durationMinutes: { type: integer, format: int32, minimum: 1 }
+        unitPrice: { type: number, minimum: 0 }
+        status: { $ref: "#/components/schemas/ResourceStatus" }
+    CreateBookingRequest:
+      type: object
+      required: [customerId, petId, bookingTime, serviceOptionIds]
+      properties:
+        customerId: { type: integer, format: int64, minimum: 1 }
+        petId: { type: integer, format: int64, minimum: 1 }
+        bookingTime: { type: string, format: date-time, example: "2026-11-20T03:00:00Z" }
+        note: { type: string, nullable: true }
+        serviceOptionIds: { type: array, items: { type: integer, format: int64, minimum: 1 }, minItems: 1, uniqueItems: true, example: [100, 200] }
+    UpdateBookingRequest:
+      type: object
+      required: [customerId, petId, bookingTime, status]
+      properties:
+        customerId: { type: integer, format: int64, minimum: 1 }
+        petId: { type: integer, format: int64, minimum: 1 }
+        bookingTime: { type: string, format: date-time, example: "2026-11-20T03:00:00Z" }
+        note: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/BookingStatus" }
+        checkIn: { type: string, format: date-time, nullable: true }
+        checkOut: { type: string, format: date-time, nullable: true }
+    ReplaceBookingServicesRequest:
+      type: object
+      required: [serviceOptionIds]
+      properties:
+        serviceOptionIds: { type: array, items: { type: integer, format: int64, minimum: 1 }, minItems: 1, uniqueItems: true, example: [100, 200] }
+    Booking:
+      type: object
+      required: [id, customerId, petId, bookingTime, note, status, checkIn, checkOut, createdAt, updatedAt, services]
+      properties:
+        id: { type: integer, format: int64 }
+        customerId: { type: integer, format: int64, minimum: 1 }
+        petId: { type: integer, format: int64, minimum: 1 }
+        bookingTime: { type: string, format: date-time, example: "2026-11-20T03:00:00Z" }
+        note: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/BookingStatus" }
+        checkIn: { type: string, format: date-time, nullable: true }
+        checkOut: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        services: { type: array, items: { $ref: "#/components/schemas/BookingDetail" } }
+    BookingStatus: { type: string, enum: [PENDING, CONFIRMED, CHECKED_IN, COMPLETED, CANCELLED] }
+    BookingDetail:
+      type: object
+      required: [id, serviceOptionId, unitPrice, status]
+      properties:
+        id: { type: integer, format: int64 }
+        serviceOptionId: { type: integer, format: int64 }
+        unitPrice: { type: number }
+        status: { type: string, enum: [ASSIGNED, WORKING, COMPLETED, CANCELLED] }
+    Message:
+      type: object
+      properties:
+        message: { type: string }
+    ValidationProblem:
+      type: object
+      required: [errors]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer, format: int32 }
+        errors: { type: object, additionalProperties: { type: array, items: { type: string } } }

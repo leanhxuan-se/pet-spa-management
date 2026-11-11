@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/PetSpa.Api/PetSpa.Api.csproj" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
+    <!-- Compile the internal customer login types from their actual sources to inject a fake repository. -->
+    <Compile Include="../../src/PetSpa.Modules/Customer/Domain/Entities/Customer.cs" Link="Source/Customer.cs" />
+    <Compile Include="../../src/PetSpa.Modules/Customer/Domain/Entities/Pet.cs" Link="Source/Pet.cs" />
+    <Compile Include="../../src/PetSpa.Modules/Customer/Domain/Repositories/ICustomerRepository.cs" Link="Source/ICustomerRepository.cs" />
+    <Compile Include="../../src/PetSpa.Modules/Customer/Application/Services/CustomerLoginService.cs" Link="Source/CustomerLoginService.cs" />
+    <Compile Include="../../src/PetSpa.Modules/Customer/Endpoints/CustomerAuthEndpoints.cs" Link="Source/CustomerAuthEndpoints.cs" />
+    <Compile Include="../../src/PetSpa.Modules/Resource/Endpoints/ResourceEndpointResults.cs" Link="Source/ResourceEndpointResults.cs" />
+  </ItemGroup>
+</Project>

@@ -61,7 +61,7 @@ app.UseHttpsRedirection();
 
 // Activate CORS
 app.UseCors("AllowAll");
-app.UseCors("AllowAll");
+
 
 
 app.UseAuthentication();
