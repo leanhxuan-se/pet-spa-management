@@ -16,7 +16,7 @@ public static class CustomerAuthEndpoints
     public static IEndpointRouteBuilder MapCustomerAuthEndpoints(
         this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/customer/login", LoginAsync)
+        app.MapPost("/api/auth/customer/login", LoginAsync)
             .WithTags("Customers")
             .WithName("CustomerLogin")
             .AllowAnonymous();

@@ -16,7 +16,7 @@ internal static class OperationAuthEndpoints
     public static IEndpointRouteBuilder MapOperationAuthEndpoints(
         this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/staff/login", LoginAsync)
+        app.MapPost("/api/auth/staff/login", LoginAsync)
             .WithTags("Staffs")
             .WithName("StaffLogin")
             .AllowAnonymous();

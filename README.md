@@ -96,58 +96,7 @@ The system provides tools for:
 
 ## ⚙️ Installation
 
-### 1. Clone repository
-
-```bash
-git clone <repository-url>
-cd pet-spa-management
-```
-
-### 2. Install dependencies
-
-Backend:
-
-```bash
-cd server
-npm install
-```
-
-Frontend:
-
-```bash
-cd client
-npm install
-```
-
-### 3. Configure environment variables
-
-Create a `.env` file in the backend directory:
-
-```env
-PORT=5000
-
-MONGODB_URL=<your-mongodb-url>
-DATABASE_NAME=pet_spa
-
-JWT_ACCESS_SECRET=<your-access-secret>
-JWT_ACCESS_EXPIRES_IN=15m
-```
-
-> Do not commit `.env` files or other sensitive credentials to GitHub.
-
-### 4. Run the project
-
-Backend:
-
-```bash
-npm run dev
-```
-
-Frontend:
-
-```bash
-npm run dev
-```
+Xem [hướng dẫn chạy server và kiểm tra kết nối với WPF](HUONG-DAN-CHAY.md).
 
 ## 📋 Core Business Workflow
 

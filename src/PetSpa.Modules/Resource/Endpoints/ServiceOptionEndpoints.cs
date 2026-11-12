@@ -12,7 +12,7 @@ public static class ServiceOptionEndpoints
 {
     public static IEndpointRouteBuilder MapServiceOptionEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/resource/service-options").WithTags("Service Options");
+        var group = app.MapGroup("/api/service-options").WithTags("Service Options");
         group.MapGet("/", ListAsync).WithName("GetServiceOptions").Produces<IReadOnlyList<ServiceOptionResponse>>();
         group.MapGet("/{id:long}", GetByIdAsync).WithName("GetServiceOptionById").Produces<ServiceOptionResponse>();
         group.MapPost("/", CreateAsync).WithName("CreateServiceOption")
@@ -21,7 +21,7 @@ public static class ServiceOptionEndpoints
             .Produces<ServiceOptionResponse>().ProducesValidationProblem().RequireStaff();
         group.MapDelete("/{id:long}", DeleteAsync).WithName("DeleteServiceOption")
             .Produces(StatusCodes.Status204NoContent).RequireStaff();
-        app.MapGet("/api/resource/services/{serviceId:long}/options", ListByServiceAsync)
+        app.MapGet("/api/services/{serviceId:long}/options", ListByServiceAsync)
             .WithTags("Service Options").WithName("GetOptionsByService").Produces<IReadOnlyList<ServiceOptionResponse>>();
         return app;
     }

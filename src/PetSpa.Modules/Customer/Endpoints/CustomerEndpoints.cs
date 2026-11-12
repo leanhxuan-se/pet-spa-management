@@ -13,11 +13,11 @@ internal static class CustomerEndpoints
 {
     public static IEndpointRouteBuilder MapCustomerEndpoint(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/customer").WithTags("Customers"); // gom nhóm các endpoint liên quan đến customer lại ở swagger
+        var group = app.MapGroup("/api/customers").WithTags("Customers"); // gom nhóm các endpoint liên quan đến customer lại ở swagger
 
         group.MapGet("/{id:long}", GetCustomerByIdAsync).WithName("GetCustomerById").RequireAuthorization();
-        group.MapPost("/create", CreateCustomerAsync).WithName("CreateCustomer").RequireAuthorization();
-        group.MapPut("/update/{id:long}", UpdateCustomerAsync).WithName("UpdateCustomer").RequireAuthorization();
+        group.MapPost("/", CreateCustomerAsync).WithName("CreateCustomer").RequireAuthorization();
+        group.MapPut("/{id:long}", UpdateCustomerAsync).WithName("UpdateCustomer").RequireAuthorization();
 
         return app;     
     }
@@ -71,7 +71,7 @@ internal static class CustomerEndpoints
         var customer = await customerService.CreateAsync(req, ct);
         
         return customer.ToHttpResult(
-            "getCustomerById",
+            "GetCustomerById",
             p => new { id = p?.Id }
         );
 
