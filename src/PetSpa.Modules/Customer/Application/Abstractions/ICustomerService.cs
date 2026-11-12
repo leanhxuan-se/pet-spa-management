@@ -6,6 +6,8 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
 {
     public interface ICustomerService
     {
+        Task<Result<List<CustomerResponse>>> GetAsync(
+            CancellationToken ct);
         Task<Result<CustomerResponse>> GetByIdAsync(
             long id,
             CancellationToken ct);

@@ -6,6 +6,7 @@ using PetSpa.Modules.Customer.Application.Abstractions;
 using PetSpa.Modules.Customer.Endpoints.Requests;
 using PetSpa.Modules.Customer.Endpoints.Responses;
 using PetSpa.Modules.Customer.Infrastructure.Persistence;
+using PetSpa.Modules.Customer.Domain.Enums;
 using PetSpa.SharedKernel.Application.Abstractions;
 
 using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
@@ -16,6 +17,22 @@ namespace PetSpa.Modules.Customer.Application.Services
         CustomerDbContext db,
         IServiceProvider serviceProvider) : ICustomerService
     {
+        public async Task<Result<List<CustomerResponse>>> GetAsync(CancellationToken ct)
+        {
+            var customer = await db.Customers
+                .Where(x => x.Status == CustomerStatus.ACTIVE)
+                .AsNoTracking()
+                .ProjectToType<CustomerResponse>()
+                .ToListAsync(ct);
+
+            if (customer is null)
+            {
+                return Result<List<CustomerResponse>>.NotFound("Customer not found");
+            }
+
+
+            return Result<List<CustomerResponse>>.Success(customer);
+        }
         public async Task<Result<CustomerResponse>> GetByIdAsync(long id, CancellationToken ct)
         {
             var customer = await db.Customers

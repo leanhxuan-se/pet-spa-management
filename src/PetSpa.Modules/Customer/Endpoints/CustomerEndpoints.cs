@@ -15,11 +15,40 @@ internal static class CustomerEndpoints
     {
         var group = app.MapGroup("/api/customer").WithTags("Customers"); // gom nhóm các endpoint liên quan đến customer lại ở swagger
 
+        group.MapGet("", GetCustomersAsync).WithName("GetCustomers").RequireAuthorization();
         group.MapGet("/{id:long}", GetCustomerByIdAsync).WithName("GetCustomerById").RequireAuthorization();
         group.MapPost("/create", CreateCustomerAsync).WithName("CreateCustomer").RequireAuthorization();
         group.MapPut("/update/{id:long}", UpdateCustomerAsync).WithName("UpdateCustomer").RequireAuthorization();
 
         return app;     
+    }
+
+    public static async Task<IResult> GetCustomersAsync(
+        ClaimsPrincipal currentUser,
+        ICustomerService customerService,
+        CancellationToken ct
+    )
+    {
+        //Phần quyền truy cập người dùng hiện tại, ko là recep hoặc manager và ko phải là chính khách hàng đó thì không được phép truy cập 
+        var currentUserId = Convert.ToInt64(currentUser.FindFirst("customer_id")?.Value);
+        var currentRole = currentUser.FindFirst("account_role")?.Value;
+
+        if (currentRole != "MANAGER" && currentRole != "RECEPTIONIST")
+        {
+            return Results.Json(
+                new { message = "Bạn không có quyền xem các thông tin khách hàng" },
+                statusCode: StatusCodes.Status403Forbidden
+            );
+        }
+
+        var Customer = await customerService.GetAsync(ct);
+
+        if (Customer.Status == ResultStatus.NotFound)
+        {
+            return Results.NotFound(new { Message = $"Không tìm thấy khách hàng nào" });
+        }
+
+        return Results.Ok<List<CustomerResponse>>(Customer.Value);
     }
 
     public static async Task<IResult> GetCustomerByIdAsync(
