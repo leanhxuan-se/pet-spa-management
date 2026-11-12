@@ -12,7 +12,7 @@ public static class CategoryEndpoints
 {
     public static IEndpointRouteBuilder MapCategoryEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/resource/categories").WithTags("Categories");
+        var group = app.MapGroup("/api/categories").WithTags("Categories");
         group.MapGet("/", ListAsync).WithName("GetCategories").Produces<IReadOnlyList<CategoryResponse>>();
         group.MapGet("/{id:long}", GetByIdAsync).WithName("GetCategoryById").Produces<CategoryResponse>();
         group.MapPost("/", CreateAsync).WithName("CreateCategory")

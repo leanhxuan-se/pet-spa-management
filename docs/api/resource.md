@@ -5,9 +5,9 @@ Repository hiện chỉ có backend. Frontend có thể dùng ba request sau đ�
 
 | Thao tác trên giao diện | Request |
 |---|---|
-| Bấm nút Danh mục | `GET /api/resource/categories` |
-| Chọn một danh mục | `GET /api/resource/categories/{categoryId}/services` |
-| Chọn một dịch vụ | `GET /api/resource/services/{serviceId}/options` |
+| Bấm nút Danh mục | `GET /api/categories` |
+| Chọn một danh mục | `GET /api/categories/{categoryId}/services` |
+| Chọn một dịch vụ | `GET /api/services/{serviceId}/options` |
 
 Khi đổi danh mục, xóa lựa chọn dịch vụ và tùy chọn cũ trước khi tải danh sách mới.
 Khi đổi dịch vụ, xóa lựa chọn tùy chọn cũ. Frontend cần bỏ qua response của lựa chọn cũ nếu người dùng đã chuyển sang lựa chọn khác.
@@ -16,9 +16,9 @@ Khi đổi dịch vụ, xóa lựa chọn tùy chọn cũ. Frontend cần bỏ q
 
 | Đối tượng | Danh sách | Chi tiết / cập nhật / xóa | Tạo mới |
 |---|---|---|---|
-| Category | `GET /api/resource/categories` | `GET / PUT / DELETE /api/resource/categories/{id}` | `POST /api/resource/categories` |
-| Service | `GET /api/resource/services?categoryId=1&keyword=tắm` | `GET / PUT / DELETE /api/resource/services/{id}` | `POST /api/resource/services` |
-| ServiceOption | `GET /api/resource/service-options?serviceId=1` | `GET / PUT / DELETE /api/resource/service-options/{id}` | `POST /api/resource/service-options` |
+| Category | `GET /api/categories` | `GET / PUT / DELETE /api/categories/{id}` | `POST /api/categories` |
+| Service | `GET /api/services?categoryId=1&keyword=tắm` | `GET / PUT / DELETE /api/services/{id}` | `POST /api/services` |
+| ServiceOption | `GET /api/service-options?serviceId=1` | `GET / PUT / DELETE /api/service-options/{id}` | `POST /api/service-options` |
 
 `categoryId`, `keyword` và `serviceId` là các query parameter tùy chọn.
 Đường dẫn lấy con theo cha tương đương với lọc bằng query parameter.

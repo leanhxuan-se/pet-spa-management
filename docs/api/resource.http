@@ -2,11 +2,11 @@
 @staffToken = paste-staff-bearer-token-here
 
 ### Danh sách danh mục
-GET {{host}}/api/resource/categories
+GET {{host}}/api/categories
 
 ### Tạo danh mục
 # @name createCategory
-POST {{host}}/api/resource/categories
+POST {{host}}/api/categories
 Authorization: Bearer {{staffToken}}
 Content-Type: application/json
 
@@ -20,11 +20,11 @@ Content-Type: application/json
 @categoryId = {{createCategory.response.body.$.id}}
 
 ### Bấm vào danh mục
-GET {{host}}/api/resource/categories/{{categoryId}}/services
+GET {{host}}/api/categories/{{categoryId}}/services
 
 ### Tạo dịch vụ
 # @name createService
-POST {{host}}/api/resource/services
+POST {{host}}/api/services
 Authorization: Bearer {{staffToken}}
 Content-Type: application/json
 
@@ -39,11 +39,11 @@ Content-Type: application/json
 @serviceId = {{createService.response.body.$.id}}
 
 ### Bấm vào dịch vụ
-GET {{host}}/api/resource/services/{{serviceId}}/options
+GET {{host}}/api/services/{{serviceId}}/options
 
 ### Tạo tùy chọn dịch vụ
 # @name createOption
-POST {{host}}/api/resource/service-options
+POST {{host}}/api/service-options
 Authorization: Bearer {{staffToken}}
 Content-Type: application/json
 
@@ -61,7 +61,7 @@ Content-Type: application/json
 @optionId = {{createOption.response.body.$.id}}
 
 ### Cập nhật tùy chọn
-PUT {{host}}/api/resource/service-options/{{optionId}}
+PUT {{host}}/api/service-options/{{optionId}}
 Authorization: Bearer {{staffToken}}
 Content-Type: application/json
 
@@ -76,5 +76,5 @@ Content-Type: application/json
 }
 
 ### Xóa tùy chọn
-DELETE {{host}}/api/resource/service-options/{{optionId}}
+DELETE {{host}}/api/service-options/{{optionId}}
 Authorization: Bearer {{staffToken}}

@@ -12,7 +12,7 @@ public static class ServiceEndpoints
 {
     public static IEndpointRouteBuilder MapServiceEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/resource/services").WithTags("Services");
+        var group = app.MapGroup("/api/services").WithTags("Services");
         group.MapGet("/", ListAsync).WithName("SearchServices").Produces<IReadOnlyList<ServiceResponse>>();
         group.MapGet("/{id:long}", GetByIdAsync).WithName("GetServiceById").Produces<ServiceResponse>();
         group.MapPost("/", CreateAsync).WithName("CreateService")
@@ -21,7 +21,7 @@ public static class ServiceEndpoints
             .Produces<ServiceResponse>().ProducesValidationProblem().RequireStaff();
         group.MapDelete("/{id:long}", DeleteAsync).WithName("DeleteService")
             .Produces(StatusCodes.Status204NoContent).RequireStaff();
-        app.MapGet("/api/resource/categories/{categoryId:long}/services", ListByCategoryAsync)
+        app.MapGet("/api/categories/{categoryId:long}/services", ListByCategoryAsync)
             .WithTags("Services").WithName("GetServicesByCategory").Produces<IReadOnlyList<ServiceResponse>>();
         return app;
     }

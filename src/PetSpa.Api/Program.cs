@@ -67,6 +67,8 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
+
 //Register EndpointMap
 app.MapCustomerModuleEndpoint();
 app.MapOperationModuleEndpoint();

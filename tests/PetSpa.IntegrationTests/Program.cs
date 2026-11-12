@@ -88,7 +88,7 @@ async Task<HttpResponseMessage> Send(HttpMethod method, string path, string? tok
 }
 async Task<string> Login(string kind, string phone, string role, long id)
 {
-    using var response = await Send(HttpMethod.Post, $"/api/{kind}/login", body: new { phone, password });
+    using var response = await Send(HttpMethod.Post, $"/api/auth/{kind}/login", body: new { phone, password });
     Check(response.StatusCode == HttpStatusCode.OK, role + " login succeeds");
     var json = await response.Content.ReadFromJsonAsync<JsonElement>();
     Check(json.EnumerateObject().Select(p => p.Name).Order().SequenceEqual(
@@ -110,9 +110,9 @@ try
     using (var anonymous = await Send(HttpMethod.Get, "/test/staff"))
         Check(anonymous.StatusCode == HttpStatusCode.Unauthorized, "anonymous -> 401");
     var customerToken = await Login("customer", " " + customer.Phone + " ", AccountRoles.Customer, 1);
-    using (var own = await Send(HttpMethod.Get, "/api/customer/1", customerToken))
+    using (var own = await Send(HttpMethod.Get, "/api/customers/1", customerToken))
         Check(own.StatusCode == HttpStatusCode.OK, "customer reads own profile");
-    using (var other = await Send(HttpMethod.Get, "/api/customer/999", customerToken))
+    using (var other = await Send(HttpMethod.Get, "/api/customers/999", customerToken))
         Check(other.StatusCode == HttpStatusCode.Forbidden, "customer cannot read another profile");
     using (var denied = await Send(HttpMethod.Get, "/test/staff", customerToken))
         Check(denied.StatusCode == HttpStatusCode.Forbidden, "customer rejected by resource staff policy");
@@ -131,10 +131,10 @@ try
         using (var manager = await Send(HttpMethod.Get, "/test/manager", token))
             Check(manager.StatusCode == (role is StaffRole.MANAGER or StaffRole.ADMIN ? HttpStatusCode.OK : HttpStatusCode.Forbidden),
                 role + " manager/admin RequireRole policy");
-        using (var profile = await Send(HttpMethod.Get, "/api/customer/999", token))
+        using (var profile = await Send(HttpMethod.Get, "/api/customers/999", token))
             Check(profile.StatusCode == (role == StaffRole.STAFF ? HttpStatusCode.Forbidden : HttpStatusCode.OK),
                 role + " customer management permissions");
-        using (var list = await Send(HttpMethod.Get, "/api/pet/all_pets/999", token))
+        using (var list = await Send(HttpMethod.Get, "/api/customers/999/pets", token))
             Check(list.StatusCode == (role == StaffRole.STAFF ? HttpStatusCode.Forbidden : HttpStatusCode.OK)
                 && (role == StaffRole.STAFF || pets.ListOwner == 999), role + " pet list permissions and requested owner");
         using (var actor = await Send(HttpMethod.Get, "/test/booking-actor", token))
@@ -144,23 +144,23 @@ try
                 role + " booking actor is internal staff");
         }
     }
-    using (var read = await Send(HttpMethod.Get, "/api/pet/1/77", customerToken))
+    using (var read = await Send(HttpMethod.Get, "/api/pets/77", customerToken))
         Check(read.StatusCode == HttpStatusCode.NotFound, "pet read validates actual owner");
-    using (var update = await Send(HttpMethod.Put, "/api/pet/update/1/77", customerToken, new { name = "Not allowed" }))
+    using (var update = await Send(HttpMethod.Put, "/api/pets/77", customerToken, new { name = "Not allowed" }))
         Check(update.StatusCode == HttpStatusCode.NotFound && pets.UpdateCalls == 0, "pet update rejects another owner's pet");
-    using (var create = await Send(HttpMethod.Post, "/api/pet/create/1", customerToken,
+    using (var create = await Send(HttpMethod.Post, "/api/customers/1/pets", customerToken,
         new { customersId = 999, name = "Not allowed", species = Species.DOG }))
         Check(create.StatusCode == HttpStatusCode.BadRequest && pets.CreateCalls == 0, "pet creation rejects mismatched body owner");
     foreach (var kind in new[] { "customer", "staff" })
     {
         var phone = kind == "customer" ? customer.Phone : staff.Phone;
-        using var wrong = await Send(HttpMethod.Post, $"/api/{kind}/login", body: new { phone, password = "wrong" });
+        using var wrong = await Send(HttpMethod.Post, $"/api/auth/{kind}/login", body: new { phone, password = "wrong" });
         Check(wrong.StatusCode == HttpStatusCode.Unauthorized, kind + " wrong password -> 401");
-        using var invalid = await Send(HttpMethod.Post, $"/api/{kind}/login", body: new { phone = "", password });
+        using var invalid = await Send(HttpMethod.Post, $"/api/auth/{kind}/login", body: new { phone = "", password });
         Check(invalid.StatusCode == HttpStatusCode.BadRequest, kind + " invalid input -> 400");
     }
     staff.Role = (StaffRole)999;
-    using (var invalidRole = await Send(HttpMethod.Post, "/api/staff/login", body: new { phone = staff.Phone, password }))
+    using (var invalidRole = await Send(HttpMethod.Post, "/api/auth/staff/login", body: new { phone = staff.Phone, password }))
         Check(invalidRole.StatusCode == HttpStatusCode.Unauthorized, "unknown staff role cannot receive a token");
     var jwt = new JwtSecurityToken("role-tests", "role-tests-client",
         [new Claim("account_type", "staff"), new Claim("account_role", "MANAGER")],
@@ -170,7 +170,7 @@ try
         Check(legacy.StatusCode == HttpStatusCode.Forbidden, "legacy claims cannot bypass the role policy");
     var parts = customerToken.Split('.');
     parts[2] = (parts[2][0] == 'A' ? "B" : "A") + parts[2][1..];
-    using (var tampered = await Send(HttpMethod.Get, "/api/customer/1", string.Join('.', parts)))
+    using (var tampered = await Send(HttpMethod.Get, "/api/customers/1", string.Join('.', parts)))
         Check(tampered.StatusCode == HttpStatusCode.Unauthorized, "tampered JWT -> 401");
     await using var db = new OperationDbContext(new DbContextOptionsBuilder<OperationDbContext>()
         .UseNpgsql("Host=127.0.0.1;Database=unused;Username=synthetic;Password=synthetic").Options);
