@@ -19,19 +19,19 @@ namespace PetSpa.Modules.Customer.Application.Services
     {
         public async Task<Result<List<CustomerResponse>>> GetAsync(CancellationToken ct)
         {
-            var customer = await db.Customers
+            var customers = await db.Customers
                 .Where(x => x.Status == CustomerStatus.ACTIVE)
                 .AsNoTracking()
                 .ProjectToType<CustomerResponse>()
                 .ToListAsync(ct);
 
-            if (customer is null)
+            if (customers is [])
             {
-                return Result<List<CustomerResponse>>.NotFound("Customer not found");
+                return Result<List<CustomerResponse>>.NotFound("Customers not found");
             }
 
 
-            return Result<List<CustomerResponse>>.Success(customer);
+            return Result<List<CustomerResponse>>.Success(customers);
         }
         public async Task<Result<CustomerResponse>> GetByIdAsync(long id, CancellationToken ct)
         {
