@@ -6,6 +6,7 @@ using PetSpa.Modules.Customer.Endpoints.Requests;
 using PetSpa.Modules.Customer.Endpoints.Responses;
 using System.Security.Claims;
 using PetSpa.SharedKernel.Application.Abstractions;
+using PetSpa.SharedKernel.Application.Authentication;
 
 namespace PetSpa.Modules.Customer.Endpoints;
 
@@ -13,11 +14,13 @@ public static class PetEndpoints
 {
     public static IEndpointRouteBuilder MapPetEndpoint(this IEndpointRouteBuilder app)
     {
-        var customerPets = app.MapGroup("/api/customers/{customerId:long}/pets").WithTags("Pets").RequireAuthorization();
+        var customerPets = app.MapGroup("/api/customers/{customerId:long}/pets").WithTags("Pets")
+            .RequireAuthorization(AuthorizationPolicies.AuthenticatedAccount);
         customerPets.MapGet("/", GetAllPetsAsync).WithName("GetAllPets");
         customerPets.MapPost("/", CreatePetAsync).WithName("CreatePet");
 
-        var group = app.MapGroup("/api/pets").WithTags("Pets").RequireAuthorization();
+        var group = app.MapGroup("/api/pets").WithTags("Pets")
+            .RequireAuthorization(AuthorizationPolicies.AuthenticatedAccount);
         group.MapGet("/{id:long}", GetPetByIdAsync).WithName("GetPet");
         group.MapPut("/{id:long}", UpdatePetAsync).WithName("UpdatePet");
 
@@ -36,23 +39,20 @@ public static class PetEndpoints
         {
             return Results.NotFound(pet.Errors);
         }
-        if (!CanAccessCustomer(currentUser, pet.Value!.CustomersId))
+        if (pet.Value is null || !currentUser.CanAccessCustomer(pet.Value.CustomersId))
             return Results.NotFound();
         return Results.Ok<PetResponse>(pet.Value);
     }   
 
     public static async Task<IResult> GetAllPetsAsync(
         long customerId,
-        ClaimsPrincipal currentUSer,
+        ClaimsPrincipal currentUser,
         IPetServices petServices,
         CancellationToken ct
     )
     {
-        //Kiểm tra quyền truy cập của người dùng hiện tại
-        if (!CanAccessCustomer(currentUSer, customerId))
-        {
-            return Results.BadRequest(new { Message = $"Bạn không có quyền truy cập pet của user khác" });
-        }
+        if (!currentUser.CanAccessCustomer(customerId))
+            return Results.Forbid();
 
         var Pets = await petServices.GetAllByIdAsync(customerId, ct);
 
@@ -71,11 +71,8 @@ public static class PetEndpoints
         ClaimsPrincipal currentUser,
         CancellationToken ct)
     {
-        //Kiểm tra quyền truy cập của người dùng hiện tại
-        if (!CanAccessCustomer(currentUser, customerId))
-        {
-            return Results.BadRequest(new { Message = $"Bạn không có quyền tạo pet cho user khác" });
-        }
+        if (!currentUser.CanAccessCustomer(customerId))
+            return Results.Forbid();
 
         if (req.CustomersId != customerId)
             return Results.BadRequest(new { Message = "ID khách hàng trong URL và body phải giống nhau" });
@@ -98,7 +95,7 @@ public static class PetEndpoints
         CancellationToken ct)
     {
         var existing = await petServices.GetByIdAsync(id, ct);
-        if (existing.Status == ResultStatus.NotFound || existing.Value is null || !CanAccessCustomer(currentUser, existing.Value.CustomersId))
+        if (existing.Status == ResultStatus.NotFound || existing.Value is null || !currentUser.CanAccessCustomer(existing.Value.CustomersId))
             return Results.NotFound();
         var pet = await petServices.UpdateAsync(id, req, ct);
 
@@ -115,9 +112,5 @@ public static class PetEndpoints
         }
 
     }
-
-    private static bool CanAccessCustomer(ClaimsPrincipal user, long customerId)
-        => (long.TryParse(user.FindFirst("customer_id")?.Value, out var userId) && userId == customerId)
-            || user.FindFirst("account_role")?.Value is "MANAGER" or "RECEPTIONIST";
 }
 

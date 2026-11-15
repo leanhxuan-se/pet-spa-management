@@ -4,5 +4,6 @@ public enum StaffRole
 {
     STAFF,
     RECEPTIONIST,
-    MANAGER
+    MANAGER,
+    ADMIN
 }

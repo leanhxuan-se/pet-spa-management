@@ -13,7 +13,11 @@ namespace PetSpa.Modules.Customer.Application.Validators
                 .NotEmpty().WithMessage("Họ và tên không được để trống")
                 .MaximumLength(100).WithMessage("Họ và tên tối đa 100 ký tự");
 
+            RuleFor(x => x.Password)
+                .NotEmpty().WithMessage("Mật khẩu không được để trống.");
+
             RuleFor(x => x.Phone)
+                .Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Số điện thoại không được để trống")
                 .Matches(@"^(0[3|5|7|8|9])[0-9]{8}$").WithMessage("Số điện thoại không đúng định dạng")
                 .MustAsync(async (phone, ct) =>

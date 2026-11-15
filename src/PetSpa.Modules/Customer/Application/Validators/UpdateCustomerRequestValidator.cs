@@ -12,6 +12,9 @@ namespace PetSpa.Modules.Customer.Application.Validators
                 .Must(HaveAtLeastOneProperty)
                 .WithMessage("Cần cung cấp ít nhất một thông tin để cập nhật.");
 
+            RuleFor(x => x.Password)
+                .NotEmpty().WithMessage("Mật khẩu không được để trống.")
+                .When(x => x.Password is not null);
 
             When(x => x.FullName is not null, () =>
             {
@@ -75,6 +78,7 @@ namespace PetSpa.Modules.Customer.Application.Validators
                 || req.Phone is not null
                 || req.AvtURL is not null
                 || req.Note is not null
+                || req.Password is not null
                 || req.Status.HasValue;
         }
     }

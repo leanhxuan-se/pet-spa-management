@@ -205,6 +205,7 @@ namespace PetSpa.Modules.Operation.Migrations
                         .HasColumnName("password_hash");
 
                     b.Property<string>("Phone")
+                        .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("phone");
@@ -247,7 +248,7 @@ namespace PetSpa.Modules.Operation.Migrations
                         {
                             t.HasCheckConstraint("ck_staff_gender", "gender IN ('MALE', 'FEMALE', 'OTHER')");
 
-                            t.HasCheckConstraint("ck_staff_role", "role IN ('MANAGER', 'RECEPTIONIST', 'STAFF')");
+                            t.HasCheckConstraint("ck_staff_role", "role IN ('MANAGER', 'RECEPTIONIST', 'STAFF', 'ADMIN')");
 
                             t.HasCheckConstraint("ck_staff_status", "status IN ('ACTIVE', 'INACTIVE')");
                         });

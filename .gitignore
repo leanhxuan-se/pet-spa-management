@@ -1,4 +1,9 @@
 
+# Local documentation, VS Code settings, and tests
+/docs/
+/.vscode/
+/tests/
+
 # .NET build output and packages
 **/bin/
 **/obj/
@@ -13,7 +18,6 @@ artifacts/
 *.userosscache
 *.rsuser
 *.sln.docstates
-
 # Rider / ReSharper
 .idea/
 *.sln.iml

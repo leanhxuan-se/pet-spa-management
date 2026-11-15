@@ -33,7 +33,7 @@ public static class CustomerModule
             });
         });
         // Find UpdateCustomerRequestValidator and regis all the class that inherit AbstractValidator<T>
-        services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>(includeInternalTypes: true);
         services.AddScoped<IValidator<CustomerLoginRequest>, LoginRequestValidator<CustomerLoginRequest>>();
 
         // Đăng ký các interface và dịch vụ liên quan đến CustomerModule

@@ -13,8 +13,8 @@ public static class ServiceEndpoints
     public static IEndpointRouteBuilder MapServiceEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/services").WithTags("Services");
-        group.MapGet("/", ListAsync).WithName("SearchServices").Produces<IReadOnlyList<ServiceResponse>>();
-        group.MapGet("/{id:long}", GetByIdAsync).WithName("GetServiceById").Produces<ServiceResponse>();
+        group.MapGet("/", ListAsync).WithName("SearchServices").Produces<IReadOnlyList<ServiceResponse>>().AllowAnonymous();
+        group.MapGet("/{id:long}", GetByIdAsync).WithName("GetServiceById").Produces<ServiceResponse>().AllowAnonymous();
         group.MapPost("/", CreateAsync).WithName("CreateService")
             .Produces<ServiceResponse>(StatusCodes.Status201Created).ProducesValidationProblem().RequireStaff();
         group.MapPut("/{id:long}", UpdateAsync).WithName("UpdateService")
@@ -22,7 +22,7 @@ public static class ServiceEndpoints
         group.MapDelete("/{id:long}", DeleteAsync).WithName("DeleteService")
             .Produces(StatusCodes.Status204NoContent).RequireStaff();
         app.MapGet("/api/categories/{categoryId:long}/services", ListByCategoryAsync)
-            .WithTags("Services").WithName("GetServicesByCategory").Produces<IReadOnlyList<ServiceResponse>>();
+            .WithTags("Services").WithName("GetServicesByCategory").Produces<IReadOnlyList<ServiceResponse>>().AllowAnonymous();
         return app;
     }
 

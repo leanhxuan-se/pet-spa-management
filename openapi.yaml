@@ -11,6 +11,20 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /health:
+    get:
+      summary: "Kiểm tra API đang hoạt động"
+      security: []
+      responses:
+        "200":
+          description: "API đang hoạt động."
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, enum: [ok] }
   /api/auth/customer/login:
     post:
       tags: ["Đăng nhập"]
@@ -27,7 +41,7 @@ paths:
           description: "Thành công."
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/CustomerLoginResponse" }
+              schema: { $ref: "#/components/schemas/LoginResponse" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
   /api/auth/staff/login:
@@ -46,7 +60,7 @@ paths:
           description: "Thành công."
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/StaffLoginResponse" }
+              schema: { $ref: "#/components/schemas/LoginResponse" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
   /api/customers/{id}:
@@ -56,7 +70,7 @@ paths:
       tags: ["Khách hàng"]
       summary: "Xem hồ sơ khách hàng"
       operationId: GetCustomerById
-      description: "Chủ hồ sơ hoặc nhân viên có vai trò MANAGER hay RECEPTIONIST."
+      description: "Chủ hồ sơ hoặc nhân viên có vai trò receptionist, manager hoặc admin."
       responses:
         "200":
           description: "Thành công."
@@ -70,7 +84,7 @@ paths:
       tags: ["Khách hàng"]
       summary: "Cập nhật hồ sơ khách hàng"
       operationId: UpdateCustomer
-      description: "Chủ hồ sơ hoặc nhân viên có vai trò MANAGER hay RECEPTIONIST."
+      description: "Chủ hồ sơ hoặc nhân viên có vai trò receptionist, manager hoặc admin. Có thể gửi riêng password để đổi mật khẩu. Mật khẩu hiện tại được giữ khi bỏ qua password hoặc gửi null."
       requestBody:
         required: true
         content:
@@ -96,7 +110,7 @@ paths:
       tags: ["Khách hàng"]
       summary: "Tạo hồ sơ khách hàng"
       operationId: CreateCustomer
-      description: "Dành cho MANAGER và RECEPTIONIST. Mã 201 mô tả nhánh thành công của handler. Luồng lưu hiện chưa gán password_hash, trong khi cấu hình database yêu cầu giá trị này."
+      description: "Dành cho receptionist, manager và admin. Mật khẩu là bắt buộc và được băm trước khi lưu."
       requestBody:
         required: true
         content:
@@ -123,7 +137,7 @@ paths:
       tags: ["Thú cưng"]
       summary: "Liệt kê thú cưng của khách hàng"
       operationId: GetAllPets
-      description: "Chủ hồ sơ hoặc nhân viên có vai trò MANAGER hay RECEPTIONIST."
+      description: "Chủ hồ sơ hoặc nhân viên có vai trò receptionist, manager hoặc admin."
       responses:
         "200":
           description: "Thành công."
@@ -132,13 +146,14 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/Pet" }
-        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
     post:
       tags: ["Thú cưng"]
       summary: "Tạo hồ sơ thú cưng"
       operationId: CreatePet
-      description: "Chủ hồ sơ hoặc nhân viên có vai trò MANAGER hay RECEPTIONIST. Dùng cùng ID khách hàng cho customerId trên URL và customersId trong body."
+      description: "Chủ hồ sơ hoặc nhân viên có vai trò receptionist, manager hoặc admin. Dùng cùng ID khách hàng cho customerId trên URL và customersId trong body."
       requestBody:
         required: true
         content:
@@ -157,6 +172,7 @@ paths:
               schema: { $ref: "#/components/schemas/Pet" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/pets/{id}:
     parameters:
@@ -165,21 +181,21 @@ paths:
       tags: ["Thú cưng"]
       summary: "Xem chi tiết thú cưng"
       operationId: GetPet
-      description: "Chủ hồ sơ hoặc nhân viên có vai trò MANAGER hay RECEPTIONIST."
+      description: "Chủ thú cưng hoặc nhân viên có vai trò receptionist, manager hoặc admin. Trả 404 nếu thú cưng thuộc khách hàng khác hoặc role không được phép đọc thú cưng đó."
       responses:
         "200":
           description: "Thành công."
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Pet" }
-        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
     put:
       tags: ["Thú cưng"]
       summary: "Cập nhật hồ sơ thú cưng"
       operationId: UpdatePet
-      description: "Chủ hồ sơ hoặc nhân viên có vai trò MANAGER hay RECEPTIONIST."
+      description: "Chủ thú cưng hoặc nhân viên có vai trò receptionist, manager hoặc admin. Trả 404 nếu tài khoản không được phép sửa thú cưng đó."
       requestBody:
         required: true
         content:
@@ -198,6 +214,7 @@ paths:
               schema: { $ref: "#/components/schemas/Pet" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/categories:
     get:
@@ -217,7 +234,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Tạo danh mục"
       operationId: CreateCategory
-      description: "Yêu cầu token nhân viên có account_type=staff."
+      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
       requestBody:
         required: true
         content:
@@ -257,7 +274,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Cập nhật danh mục"
       operationId: UpdateCategory
-      description: "Yêu cầu token nhân viên có account_type=staff."
+      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
       requestBody:
         required: true
         content:
@@ -278,7 +295,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Xóa danh mục"
       operationId: DeleteCategory
-      description: "Yêu cầu token nhân viên có account_type=staff. Chuyển trạng thái sang DELETED."
+      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
       responses:
         "204":
           description: "Đã xóa."
@@ -309,7 +326,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Tạo dịch vụ"
       operationId: CreateService
-      description: "Yêu cầu token nhân viên có account_type=staff."
+      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
       requestBody:
         required: true
         content:
@@ -350,7 +367,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Cập nhật dịch vụ"
       operationId: UpdateService
-      description: "Yêu cầu token nhân viên có account_type=staff."
+      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
       requestBody:
         required: true
         content:
@@ -371,7 +388,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Xóa dịch vụ"
       operationId: DeleteService
-      description: "Yêu cầu token nhân viên có account_type=staff. Chuyển trạng thái sang DELETED."
+      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
       responses:
         "204":
           description: "Đã xóa."
@@ -400,7 +417,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Tạo tùy chọn dịch vụ"
       operationId: CreateServiceOption
-      description: "Yêu cầu token nhân viên có account_type=staff."
+      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
       requestBody:
         required: true
         content:
@@ -440,7 +457,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Cập nhật tùy chọn dịch vụ"
       operationId: UpdateServiceOption
-      description: "Yêu cầu token nhân viên có account_type=staff."
+      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
       requestBody:
         required: true
         content:
@@ -460,7 +477,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Xóa tùy chọn dịch vụ"
       operationId: DeleteServiceOption
-      description: "Yêu cầu token nhân viên có account_type=staff. Chuyển trạng thái sang DELETED."
+      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
       responses:
         "204":
           description: "Đã xóa."
@@ -659,10 +676,7 @@ components:
     Unauthorized:
       description: "Thiếu token hợp lệ hoặc thông tin đăng nhập không được chấp nhận."
     Forbidden:
-      description: "Tài khoản thiếu quyền thực hiện thao tác."
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Message" }
+      description: "Token hợp lệ về xác thực nhưng claim tài khoản không đạt yêu cầu hoặc tài khoản thiếu quyền."
     NotFound:
       description: "Không tìm thấy đối tượng."
       content:
@@ -682,44 +696,32 @@ components:
       properties:
         phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001" }
         password: { type: string, format: password, minLength: 1, example: example-password }
-    CustomerLoginResponse:
+    LoginResponse:
       type: object
-      required: [accessToken, tokenType, expiresAtUtc, customer]
+      required: [accessToken, tokenType, expiresAtUtc, role, user]
       properties:
         accessToken: { type: string }
         tokenType: { type: string, enum: [Bearer] }
         expiresAtUtc: { type: string, format: date-time }
-        customer:
-          type: object
-          required: [id, fullName, phone]
-          properties:
-            id: { type: integer, format: int64 }
-            fullName: { type: string }
-            phone: { type: string }
-    StaffLoginResponse:
+        role: { type: string, enum: [customer, staff, receptionist, manager, admin] }
+        user: { $ref: "#/components/schemas/LoginUser" }
+    LoginUser:
       type: object
-      required: [accessToken, tokenType, expiresAtUtc, staff]
+      required: [id, fullName, phone]
       properties:
-        accessToken: { type: string }
-        tokenType: { type: string, enum: [Bearer] }
-        expiresAtUtc: { type: string, format: date-time }
-        staff:
-          type: object
-          required: [id, fullName, phone, role]
-          properties:
-            id: { type: integer, format: int64 }
-            fullName: { type: string }
-            phone: { type: string }
-            role: { type: string, enum: [STAFF, RECEPTIONIST, MANAGER] }
+        id: { type: integer, format: int64 }
+        fullName: { type: string }
+        phone: { type: string }
     CreateCustomerRequest:
       type: object
-      required: [fullName, phone]
+      required: [fullName, phone, password]
       properties:
         fullName: { type: string, minLength: 1, maxLength: 100 }
         gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
         dateOfBirth: { type: string, format: date, nullable: true }
         email: { type: string, format: email, nullable: true }
         phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001" }
+        password: { type: string, format: password, minLength: 1, writeOnly: true }
         status: { type: string, enum: [ACTIVE, INACTIVE], default: ACTIVE, description: "Handler hiện tạo khách hàng ở trạng thái ACTIVE." }
     UpdateCustomerRequest:
       type: object
@@ -730,6 +732,7 @@ components:
         dateOfBirth: { type: string, format: date, nullable: true }
         email: { type: string, format: email, nullable: true }
         phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001", nullable: true }
+        password: { type: string, format: password, minLength: 1, writeOnly: true, nullable: true }
         avtURL: { type: string, description: "Handler hiện chưa lưu thay đổi trường này.", nullable: true }
         note: { type: string, nullable: true }
         status: { type: string, enum: [ACTIVE, INACTIVE, null], nullable: true }

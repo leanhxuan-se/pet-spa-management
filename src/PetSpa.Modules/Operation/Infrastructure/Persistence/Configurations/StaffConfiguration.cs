@@ -12,7 +12,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
             Builder.ToTable("staff", table =>
             {
                 table.HasCheckConstraint("ck_staff_gender", "gender IN ('MALE', 'FEMALE', 'OTHER')");
-                table.HasCheckConstraint("ck_staff_role", "role IN ('MANAGER', 'RECEPTIONIST', 'STAFF')");
+                table.HasCheckConstraint("ck_staff_role", "role IN ('MANAGER', 'RECEPTIONIST', 'STAFF', 'ADMIN')");
                 table.HasCheckConstraint("ck_staff_status", "status IN ('ACTIVE', 'INACTIVE')");
             });
 

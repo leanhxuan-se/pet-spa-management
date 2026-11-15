@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using PetSpa.Modules.Resource.Application.Dtos;
+using PetSpa.SharedKernel.Application.Authentication;
 
 namespace PetSpa.Modules.Resource.Endpoints;
 
@@ -17,6 +18,5 @@ internal static class ResourceEndpointResults
         };
 
     public static RouteHandlerBuilder RequireStaff(this RouteHandlerBuilder builder)
-        => builder.RequireAuthorization(policy =>
-            policy.RequireAuthenticatedUser().RequireClaim("account_type", "staff"));
+        => builder.RequireAuthorization(AuthorizationPolicies.StaffOnly);
 }

@@ -14,7 +14,8 @@ namespace PetSpa.Modules.Customer.Application.Services
 {
     internal class CustomerService(
         CustomerDbContext db,
-        IServiceProvider serviceProvider) : ICustomerService
+        IServiceProvider serviceProvider,
+        IPasswordService<CustomerTable> passwordService) : ICustomerService
     {
         public async Task<Result<CustomerResponse>> GetByIdAsync(long id, CancellationToken ct)
         {
@@ -53,6 +54,7 @@ namespace PetSpa.Modules.Customer.Application.Services
 
             };
 
+            customer.PasswordHash = passwordService.HashPassword(customer, req.Password);
             db.Customers.Add(customer);
             await db.SaveChangesAsync(ct);
 
@@ -89,6 +91,11 @@ namespace PetSpa.Modules.Customer.Application.Services
             customer.Phone = string.IsNullOrWhiteSpace(req.Phone) ? customer.Phone : req.Phone.Trim();
             customer.Email = string.IsNullOrWhiteSpace(req.Email) ? customer.Email : req.Email.Trim();
             customer.Note = string.IsNullOrWhiteSpace(req.Note) ? customer.Note : req.Note;
+
+            if (req.Password is not null)
+            {
+                customer.PasswordHash = passwordService.HashPassword(customer, req.Password);
+            }
 
             customer.UpdatedAt = DateTime.UtcNow;
 

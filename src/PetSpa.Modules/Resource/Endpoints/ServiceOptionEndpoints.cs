@@ -13,8 +13,8 @@ public static class ServiceOptionEndpoints
     public static IEndpointRouteBuilder MapServiceOptionEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/service-options").WithTags("Service Options");
-        group.MapGet("/", ListAsync).WithName("GetServiceOptions").Produces<IReadOnlyList<ServiceOptionResponse>>();
-        group.MapGet("/{id:long}", GetByIdAsync).WithName("GetServiceOptionById").Produces<ServiceOptionResponse>();
+        group.MapGet("/", ListAsync).WithName("GetServiceOptions").Produces<IReadOnlyList<ServiceOptionResponse>>().AllowAnonymous();
+        group.MapGet("/{id:long}", GetByIdAsync).WithName("GetServiceOptionById").Produces<ServiceOptionResponse>().AllowAnonymous();
         group.MapPost("/", CreateAsync).WithName("CreateServiceOption")
             .Produces<ServiceOptionResponse>(StatusCodes.Status201Created).ProducesValidationProblem().RequireStaff();
         group.MapPut("/{id:long}", UpdateAsync).WithName("UpdateServiceOption")
@@ -22,7 +22,7 @@ public static class ServiceOptionEndpoints
         group.MapDelete("/{id:long}", DeleteAsync).WithName("DeleteServiceOption")
             .Produces(StatusCodes.Status204NoContent).RequireStaff();
         app.MapGet("/api/services/{serviceId:long}/options", ListByServiceAsync)
-            .WithTags("Service Options").WithName("GetOptionsByService").Produces<IReadOnlyList<ServiceOptionResponse>>();
+            .WithTags("Service Options").WithName("GetOptionsByService").Produces<IReadOnlyList<ServiceOptionResponse>>().AllowAnonymous();
         return app;
     }
 

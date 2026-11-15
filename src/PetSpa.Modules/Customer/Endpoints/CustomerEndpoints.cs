@@ -6,6 +6,7 @@ using PetSpa.Modules.Customer.Endpoints.Requests;
 using PetSpa.Modules.Customer.Endpoints.Responses;
 using System.Security.Claims;
 using PetSpa.SharedKernel.Application.Abstractions;
+using PetSpa.SharedKernel.Application.Authentication;
 
 namespace PetSpa.Modules.Customer.Endpoints;
 
@@ -15,9 +16,12 @@ public static class CustomerEndpoints
     {
         var group = app.MapGroup("/api/customers").WithTags("Customers"); // gom nhóm các endpoint liên quan đến customer lại ở swagger
 
-        group.MapGet("/{id:long}", GetCustomerByIdAsync).WithName("GetCustomerById").RequireAuthorization();
-        group.MapPost("/", CreateCustomerAsync).WithName("CreateCustomer").RequireAuthorization();
-        group.MapPut("/{id:long}", UpdateCustomerAsync).WithName("UpdateCustomer").RequireAuthorization();
+        group.MapGet("/{id:long}", GetCustomerByIdAsync).WithName("GetCustomerById")
+            .RequireAuthorization(AuthorizationPolicies.AuthenticatedAccount);
+        group.MapPost("/", CreateCustomerAsync).WithName("CreateCustomer")
+            .RequireAuthorization(AuthorizationPolicies.CustomerManagement);
+        group.MapPut("/{id:long}", UpdateCustomerAsync).WithName("UpdateCustomer")
+            .RequireAuthorization(AuthorizationPolicies.AuthenticatedAccount);
 
         return app;     
     }
@@ -29,17 +33,8 @@ public static class CustomerEndpoints
         CancellationToken ct
     )
     {
-        //Phần quyền truy cập người dùng hiện tại, ko là recep hoặc manager và ko phải là chính khách hàng đó thì không được phép truy cập 
-        var currentUserId = Convert.ToInt64(currentUser.FindFirst("customer_id")?.Value);
-        var currentRole = currentUser.FindFirst("account_role")?.Value;
-
-        if (currentRole != "MANAGER" && currentRole != "RECEPTIONIST" && currentUserId != id)
-        {
-            return Results.Json(
-                new { message = "Bạn không có quyền xem thông tin khách hàng" },
-                statusCode: StatusCodes.Status403Forbidden
-            );
-        }
+        if (!currentUser.CanAccessCustomer(id))
+            return Results.Forbid();
 
         var Customer = await customerService.GetByIdAsync(id, ct);
 
@@ -53,21 +48,9 @@ public static class CustomerEndpoints
 
     public static async Task<IResult> CreateCustomerAsync(
         CreateCustomerRequest req,
-        ClaimsPrincipal currentUser,
         ICustomerService customerService,
         CancellationToken ct)
     {
-        //Phần quyền truy cập người dùng hiện tại, không phải recep tionist hoặc manager thì không được phép tạo khách hàng
-        var currentRole =  currentUser.FindFirst("account_role")?.Value;
-
-        if(currentRole != "MANAGER" && currentRole != "RECEPTIONIST")
-        {
-            return Results.Json(
-                new { message = "Bạn không có quyền tạo khách hàng" },
-                statusCode: StatusCodes.Status403Forbidden
-            );
-        }
-
         var customer = await customerService.CreateAsync(req, ct);
         
         return customer.ToHttpResult(
@@ -84,14 +67,8 @@ public static class CustomerEndpoints
         ICustomerService customerService,
         CancellationToken ct)
     {
-        //Phần quyền truy cập người dùng hiện tại, ko là recep hoặc manager và ko phải là chính khách hàng đó thì không được phép cập nhật
-        var currentUserId = Convert.ToInt64(currentUser.FindFirst("customer_id")?.Value);
-        var currentRole = currentUser.FindFirst("account_role")?.Value;
-
-        if (currentRole != "MANAGER" && currentRole != "RECEPTIONIST" && currentUserId != id)
-        {
+        if (!currentUser.CanAccessCustomer(id))
             return Results.Forbid();
-        }
 
         var customer = await customerService.UpdateAsync(id, req, ct);
 

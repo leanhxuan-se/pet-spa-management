@@ -25,8 +25,10 @@ Khi đổi dịch vụ, xóa lựa chọn tùy chọn cũ. Frontend cần bỏ q
 Cha tồn tại nhưng chưa có con trả về `200 []`; cha không tồn tại hoặc đã xóa trả về `404`.
 
 Các endpoint GET có thể đọc công khai.
-POST, PUT và DELETE yêu cầu bearer token có claim `account_type=staff`.
-Token khách hàng không có quyền ghi.
+POST, PUT và DELETE dùng policy `StaffOnly`. Bearer token cần định danh nhân viên
+hợp lệ và role `staff`, `receptionist`, `manager` hoặc `admin`.
+Thiếu token hoặc token không xác thực được trả 401. Tài khoản khách hàng và token
+thiếu claim theo chuẩn mới trả 403 khi gọi API ghi.
 
 ## Payload
 
@@ -98,7 +100,7 @@ Tên danh mục vẫn phải duy nhất, kể cả khi danh mục cũ đã xóa,
 | 204 | Xóa thành công |
 | 400 | ValidationProblem với lỗi theo trường, hoặc JSON không hợp lệ |
 | 401 | Thiếu xác thực cho thao tác ghi |
-| 403 | Tài khoản không phải nhân viên |
+| 403 | Claim tài khoản không hợp lệ hoặc role thiếu quyền ghi |
 | 404 | Đối tượng hoặc cha không tồn tại/đã xóa |
 | 409 | Trùng tên danh mục |
 

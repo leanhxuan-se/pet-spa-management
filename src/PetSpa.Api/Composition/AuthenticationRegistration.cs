@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PetSpa.Api.Authentication;
 using PetSpa.Api.Configuration;
 using PetSpa.SharedKernel.Application.Abstractions;
+using PetSpa.SharedKernel.Application.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -49,6 +50,9 @@ public static class AuthenticationRegistration
         bearerOptions.TokenValidationParameters =
             new TokenValidationParameters
             {
+                NameClaimType = AuthClaimTypes.Subject,
+                RoleClaimType = AuthClaimTypes.Role,
+
                 ValidateIssuer = true,
                 ValidIssuer = jwt.Issuer,
 
@@ -64,7 +68,6 @@ public static class AuthenticationRegistration
             };
     });
 
-        services.AddAuthorization();
         return services;
     }
 }

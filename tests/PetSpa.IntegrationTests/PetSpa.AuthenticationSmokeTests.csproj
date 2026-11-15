@@ -14,6 +14,5 @@
     <Compile Include="../../src/PetSpa.Modules/Customer/Domain/Repositories/ICustomerRepository.cs" Link="Source/ICustomerRepository.cs" />
     <Compile Include="../../src/PetSpa.Modules/Customer/Application/Services/CustomerLoginService.cs" Link="Source/CustomerLoginService.cs" />
     <Compile Include="../../src/PetSpa.Modules/Customer/Endpoints/CustomerAuthEndpoints.cs" Link="Source/CustomerAuthEndpoints.cs" />
-    <Compile Include="../../src/PetSpa.Modules/Resource/Endpoints/ResourceEndpointResults.cs" Link="Source/ResourceEndpointResults.cs" />
   </ItemGroup>
 </Project>

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Booking.Application.Dtos;
 using PetSpa.Modules.Booking.Application.Services;
+using PetSpa.SharedKernel.Application.Authentication;
 
 namespace PetSpa.Modules.Booking.Endpoints;
 
@@ -11,7 +12,8 @@ public static class BookingEndpoints
 {
     public static IEndpointRouteBuilder MapBookingEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/bookings").WithTags("Bookings").RequireAuthorization();
+        var group = app.MapGroup("/api/bookings").WithTags("Bookings")
+            .RequireAuthorization(AuthorizationPolicies.AuthenticatedAccount);
         group.MapGet("/{id:long}", GetByIdAsync).WithName("GetBookingById").Produces<BookingDto>();
         group.MapPost("/", CreateAsync).WithName("CreateBooking")
             .Produces<BookingDto>(StatusCodes.Status201Created).ProducesValidationProblem();
@@ -40,9 +42,7 @@ public static class BookingEndpoints
         => ToHttpResult(await service.UpdateAsync(id, command, Actor(user), ct), Results.Ok);
 
     private static BookingActor Actor(ClaimsPrincipal user)
-        => new(user.HasClaim("account_type", "staff"),
-            user.HasClaim("account_type", "customer") && long.TryParse(user.FindFirst("customer_id")?.Value, out var id) && id > 0
-                ? id : null);
+        => new(user.HasStaffRole(), user.GetCustomerId());
 
     private static IResult ToHttpResult(BookingResult<BookingDto> result, Func<BookingDto, IResult> onSuccess)
         => result.Status switch

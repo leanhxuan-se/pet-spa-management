@@ -4,10 +4,11 @@ namespace PetSpa.Modules.Customer.Endpoints.Requests
 {
     public record CreateCustomerRequest(
         string FullName,
-        Gender? Gender,
         string Phone,
-        DateOnly? DateOfBirth,
-        string? Email,
+        string Password,
+        Gender? Gender = null,
+        DateOnly? DateOfBirth = null,
+        string? Email = null,
         CustomerStatus Status = CustomerStatus.ACTIVE
    );
 }

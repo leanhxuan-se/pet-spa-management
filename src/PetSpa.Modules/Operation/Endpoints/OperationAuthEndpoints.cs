@@ -6,8 +6,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Operation.Application.Services;
 using PetSpa.Modules.Operation.Endpoints.Requests;
-using PetSpa.Modules.Operation.Endpoints.Responses;
 using PetSpa.SharedKernel.Application.Abstractions;
+using PetSpa.SharedKernel.Application.Authentication;
+using PetSpa.SharedKernel.Application.Dtos;
 
 namespace PetSpa.Modules.Operation.Endpoints;
 
@@ -19,6 +20,9 @@ public static class OperationAuthEndpoints
         app.MapPost("/api/auth/staff/login", LoginAsync)
             .WithTags("Staffs")
             .WithName("StaffLogin")
+            .Produces<LoginResponse>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status401Unauthorized)
             .AllowAnonymous();
 
         return app;
@@ -54,19 +58,21 @@ public static class OperationAuthEndpoints
         var staffId = staff.Id.ToString(
             CultureInfo.InvariantCulture);
 
+        const string accountType = AccountTypes.Staff;
         var token = tokenService.Generate(
         [
-            new Claim("sub", $"staff:{staffId}"),
-            new Claim("account_type", "staff"),
-            new Claim("account_role", staff.Role.ToString()),
-            new Claim("staff_id", staffId)
+            new Claim(AuthClaimTypes.Subject, $"{accountType}:{staffId}"),
+            new Claim(AuthClaimTypes.Role, staff.Role),
+            new Claim(AuthClaimTypes.AccountType, accountType),
+            new Claim(AuthClaimTypes.StaffId, staffId)
         ]);
 
         // 4. Trả response cho client.
-        return Results.Ok(new StaffLoginResponse(
+        return Results.Ok(new LoginResponse(
             token.AccessToken,
             "Bearer",
             token.ExpiresAtUtc,
-            staff));
+            staff.Role,
+            new LoginUser(staff.Id, staff.FullName, staff.Phone)));
     }
 }

@@ -6,8 +6,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Customer.Application.Services;
 using PetSpa.Modules.Customer.Endpoints.Requests;
-using PetSpa.Modules.Customer.Endpoints.Responses;
 using PetSpa.SharedKernel.Application.Abstractions;
+using PetSpa.SharedKernel.Application.Authentication;
+using PetSpa.SharedKernel.Application.Dtos;
 
 namespace PetSpa.Modules.Customer.Endpoints;
 
@@ -19,6 +20,9 @@ public static class CustomerAuthEndpoints
         app.MapPost("/api/auth/customer/login", LoginAsync)
             .WithTags("Customers")
             .WithName("CustomerLogin")
+            .Produces<LoginResponse>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status401Unauthorized)
             .AllowAnonymous();
 
         return app;
@@ -54,18 +58,22 @@ public static class CustomerAuthEndpoints
         var customerId = customer.Id.ToString(
             CultureInfo.InvariantCulture);
 
+        const string role = AccountRoles.Customer;
+        const string accountType = AccountTypes.Customer;
         var token = tokenService.Generate(
         [
-            new Claim("sub", $"customer:{customerId}"),
-            new Claim("account_type", "customer"),
-            new Claim("customer_id", customerId)
+            new Claim(AuthClaimTypes.Subject, $"{accountType}:{customerId}"),
+            new Claim(AuthClaimTypes.Role, role),
+            new Claim(AuthClaimTypes.AccountType, accountType),
+            new Claim(AuthClaimTypes.CustomerId, customerId)
         ]);
 
         // 4. Trả response cho client.
-        return Results.Ok(new CustomerLoginResponse(
+        return Results.Ok(new LoginResponse(
             token.AccessToken,
             "Bearer",
             token.ExpiresAtUtc,
-            customer));
+            role,
+            new LoginUser(customer.Id, customer.FullName, customer.Phone)));
     }
 }

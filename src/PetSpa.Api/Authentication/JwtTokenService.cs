@@ -17,7 +17,7 @@ public class JwtTokenService(
 
     public TokenResult Generate(IEnumerable<Claim> claims)
     {
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds()).UtcDateTime;
         var expiresAt = now.AddMinutes(options.AccessTokenMinutes);
 
         // Chuyển khóa cấu hình thành dạng thư viện có thể sử dụng.
