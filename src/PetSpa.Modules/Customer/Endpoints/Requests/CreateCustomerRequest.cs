@@ -1,4 +1,5 @@
-﻿using PetSpa.Modules.Customer.Domain.Enums;
+﻿// Định nghĩa dữ liệu đầu vào CreateCustomerRequest.
+using PetSpa.Modules.Customer.Domain.Enums;
 
 namespace PetSpa.Modules.Customer.Endpoints.Requests
 {

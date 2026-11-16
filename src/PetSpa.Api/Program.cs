@@ -1,3 +1,4 @@
+// Khởi tạo ứng dụng, dịch vụ và các endpoint API.
 using PetSpa.Api.Composition;
 using PetSpa.Modules.Billing;
 using PetSpa.Modules.Booking;

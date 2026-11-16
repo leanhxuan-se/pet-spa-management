@@ -1,4 +1,5 @@
-﻿
+﻿// Định nghĩa thực thể ServiceSession và dữ liệu liên quan.
+
 using PetSpa.Modules.Operation.Domain.Enums;
 
 namespace PetSpa.Modules.Operation.Domain.Entities

@@ -1,3 +1,4 @@
+// Định nghĩa các giá trị ResourceStatus.
 using System.Text.Json.Serialization;
 
 namespace PetSpa.Modules.Resource.Domain.Enums;

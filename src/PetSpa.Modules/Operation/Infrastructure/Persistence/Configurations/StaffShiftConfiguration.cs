@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Cấu hình ánh xạ cơ sở dữ liệu cho StaffShift.
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Operation.Domain.Entities;
 using PetSpa.Modules.Operation.Domain.Enums;
@@ -7,21 +8,26 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 {
     public class StaffShiftConfiguration : IEntityTypeConfiguration<StaffShift>
     {
+        // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<StaffShift> Builder)
         {
+            // 1. Cấu hình tên bảng và các ràng buộc.
             Builder.ToTable("staff_shift", table =>
             {
                 table.HasCheckConstraint("ck_staff_shift_status", "status IN ('SCHEDULED', 'COMPLETED', 'CANCELLED')");
                 table.HasCheckConstraint("ck_staff_shift_time_order", "end_time > start_time");
             });
 
+            // 2. Cấu hình khóa chính.
             Builder.HasKey(x => x.Id);
 
+            // 3. Cấu hình các cột và kiểu dữ liệu.
             Builder.Property(x => x.Id)
                 .HasColumnName("id")
                 .HasColumnType("bigint")
                 .UseIdentityByDefaultColumn();
 
+            // 4. Cấu hình quan hệ hoặc chỉ mục.
             Builder.HasIndex(x => x.StaffId);
             Builder.HasIndex(x => x.ShiftDate);
             Builder.HasIndex(x => new { x.StaffId, x.ShiftDate });

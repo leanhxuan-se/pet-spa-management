@@ -1,3 +1,4 @@
+// Đăng ký và kết nối các thành phần của CustomerModule.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PetSpa.Modules.Customer.Infrastructure.Persistence;
@@ -19,8 +20,10 @@ namespace PetSpa.Modules.Customer;
 
 public static class CustomerModule
 {
+    // Đăng ký các dịch vụ của module khách hàng.
     public static IServiceCollection AddCustomerModule(this IServiceCollection services, string ConnectionString)
     {
+        // 1. Đăng ký kết nối cơ sở dữ liệu.
         services.AddDbContext<CustomerDbContext>(options =>
         {
             options.UseNpgsql(ConnectionString, npgsql =>
@@ -29,11 +32,12 @@ public static class CustomerModule
                 npgsql.MigrationsAssembly("PetSpa.Modules.Customer");
 
                 // Seperate migrations history
-                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "Customer");
+                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "customer");
             });
         });
         // Find UpdateCustomerRequestValidator and regis all the class that inherit AbstractValidator<T>
         services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>(includeInternalTypes: true);
+        // 2. Đăng ký các dịch vụ cần sử dụng.
         services.AddScoped<IValidator<CustomerLoginRequest>, LoginRequestValidator<CustomerLoginRequest>>();
 
         // Đăng ký các interface và dịch vụ liên quan đến CustomerModule
@@ -46,6 +50,7 @@ public static class CustomerModule
         return services;
     }
 
+    // Đăng ký các endpoint của module khách hàng.
     public static IEndpointRouteBuilder MapCustomerModuleEndpoint(this IEndpointRouteBuilder app) // Register Module's Endpoints
     {
         //....

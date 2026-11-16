@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Cấu hình ánh xạ cơ sở dữ liệu cho Pet.
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Customer.Domain.Entities;
 
@@ -6,12 +7,16 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
 {
     internal class PetConfiguration: IEntityTypeConfiguration<Pet>
     {
+        // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<Pet> builder)
         {
+            // 1. Cấu hình tên bảng và các ràng buộc.
             builder.ToTable("pet");
 
+            // 2. Cấu hình khóa chính.
             builder.HasKey(x => x.Id);
 
+            // 3. Cấu hình các cột và kiểu dữ liệu.
             builder.Property(x => x.CustomersId)
                 .HasColumnName("customer_id");
 

@@ -1,3 +1,4 @@
+// Kiểm thử các chức năng và quyền truy cập của API.
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
@@ -111,12 +112,14 @@ await app.StartAsync();
 var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
 using var client = new HttpClient { BaseAddress = new Uri(address) };
 var checks = 0;
+// Kiểm tra điều kiện và báo lỗi nếu không đạt.
 void Check(bool condition, string description)
 {
     if (!condition) throw new InvalidOperationException("FAIL: " + description);
     checks++;
     Console.WriteLine("PASS: " + description);
 }
+// Gửi yêu cầu HTTP kiểm thử.
 async Task<HttpResponseMessage> Send(HttpMethod method, string path, string? token = null, object? body = null)
 {
     using var request = new HttpRequestMessage(method, path);
@@ -124,6 +127,7 @@ async Task<HttpResponseMessage> Send(HttpMethod method, string path, string? tok
     if (body != null) request.Content = JsonContent.Create(body);
     return await client.SendAsync(request);
 }
+// Đăng nhập và kiểm tra thông tin token trả về.
 async Task<string> Login(string kind, string phone, string role, long id)
 {
     using var response = await Send(HttpMethod.Post, $"/api/auth/{kind}/login", body: new { phone, password });
@@ -148,6 +152,7 @@ async Task<string> Login(string kind, string phone, string role, long id)
     return token;
 }
 
+// Tạo JWT dùng trong kiểm thử.
 string IssueTestToken(IEnumerable<Claim> claims, string issuer = "role-tests",
     string audience = "role-tests-client", bool expired = false)
 {
@@ -178,6 +183,7 @@ try
         Check(openApi.StatusCode == HttpStatusCode.OK, "generated OpenAPI is public");
         var document = await openApi.Content.ReadFromJsonAsync<JsonElement>();
         var paths = document.GetProperty("paths");
+        // Lấy tham chiếu schema đăng nhập trong OpenAPI.
         string LoginSchemaRef(string kind)
         {
             var login = paths.GetProperty($"/api/auth/{kind}/login").GetProperty("post");
@@ -335,6 +341,7 @@ try
     };
     using (var legacy = await Send(HttpMethod.Get, "/test/staff", IssueTestToken(legacyClaims)))
         Check(legacy.StatusCode == HttpStatusCode.Forbidden, "legacy claims cannot bypass the role policy");
+    // Tạo bộ claim nhân viên để kiểm thử.
     Claim[] StaffClaims(string role = "staff", string accountType = "staff", string id = "1", string sub = "staff:1") =>
         [new("role", role), new("account_type", accountType), new("staff_id", id), new("sub", sub)];
     var malformedAccounts = new (string Description, Claim[] Claims)[]
@@ -390,13 +397,17 @@ finally { await app.StopAsync(); }
 sealed class FakeCustomers(Customer account) : ICustomerRepository
 {
     public int SaveCalls { get; private set; }
+    // Tìm tài khoản theo số điện thoại.
     public Task<Customer?> GetByPhoneAsync(string phone, CancellationToken ct) => Task.FromResult(phone == account.Phone ? account : null);
+    // Ghi nhận số lần lưu trong dữ liệu giả.
     public Task SaveAsync(CancellationToken ct) { SaveCalls++; return Task.CompletedTask; }
 }
 sealed class FakeStaffs(Staff account) : IStaffRepository
 {
     public int SaveCalls { get; private set; }
+    // Tìm tài khoản theo số điện thoại.
     public Task<Staff?> GetByPhoneAsync(string phone, CancellationToken ct) => Task.FromResult(phone == account.Phone ? account : null);
+    // Ghi nhận số lần lưu trong dữ liệu giả.
     public Task SaveAsync(CancellationToken ct) { SaveCalls++; return Task.CompletedTask; }
 }
 sealed class FakePets : IPetServices
@@ -404,12 +415,17 @@ sealed class FakePets : IPetServices
     public long? ListOwner { get; private set; }
     public int UpdateCalls { get; private set; }
     public int CreateCalls { get; private set; }
+    // Tạo dữ liệu thú cưng mẫu.
     static PetResponse Pet(long id, long owner) => new(id, owner, "Pet", Species.DOG, null, null, null, null, PetStatus.ACTIVE, null);
+    // Tìm đối tượng theo mã.
     public Task<Result<PetResponse>> GetByIdAsync(long id, CancellationToken ct) => Task.FromResult(Result<PetResponse>.Success(Pet(id, 999)));
+    // Lấy danh sách theo mã liên quan.
     public Task<Result<List<PetResponse>>> GetAllByIdAsync(long id, CancellationToken ct)
     { ListOwner = id; return Task.FromResult(Result<List<PetResponse>>.Success([])); }
+    // Tạo đối tượng mới.
     public Task<Result<PetResponse>> CreateAsync(CreatePetRequest req, CancellationToken ct)
     { CreateCalls++; return Task.FromResult(Result<PetResponse>.Success(Pet(78, req.CustomersId))); }
+    // Cập nhật đối tượng.
     public Task<Result<PetResponse>> UpdateAsync(long id, UpdatePetRequest req, CancellationToken ct)
     { UpdateCalls++; return Task.FromResult(Result<PetResponse>.Success(Pet(id, 999))); }
 }
@@ -417,10 +433,14 @@ sealed class FakeCustomerService : ICustomerService
 {
     public long? LastUpdatedId { get; private set; }
     public int CreateCalls { get; private set; }
+    // Tạo dữ liệu khách hàng mẫu.
     static CustomerResponse Customer(long id) => new(id, "Customer", null, null, null, "0900000001", null, null, []);
+    // Tìm đối tượng theo mã.
     public Task<Result<CustomerResponse>> GetByIdAsync(long id, CancellationToken ct) => Task.FromResult(Result<CustomerResponse>.Success(Customer(id)));
+    // Tạo đối tượng mới.
     public Task<Result<CustomerResponse>> CreateAsync(CreateCustomerRequest req, CancellationToken ct)
     { CreateCalls++; return Task.FromResult(Result<CustomerResponse>.Success(Customer(999))); }
+    // Cập nhật đối tượng.
     public Task<Result<CustomerResponse>> UpdateAsync(long id, UpdateCustomerRequest req, CancellationToken ct)
     { LastUpdatedId = id; return Task.FromResult(Result<CustomerResponse>.Success(Customer(id))); }
 }
@@ -434,20 +454,26 @@ sealed class FakeBookings : IBookingRepository
     };
 
     public int SaveCalls { get; private set; }
+    // Tìm đối tượng theo mã.
     public Task<Booking?> GetByIdAsync(long id, CancellationToken ct) => Task.FromResult(records.GetValueOrDefault(id));
+    // Thêm đối tượng mới.
     public void Add(Booking booking) => records.Add(booking.Id = records.Count + 1, booking);
+    // Xóa chi tiết lịch hẹn.
     public void RemoveDetail(BookingDetail detail) { }
+    // Ghi nhận số lần lưu trong dữ liệu giả.
     public Task SaveChangesAsync(CancellationToken ct) { SaveCalls++; return Task.CompletedTask; }
 }
 
 sealed class FakeCustomerModule : ICustomerModule
 {
+    // Kiểm tra thú cưng thuộc khách hàng.
     public Task<bool> PetBelongsToCustomerAsync(long petId, long customerId, CancellationToken ct) =>
         Task.FromResult((petId, customerId) is (10, 1) or (20, 999));
 }
 
 sealed class FakeResourceModule : IResourceModule
 {
+    // Lấy các tùy chọn dịch vụ đang hoạt động.
     public Task<IReadOnlyList<BookableServiceOption>> GetActiveServiceOptionsAsync(
         IReadOnlyCollection<long> ids, CancellationToken ct) =>
         Task.FromResult<IReadOnlyList<BookableServiceOption>>([new(1, 100_000)]);
@@ -456,9 +482,14 @@ sealed class FakeResourceModule : IResourceModule
 sealed class FakeCategories : ICategoryRepository
 {
     public int AddCalls { get; private set; }
+    // Lấy danh sách đối tượng.
     public Task<IReadOnlyList<Category>> ListAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<Category>>([]);
+    // Tìm đối tượng theo mã.
     public Task<Category?> GetByIdAsync(long id, CancellationToken ct) => Task.FromResult<Category?>(null);
+    // Kiểm tra tên đã tồn tại.
     public Task<bool> NameExistsAsync(string name, long? exceptId, CancellationToken ct) => Task.FromResult(false);
+    // Thêm đối tượng mới.
     public void Add(Category category) => category.Id = ++AddCalls;
+    // Giả lập lưu thay đổi thành công.
     public Task<bool> TrySaveChangesAsync(CancellationToken ct) => Task.FromResult(true);
 }

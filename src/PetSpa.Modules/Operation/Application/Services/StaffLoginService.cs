@@ -1,3 +1,4 @@
+// Xử lý nghiệp vụ và cung cấp dịch vụ StaffLoginService.
 using PetSpa.SharedKernel.Application.Abstractions;
 using PetSpa.SharedKernel.Application.Authentication;
 using PetSpa.Modules.Operation.Application.Dtos;
@@ -11,6 +12,7 @@ public class StaffLoginService(
     IStaffRepository staffs,
     IPasswordService<Staff> passwordService)
 {
+    // Xác thực thông tin đăng nhập.
     public async Task<StaffLoginResult?> LoginAsync(
         string phone,
         string password,

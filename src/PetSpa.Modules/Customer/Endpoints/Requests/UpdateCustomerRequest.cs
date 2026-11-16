@@ -1,4 +1,5 @@
-﻿using PetSpa.Modules.Customer.Domain.Entities;
+﻿// Định nghĩa dữ liệu đầu vào UpdateCustomerRequest.
+using PetSpa.Modules.Customer.Domain.Entities;
 using PetSpa.Modules.Customer.Domain.Enums;
 
 namespace PetSpa.Modules.Customer.Endpoints.Requests

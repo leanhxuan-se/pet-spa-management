@@ -1,3 +1,4 @@
+// Đăng ký và cấu hình thành phần AuthenticationRegistration.
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,8 +17,10 @@ namespace PetSpa.Api.Composition;
 
 public static class AuthenticationRegistration
 {
+    // Đăng ký dịch vụ xác thực và cấu hình JWT.
     public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration)
     {
+        // 1. Đọc và kiểm tra cấu hình JWT.
         services.AddOptions<JwtOptions>()
             .Bind(configuration.GetSection("Jwt"))
             .Validate(
@@ -35,11 +38,14 @@ public static class AuthenticationRegistration
                 "Jwt:SigningKey phải có ít nhất 32 byte khi đọc bằng UTF-8.")
             .ValidateOnStart();
 
+        // 2. Đăng ký các dịch vụ cần sử dụng.
         services.AddScoped(typeof(IPasswordHasher<>), typeof(PasswordHasher<>));
         services.AddScoped(typeof(IPasswordService<>), typeof(IdentityPasswordService<>));
         services.AddSingleton<ITokenService, JwtTokenService>();
+        // 3. Đăng ký xác thực bằng JWT.
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
 
+        // 4. Cấu hình kiểm tra token khi nhận yêu cầu.
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
         .Configure<IOptions<JwtOptions>>((bearerOptions, jwtOptions) =>
     {

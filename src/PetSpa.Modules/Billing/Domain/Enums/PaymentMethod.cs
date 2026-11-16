@@ -1,3 +1,4 @@
+// Định nghĩa các giá trị PaymentMethod.
 namespace PetSpa.Modules.Billing.Domain.Enums;
 
 public enum PaymentMethod

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Cấu hình ánh xạ cơ sở dữ liệu cho ServiceOption.
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Resource.Domain.Entities;
 using PetSpa.Modules.Resource.Domain.Enums;
@@ -7,8 +8,10 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
 {
     public class ServiceOptionConfiguration : IEntityTypeConfiguration<ServiceOption>
     {
+        // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<ServiceOption> builder)
         {
+            // 1. Cấu hình tên bảng và các ràng buộc.
             builder.ToTable("service_options", "resource", table =>
             {
                 table.HasCheckConstraint("ck_service_options_status", "status IN ('ACTIVE', 'INACTIVE')");
@@ -20,8 +23,10 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
                 table.HasCheckConstraint("ck_service_options_unit_price", "unit_price >= 0");
             });
 
+            // 2. Cấu hình khóa chính.
             builder.HasKey(x => x.Id);
 
+            // 3. Cấu hình các cột và kiểu dữ liệu.
             builder.Property(x => x.Status)
                 .HasColumnName("status")
                 .HasConversion<string>()
@@ -34,6 +39,7 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Configurations
                 .HasColumnType("bigint")
                 .UseIdentityByDefaultColumn();
 
+            // 4. Cấu hình quan hệ hoặc chỉ mục.
             builder.HasIndex(x => x.ServiceId);
 
             builder.Property(x => x.ServiceId)

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Cấu hình ánh xạ cơ sở dữ liệu cho BookingDetail.
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Booking.Domain.Entities;
 using PetSpa.Modules.Booking.Domain.Enums;
@@ -7,8 +8,10 @@ namespace PetSpa.Modules.Booking.Infrastructure.Persistence.Configurations
 {
     public class BookingDetailConfiguration: IEntityTypeConfiguration<BookingDetail>
     {
+        // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<BookingDetail> Builder)
         {
+            // 1. Cấu hình tên bảng và các ràng buộc.
             Builder.ToTable("booking_details", table =>
             {
                 table.HasCheckConstraint("ck_booking_details_status",
@@ -16,8 +19,10 @@ namespace PetSpa.Modules.Booking.Infrastructure.Persistence.Configurations
                 table.HasCheckConstraint("ck_booking_details_unit_price", "unit_price >= 0");
             });
 
+            // 2. Cấu hình khóa chính.
             Builder.HasKey(x => x.Id);
 
+            // 3. Cấu hình các cột và kiểu dữ liệu.
             Builder.Property(x => x.Id)
                 .HasColumnName("id")
                 .UseIdentityByDefaultColumn();

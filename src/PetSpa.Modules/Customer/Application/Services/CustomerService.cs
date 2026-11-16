@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿// Xử lý nghiệp vụ và cung cấp dịch vụ CustomerService.
+using FluentValidation;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,8 +18,10 @@ namespace PetSpa.Modules.Customer.Application.Services
         IServiceProvider serviceProvider,
         IPasswordService<CustomerTable> passwordService) : ICustomerService
     {
+        // Tìm đối tượng theo mã.
         public async Task<Result<CustomerResponse>> GetByIdAsync(long id, CancellationToken ct)
         {
+            // 1. Lấy thông tin khách hàng từ cơ sở dữ liệu.
             var customer = await db.Customers
                 .Where(x => x.Id == id)
                 .AsNoTracking()
@@ -31,11 +34,14 @@ namespace PetSpa.Modules.Customer.Application.Services
             }
 
 
+            // 2. Trả kết quả xử lý.
             return Result<CustomerResponse>.Success(customer);
         }
 
+        // Tạo đối tượng mới.
         public async Task<Result<CustomerResponse>> CreateAsync(CreateCustomerRequest req, CancellationToken ct)
         {
+            // 1. Kiểm tra dữ liệu đầu vào.
             var validator = serviceProvider.GetRequiredService<IValidator<CreateCustomerRequest>>();
             var validation = await validator.ValidateAsync(req, ct);
 
@@ -44,6 +50,7 @@ namespace PetSpa.Modules.Customer.Application.Services
                 return Result<CustomerResponse>.ValidationFailed(validation.ToDictionary());
             }
 
+            // 2. Tạo thông tin khách hàng mới.
             var customer = new CustomerTable
             {
                 FullName = req.FullName.Trim(),
@@ -54,17 +61,24 @@ namespace PetSpa.Modules.Customer.Application.Services
 
             };
 
+            // 3. Băm mật khẩu trước khi lưu.
             customer.PasswordHash = passwordService.HashPassword(customer, req.Password);
+            // 4. Thêm dữ liệu mới để lưu.
             db.Customers.Add(customer);
+            // 5. Lưu các thay đổi.
             await db.SaveChangesAsync(ct);
 
+            // 6. Chuyển dữ liệu sang dạng trả về.
             var response = customer.Adapt<CustomerResponse>();
 
+            // 7. Trả kết quả xử lý.
             return Result<CustomerResponse>.Success(response);
         }
 
+        // Cập nhật đối tượng.
         public async Task<Result<CustomerResponse>> UpdateAsync(long id, UpdateCustomerRequest req, CancellationToken ct)
         {
+            // 1. Kiểm tra dữ liệu đầu vào.
             var validator = serviceProvider.GetRequiredService<IValidator<UpdateCustomerRequest>>();
             var validation = await validator.ValidateAsync(req, ct);
 
@@ -73,6 +87,7 @@ namespace PetSpa.Modules.Customer.Application.Services
                 return Result<CustomerResponse>.ValidationFailed(validation.ToDictionary());
             }
 
+            // 2. Lấy thông tin khách hàng từ cơ sở dữ liệu.
             var customer = await db.Customers
                 .Include(x => x.Pets)
                 .Where(x => x.Id == id)
@@ -83,6 +98,7 @@ namespace PetSpa.Modules.Customer.Application.Services
                 return Result<CustomerResponse>.NotFound("Customer not found");
             }
 
+            // 3. Cập nhật thông tin khách hàng.
             customer.Gender = req.Gender ?? customer.Gender;
             customer.DateOfBirth = req.DateOfBirth ?? customer.DateOfBirth;
             customer.Status = req.Status ?? customer.Status;
@@ -92,6 +108,7 @@ namespace PetSpa.Modules.Customer.Application.Services
             customer.Email = string.IsNullOrWhiteSpace(req.Email) ? customer.Email : req.Email.Trim();
             customer.Note = string.IsNullOrWhiteSpace(req.Note) ? customer.Note : req.Note;
 
+            // 4. Cập nhật mật khẩu nếu được cung cấp.
             if (req.Password is not null)
             {
                 customer.PasswordHash = passwordService.HashPassword(customer, req.Password);
@@ -99,10 +116,13 @@ namespace PetSpa.Modules.Customer.Application.Services
 
             customer.UpdatedAt = DateTime.UtcNow;
 
+            // 5. Lưu các thay đổi.
             await db.SaveChangesAsync(ct);
 
+            // 6. Chuyển dữ liệu sang dạng trả về.
             var response = customer.Adapt<CustomerResponse>();
 
+            // 7. Trả kết quả xử lý.
             return Result<CustomerResponse>.Success(response);
         }
     }

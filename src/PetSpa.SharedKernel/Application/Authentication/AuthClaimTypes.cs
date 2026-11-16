@@ -1,3 +1,4 @@
+// Định nghĩa hoặc xử lý thông tin xác thực AuthClaimTypes.
 namespace PetSpa.SharedKernel.Application.Authentication;
 
 public static class AuthClaimTypes

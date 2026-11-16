@@ -1,3 +1,4 @@
+// Định nghĩa dữ liệu trao đổi ServiceOptionDto.
 using PetSpa.Modules.Resource.Domain.Enums;
 
 namespace PetSpa.Modules.Resource.Application.Dtos;

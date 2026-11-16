@@ -1,3 +1,4 @@
+// Định nghĩa thực thể Invoice và dữ liệu liên quan.
 using PetSpa.Modules.Billing.Domain.Enums;
 
 namespace PetSpa.Modules.Billing.Domain.Entities;

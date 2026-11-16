@@ -1,3 +1,4 @@
+// Định nghĩa cấu hình JwtOptions.
 namespace PetSpa.Api.Configuration;
 
 public class JwtOptions

@@ -1,4 +1,5 @@
-﻿
+﻿// Định nghĩa thực thể ServiceOption và dữ liệu liên quan.
+
 
 using PetSpa.Modules.Resource.Domain.Enums;
 

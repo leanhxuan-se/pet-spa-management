@@ -1,3 +1,4 @@
+// Định nghĩa dữ liệu đầu vào CustomerLoginRequest.
 using PetSpa.SharedKernel.Application.Abstractions;
 
 namespace PetSpa.Modules.Customer.Endpoints.Requests;

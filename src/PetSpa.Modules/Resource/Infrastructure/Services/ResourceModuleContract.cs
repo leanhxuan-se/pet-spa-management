@@ -1,3 +1,4 @@
+// Xử lý nghiệp vụ và cung cấp dịch vụ ResourceModuleContract.
 using Microsoft.EntityFrameworkCore;
 using PetSpa.Modules.Resource.Contracts;
 using PetSpa.Modules.Resource.Domain.Enums;
@@ -7,6 +8,7 @@ namespace PetSpa.Modules.Resource.Infrastructure.Services;
 
 public sealed class ResourceModuleContract(ResourceDbContext db) : IResourceModule
 {
+    // Lấy các tùy chọn dịch vụ đang hoạt động.
     public async Task<IReadOnlyList<BookableServiceOption>> GetActiveServiceOptionsAsync(
         IReadOnlyCollection<long> ids, CancellationToken ct)
         => await db.ServiceOptions.AsNoTracking()

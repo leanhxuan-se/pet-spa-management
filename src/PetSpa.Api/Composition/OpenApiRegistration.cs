@@ -1,3 +1,4 @@
+// Đăng ký và cấu hình thành phần OpenApiRegistration.
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi;
@@ -10,6 +11,7 @@ public static class OpenApiRegistration
 {
     private const string BearerScheme = "bearerAuth";
 
+    // Đăng ký tài liệu OpenAPI và cấu hình bảo mật.
     public static IServiceCollection AddPetSpaOpenApi(this IServiceCollection services)
     {
         services.AddOpenApi(options =>

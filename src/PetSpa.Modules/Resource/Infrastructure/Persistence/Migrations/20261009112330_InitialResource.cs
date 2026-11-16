@@ -1,4 +1,5 @@
-﻿using System;
+﻿// Migration cập nhật cấu trúc cơ sở dữ liệu.
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -9,6 +10,7 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
     /// <inheritdoc />
     public partial class InitialResource : Migration
     {
+        // Áp dụng thay đổi cơ sở dữ liệu.
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -106,6 +108,7 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
                 column: "service_id");
         }
 
+        // Hoàn tác thay đổi cơ sở dữ liệu.
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {

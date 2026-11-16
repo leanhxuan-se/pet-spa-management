@@ -33,8 +33,10 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Description")
                         .HasColumnType("text")
@@ -42,25 +44,33 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("character varying")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("ACTIVE")
                         .HasColumnName("status");
 
                     b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("category", "resource");
+                    b.ToTable("category", "resource", t =>
+                        {
+                            t.HasCheckConstraint("ck_category_status", "status IN ('ACTIVE', 'INACTIVE')");
+                        });
                 });
 
             modelBuilder.Entity("PetSpa.Modules.Resource.Domain.Entities.Service", b =>
@@ -77,8 +87,10 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
                         .HasColumnName("category_id");
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Description")
                         .HasColumnType("text")
@@ -86,24 +98,35 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("ServiceName")
                         .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("service_name");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("character varying")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("ACTIVE")
                         .HasColumnName("status");
 
                     b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("service", "resource");
+                    b.HasIndex("CategoryId", "ServiceName")
+                        .IsUnique();
+
+                    b.ToTable("service", "resource", t =>
+                        {
+                            t.HasCheckConstraint("ck_service_status", "status IN ('ACTIVE', 'INACTIVE')");
+                        });
                 });
 
             modelBuilder.Entity("PetSpa.Modules.Resource.Domain.Entities.ServiceOption", b =>
@@ -116,19 +139,23 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<int>("DurationMinutes")
                         .HasColumnType("integer")
                         .HasColumnName("duration_minutes");
 
                     b.Property<decimal?>("MaxWeight")
-                        .HasColumnType("numeric")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("numeric(6,2)")
                         .HasColumnName("max_weight");
 
                     b.Property<decimal?>("MinWeight")
-                        .HasColumnType("numeric")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("numeric(6,2)")
                         .HasColumnName("min_weight");
 
                     b.Property<long>("ServiceId")
@@ -138,27 +165,46 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
                     b.Property<string>("Species")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("species");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("character varying")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("ACTIVE")
                         .HasColumnName("status");
 
                     b.Property<decimal>("UnitPrice")
-                        .HasColumnType("numeric")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
                         .HasColumnName("unit_price");
 
                     b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("service_options", "resource");
+                    b.ToTable("service_options", "resource", t =>
+                        {
+                            t.HasCheckConstraint("ck_service_options_duration", "duration_minutes > 0");
+
+                            t.HasCheckConstraint("ck_service_options_max_weight", "max_weight >= 0");
+
+                            t.HasCheckConstraint("ck_service_options_min_weight", "min_weight >= 0");
+
+                            t.HasCheckConstraint("ck_service_options_status", "status IN ('ACTIVE', 'INACTIVE')");
+
+                            t.HasCheckConstraint("ck_service_options_unit_price", "unit_price >= 0");
+
+                            t.HasCheckConstraint("ck_service_options_weight_range", "min_weight IS NULL OR max_weight IS NULL OR max_weight >= min_weight");
+                        });
                 });
 
             modelBuilder.Entity("PetSpa.Modules.Resource.Domain.Entities.Service", b =>
@@ -168,7 +214,7 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_service_Category");
+                        .HasConstraintName("fk_service_category");
 
                     b.Navigation("Category");
                 });
@@ -180,7 +226,7 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_service_option_Service");
+                        .HasConstraintName("fk_service_option_service");
 
                     b.Navigation("Service");
                 });

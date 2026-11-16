@@ -1,3 +1,4 @@
+// Định nghĩa thực thể Payment và dữ liệu liên quan.
 using PetSpa.Modules.Billing.Domain.Enums;
 
 namespace PetSpa.Modules.Billing.Domain.Entities;

@@ -1,3 +1,4 @@
+// Định nghĩa hoặc xử lý thông tin xác thực AccountRoles.
 namespace PetSpa.SharedKernel.Application.Authentication;
 
 public static class AccountRoles

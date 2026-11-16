@@ -1,3 +1,4 @@
+// Đăng ký và kết nối các thành phần của OperationModule.
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using PetSpa.Modules.Operation.Infrastructure.Persistence;
@@ -16,8 +17,10 @@ namespace PetSpa.Modules.Operation;
 
 public static class OperationModule
 {
+    // Đăng ký các dịch vụ của module vận hành.
     public static IServiceCollection AddOperationModule(this IServiceCollection services, string ConnectionString)
     {
+        // 1. Đăng ký kết nối cơ sở dữ liệu.
         services.AddDbContext<OperationDbContext>(options =>
         {
             options.UseNpgsql(ConnectionString, npgsql =>
@@ -28,11 +31,13 @@ public static class OperationModule
             });
         });
 
+        // 2. Đăng ký các dịch vụ cần sử dụng.
         services.AddScoped<IValidator<StaffLoginRequest>, LoginRequestValidator<StaffLoginRequest>>();
         services.AddScoped<IStaffRepository, StaffRepository>();
         services.AddScoped<StaffLoginService>();
         return services;
     }
+     // Đăng ký các endpoint của module vận hành.
      public static IEndpointRouteBuilder MapOperationModuleEndpoint(this IEndpointRouteBuilder app) // Register Operation's Endpoints
     {
         //...

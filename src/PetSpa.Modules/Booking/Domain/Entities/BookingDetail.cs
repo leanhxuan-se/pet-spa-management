@@ -1,4 +1,5 @@
-﻿using PetSpa.Modules.Booking.Domain.Enums;
+﻿// Định nghĩa thực thể BookingDetail và dữ liệu liên quan.
+using PetSpa.Modules.Booking.Domain.Enums;
 
 namespace PetSpa.Modules.Booking.Domain.Entities
 {

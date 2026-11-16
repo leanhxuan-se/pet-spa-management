@@ -1,3 +1,4 @@
+// Định nghĩa hoặc hỗ trợ các endpoint CustomerAuthEndpoints.
 using System.Globalization;
 using System.Security.Claims;
 using FluentValidation;
@@ -14,6 +15,7 @@ namespace PetSpa.Modules.Customer.Endpoints;
 
 public static class CustomerAuthEndpoints
 {
+    // Đăng ký endpoint đăng nhập khách hàng.
     public static IEndpointRouteBuilder MapCustomerAuthEndpoints(
         this IEndpointRouteBuilder app)
     {
@@ -28,6 +30,7 @@ public static class CustomerAuthEndpoints
         return app;
     }
 
+    // Xác thực thông tin đăng nhập.
     private static async Task<IResult> LoginAsync(
         CustomerLoginRequest request,
         IValidator<CustomerLoginRequest> validator,

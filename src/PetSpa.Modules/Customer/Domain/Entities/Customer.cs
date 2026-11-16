@@ -1,4 +1,5 @@
-﻿using PetSpa.Modules.Customer.Domain.Enums;
+﻿// Định nghĩa thực thể Customer và dữ liệu liên quan.
+using PetSpa.Modules.Customer.Domain.Enums;
 
 namespace PetSpa.Modules.Customer.Domain.Entities
 {

@@ -1,3 +1,4 @@
+// Đăng ký và cấu hình thành phần AuthorizationRegistration.
 using Microsoft.AspNetCore.Authorization;
 using PetSpa.SharedKernel.Application.Authentication;
 
@@ -5,6 +6,7 @@ namespace PetSpa.Api.Composition;
 
 public static class AuthorizationRegistration
 {
+    // Đăng ký các chính sách phân quyền.
     public static IServiceCollection AddAuthorizationServices(this IServiceCollection services)
     {
         return services.AddAuthorization(options =>

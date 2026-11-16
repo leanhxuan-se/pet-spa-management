@@ -1,3 +1,4 @@
+// Cấu hình ánh xạ cơ sở dữ liệu cho Payment.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Billing.Domain.Entities;
@@ -6,12 +7,16 @@ namespace PetSpa.Modules.Billing.Infrastructure.Persistence.Configurations;
 
 public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 {
+    // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
     public void Configure(EntityTypeBuilder<Payment> builder)
     {
+        // 1. Cấu hình tên bảng và các ràng buộc.
         builder.ToTable("payment", "billing");
 
+        // 2. Cấu hình khóa chính.
         builder.HasKey(x => x.Id);
 
+        // 3. Cấu hình các cột và kiểu dữ liệu.
         builder.Property(x => x.Id)
             .HasColumnName("id")
             .ValueGeneratedOnAdd();
@@ -57,6 +62,7 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             .HasColumnType("timestamp with time zone")
             .IsRequired();
 
+        // 4. Cấu hình quan hệ hoặc chỉ mục.
         builder.HasIndex(x => x.InvoiceId);
     }
 }

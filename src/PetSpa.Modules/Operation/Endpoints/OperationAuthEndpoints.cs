@@ -1,3 +1,4 @@
+// Định nghĩa hoặc hỗ trợ các endpoint OperationAuthEndpoints.
 using System.Globalization;
 using System.Security.Claims;
 using FluentValidation;
@@ -14,6 +15,7 @@ namespace PetSpa.Modules.Operation.Endpoints;
 
 public static class OperationAuthEndpoints
 {
+    // Đăng ký endpoint đăng nhập nhân viên.
     public static IEndpointRouteBuilder MapOperationAuthEndpoints(
         this IEndpointRouteBuilder app)
     {
@@ -28,6 +30,7 @@ public static class OperationAuthEndpoints
         return app;
     }
 
+    // Xác thực thông tin đăng nhập.
     private static async Task<IResult> LoginAsync(
         StaffLoginRequest request,
         IValidator<StaffLoginRequest> validator,

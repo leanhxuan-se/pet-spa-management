@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿// Migration cập nhật cấu trúc cơ sở dữ liệu.
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -7,6 +8,7 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
     /// <inheritdoc />
     public partial class AddResourceStatuses : Migration
     {
+        // Áp dụng thay đổi cơ sở dữ liệu.
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -49,6 +51,7 @@ namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Migrations
                 oldNullable: true);
         }
 
+        // Hoàn tác thay đổi cơ sở dữ liệu.
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {

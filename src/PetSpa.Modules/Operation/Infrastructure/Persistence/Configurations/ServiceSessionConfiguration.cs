@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Cấu hình ánh xạ cơ sở dữ liệu cho ServiceSession.
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Operation.Domain.Entities;
 using PetSpa.Modules.Operation.Domain.Enums;
@@ -7,8 +8,10 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 {
     public class ServiceSessionConfiguration: IEntityTypeConfiguration<ServiceSession>
     {
+        // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<ServiceSession> Builder)
         {
+            // 1. Cấu hình tên bảng và các ràng buộc.
             Builder.ToTable("service_session", table =>
             {
                 table.HasCheckConstraint("ck_service_session_status", "status IN ('WAITING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')");
@@ -20,8 +23,10 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                     "started_at IS NULL OR finished_at IS NULL OR finished_at >= started_at");
             });
 
+            // 2. Cấu hình khóa chính.
             Builder.HasKey(x => x.Id);
 
+            // 3. Cấu hình các cột và kiểu dữ liệu.
             Builder.Property(x => x.Id)
                 .HasColumnName("id")
                 .HasColumnType("bigint")
@@ -30,6 +35,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
             Builder.Property(x => x.BookingDetailId)
                 .HasColumnName("booking_details_id");
 
+            // 4. Cấu hình quan hệ hoặc chỉ mục.
             Builder.HasIndex(x => x.BookingDetailId).IsUnique();
             Builder.HasIndex(x => x.RoomId);
             Builder.HasIndex(x => x.Status);
