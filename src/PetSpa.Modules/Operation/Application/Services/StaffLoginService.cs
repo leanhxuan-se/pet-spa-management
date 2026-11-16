@@ -8,9 +8,11 @@ using PetSpa.Modules.Operation.Domain.Entities;
 
 namespace PetSpa.Modules.Operation.Application.Services;
 
-public class StaffLoginService(
-    IStaffRepository staffs,
+
+internal class StaffLoginService(
+    IStaffAuthRepository staffs,
     IPasswordService<Staff> passwordService)
+
 {
     // Xác thực thông tin đăng nhập.
     public async Task<StaffLoginResult?> LoginAsync(

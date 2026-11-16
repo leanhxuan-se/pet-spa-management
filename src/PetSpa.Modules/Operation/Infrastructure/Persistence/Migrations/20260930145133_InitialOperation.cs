@@ -8,7 +8,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PetSpa.Modules.Operation.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialOperation : Migration
+    internal partial class InitialOperation : Migration
     {
         // Áp dụng thay đổi cơ sở dữ liệu.
         /// <inheritdoc />

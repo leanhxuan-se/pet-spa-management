@@ -5,7 +5,7 @@ using PetSpa.Modules.Operation.Domain.Entities;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 {
-    public class StaffAssignmentConfiguration : IEntityTypeConfiguration<StaffAssignment>
+    internal class StaffAssignmentConfiguration : IEntityTypeConfiguration<StaffAssignment>
     {
         // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<StaffAssignment> Builder)

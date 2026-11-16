@@ -6,7 +6,7 @@ using PetSpa.Modules.Operation.Domain.Enums;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 {
-    public class ServiceSessionConfiguration: IEntityTypeConfiguration<ServiceSession>
+    internal class ServiceSessionConfiguration: IEntityTypeConfiguration<ServiceSession>
     {
         // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<ServiceSession> Builder)

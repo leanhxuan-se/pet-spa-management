@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/PetSpa.Api/PetSpa.Api.csproj" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.13" />
     <!-- Compile the internal customer login types from their actual sources to inject a fake repository. -->
     <Compile Include="../../src/PetSpa.Modules/Customer/Domain/Entities/Customer.cs" Link="Source/Customer.cs" />
     <Compile Include="../../src/PetSpa.Modules/Customer/Domain/Entities/Pet.cs" Link="Source/Pet.cs" />

@@ -11,7 +11,10 @@ namespace PetSpa.SharedKernel.Application.Abstractions
         Success,
         NotFound,
         ValidationFailed,
-        UnActive
+        TimeError,
+        UnActive,
+        BadRequest,
+        Duplicate,
     }
 
     public class Result<T>
@@ -39,7 +42,10 @@ namespace PetSpa.SharedKernel.Application.Abstractions
 
         // Tạo kết quả không tìm thấy.
         public static Result<T> NotFound(string message) =>
-            new(new Dictionary<string, string[]> { { "Customer", [message] } }, ResultStatus.NotFound);
+            new(new Dictionary<string, string[]> { { "message", [message] } }, ResultStatus.NotFound);
+
+        public static Result<T> TimeError(string message) =>
+            new(new Dictionary<string, string[]> { { "message", [message] } }, ResultStatus.TimeError);
 
         // Tạo kết quả báo lỗi kiểm tra dữ liệu.
         public static Result<T> ValidationFailed(IDictionary<string, string[]> errors) =>
@@ -48,6 +54,12 @@ namespace PetSpa.SharedKernel.Application.Abstractions
         // Tạo kết quả báo đối tượng không hoạt động.
         public static Result<T> UnActive(string key, string message) =>
             new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.UnActive);
+
+        public static Result<T> BadRequest(string key, string message) =>
+            new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.BadRequest);
+
+        public static Result<T> Duplicate(string key, string message) =>
+            new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.Duplicate);
         
     }
 }

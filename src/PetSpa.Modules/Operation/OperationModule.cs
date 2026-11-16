@@ -3,10 +3,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using PetSpa.Modules.Operation.Infrastructure.Persistence;
 
-
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Operation.Endpoints;
+using PetSpa.Modules.Operation.Application.Abstractions;
 using FluentValidation;
+
 using PetSpa.Modules.Operation.Application.Services;
 using PetSpa.Modules.Operation.Domain.Repositories;
 using PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories;
@@ -31,18 +32,24 @@ public static class OperationModule
             });
         });
 
-        // 2. Đăng ký các dịch vụ cần sử dụng.
-        services.AddScoped<IValidator<StaffLoginRequest>, LoginRequestValidator<StaffLoginRequest>>();
         services.AddScoped<IStaffRepository, StaffRepository>();
+        services.AddScoped<IRoomRepository, RoomRepository>();
+        services.AddScoped<IStaffAuthRepository, StaffAuthRepository>();
+        services.AddScoped<IValidator<StaffLoginRequest>, LoginRequestValidator<StaffLoginRequest>>();
         services.AddScoped<StaffLoginService>();
+        services.AddScoped<RoomService>();
+        services.AddScoped<StaffService>();
         return services;
     }
      // Đăng ký các endpoint của module vận hành.
      public static IEndpointRouteBuilder MapOperationModuleEndpoint(this IEndpointRouteBuilder app) // Register Operation's Endpoints
     {
         //...
-       
+
         app.MapOperationAuthEndpoints();
+        app.MapRoomEndpoint();
+        app.MapStaffEndpoint();
+        //app.MapServiceSessionEndpoint();
 
         return app;
     }

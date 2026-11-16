@@ -20,6 +20,8 @@ public static class CustomerEndpoints
         var group = app.MapGroup("/api/customers").WithTags("Customers"); // gom nhóm các endpoint liên quan đến customer lại ở swagger
 
         // 2. Đăng ký các đường dẫn và phương thức HTTP.
+        group.MapGet("", GetCustomersAsync).WithName("GetCustomers")
+            .RequireAuthorization(AuthorizationPolicies.CustomerManagement);
         group.MapGet("/{id:long}", GetCustomerByIdAsync).WithName("GetCustomerById")
             .RequireAuthorization(AuthorizationPolicies.AuthenticatedAccount);
         group.MapPost("/", CreateCustomerAsync).WithName("CreateCustomer")
@@ -27,10 +29,24 @@ public static class CustomerEndpoints
         group.MapPut("/{id:long}", UpdateCustomerAsync).WithName("UpdateCustomer")
             .RequireAuthorization(AuthorizationPolicies.AuthenticatedAccount);
 
-        return app;     
+        return app;
     }
 
-    // Lấy thông tin khách hàng theo mã.
+    public static async Task<IResult> GetCustomersAsync(
+        ICustomerService customerService,
+        CancellationToken ct
+    )
+    {
+        var Customer = await customerService.GetAsync(ct);
+
+        if (Customer.Status == ResultStatus.NotFound)
+        {
+            return Results.NotFound(new { Message = $"Không tìm thấy khách hàng nào" });
+        }
+
+        return Results.Ok<List<CustomerResponse>>(Customer.Value);
+    }
+
     public static async Task<IResult> GetCustomerByIdAsync(
         long id,
         ClaimsPrincipal currentUser,
@@ -62,7 +78,7 @@ public static class CustomerEndpoints
     {
         // 1. Gọi dịch vụ xử lý thông tin khách hàng.
         var customer = await customerService.CreateAsync(req, ct);
-        
+
         // 2. Trả kết quả xử lý.
         return customer.ToHttpResult(
             "GetCustomerById",
@@ -93,4 +109,3 @@ public static class CustomerEndpoints
         );
     }
 }
-

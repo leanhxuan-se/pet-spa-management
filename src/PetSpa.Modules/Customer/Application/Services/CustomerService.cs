@@ -7,6 +7,7 @@ using PetSpa.Modules.Customer.Application.Abstractions;
 using PetSpa.Modules.Customer.Endpoints.Requests;
 using PetSpa.Modules.Customer.Endpoints.Responses;
 using PetSpa.Modules.Customer.Infrastructure.Persistence;
+using PetSpa.Modules.Customer.Domain.Enums;
 using PetSpa.SharedKernel.Application.Abstractions;
 
 using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
@@ -18,7 +19,22 @@ namespace PetSpa.Modules.Customer.Application.Services
         IServiceProvider serviceProvider,
         IPasswordService<CustomerTable> passwordService) : ICustomerService
     {
-        // Tìm đối tượng theo mã.
+        public async Task<Result<List<CustomerResponse>>> GetAsync(CancellationToken ct)
+        {
+            var customers = await db.Customers
+                .Where(x => x.Status == CustomerStatus.ACTIVE)
+                .AsNoTracking()
+                .ProjectToType<CustomerResponse>()
+                .ToListAsync(ct);
+
+            if (customers is [])
+            {
+                return Result<List<CustomerResponse>>.NotFound("Customers not found");
+            }
+
+
+            return Result<List<CustomerResponse>>.Success(customers);
+        }
         public async Task<Result<CustomerResponse>> GetByIdAsync(long id, CancellationToken ct)
         {
             // 1. Lấy thông tin khách hàng từ cơ sở dữ liệu.
@@ -50,7 +66,13 @@ namespace PetSpa.Modules.Customer.Application.Services
                 return Result<CustomerResponse>.ValidationFailed(validation.ToDictionary());
             }
 
-            // 2. Tạo thông tin khách hàng mới.
+            var phoneExists = await db.Customers.AnyAsync(x => x.Phone == req.Phone.Trim(), ct);
+
+            if (phoneExists)
+            {
+                return Result<CustomerResponse>.Duplicate("message", "Số điện thoại đã được tạo tài khoản, vui lòng mở hồ sơ hiện có");
+            }
+
             var customer = new CustomerTable
             {
                 FullName = req.FullName.Trim(),

@@ -4,7 +4,7 @@ using PetSpa.Modules.Operation.Domain.Entities;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence;
 
-public class OperationDbContext: DbContext
+internal class OperationDbContext: DbContext
 {
     // Khởi tạo DbContext với cấu hình được cung cấp.
     public OperationDbContext(DbContextOptions<OperationDbContext> options) : base(options)

@@ -6,7 +6,7 @@ using PetSpa.Modules.Operation.Domain.Enums;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 {
-    public class StaffShiftConfiguration : IEntityTypeConfiguration<StaffShift>
+    internal class StaffShiftConfiguration : IEntityTypeConfiguration<StaffShift>
     {
         // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<StaffShift> Builder)

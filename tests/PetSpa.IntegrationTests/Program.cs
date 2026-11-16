@@ -77,7 +77,7 @@ builder.Services.AddAuthorizationServices();
 builder.Services.AddPetSpaOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddSingleton<ICustomerRepository>(customerRepository);
-builder.Services.AddSingleton<IStaffRepository>(staffRepository);
+builder.Services.AddSingleton<IStaffAuthRepository>(staffRepository);
 builder.Services.AddSingleton<IPetServices>(pets);
 builder.Services.AddSingleton<ICustomerService>(customerService);
 builder.Services.AddSingleton<IBookingRepository>(bookings);
@@ -168,6 +168,8 @@ try
         Check(anonymous.StatusCode == HttpStatusCode.Unauthorized, "anonymous -> 401");
     using (var fallback = await Send(HttpMethod.Get, "/test/fallback"))
         Check(fallback.StatusCode == HttpStatusCode.Unauthorized, "fallback protects endpoint without policy metadata");
+    using (var anonymous = await Send(HttpMethod.Get, "/api/customers"))
+        Check(anonymous.StatusCode == HttpStatusCode.Unauthorized, "anonymous customer list -> 401");
     using (var anonymous = await Send(HttpMethod.Get, "/api/bookings/1"))
         Check(anonymous.StatusCode == HttpStatusCode.Unauthorized, "anonymous booking -> 401");
     using (var health = await Send(HttpMethod.Get, "/health"))
@@ -216,6 +218,8 @@ try
     using (var write = await Send(HttpMethod.Post, "/api/categories", customerToken, categoryBody))
         Check(write.StatusCode == HttpStatusCode.Forbidden && categoryRepository.AddCalls == 0,
             "customer category write -> 403");
+    using (var list = await Send(HttpMethod.Get, "/api/customers", customerToken))
+        Check(list.StatusCode == HttpStatusCode.Forbidden, "customer cannot list all customers");
     using (var own = await Send(HttpMethod.Get, "/api/customers/1", customerToken))
         Check(own.StatusCode == HttpStatusCode.OK, "customer reads own profile");
     using (var other = await Send(HttpMethod.Get, "/api/customers/999", customerToken))
@@ -249,6 +253,9 @@ try
         using (var manager = await Send(HttpMethod.Get, "/test/manager", token))
             Check(manager.StatusCode == (role is StaffRole.MANAGER or StaffRole.ADMIN ? HttpStatusCode.OK : HttpStatusCode.Forbidden),
                 role + " manager/admin RequireRole policy");
+        using (var list = await Send(HttpMethod.Get, "/api/customers", token))
+            Check(list.StatusCode == (role == StaffRole.STAFF ? HttpStatusCode.Forbidden : HttpStatusCode.OK),
+                role + " customer list policy");
         using (var profile = await Send(HttpMethod.Get, "/api/customers/999", token))
             Check(profile.StatusCode == (role == StaffRole.STAFF ? HttpStatusCode.Forbidden : HttpStatusCode.OK),
                 role + " customer management permissions");
@@ -402,7 +409,7 @@ sealed class FakeCustomers(Customer account) : ICustomerRepository
     // Ghi nhận số lần lưu trong dữ liệu giả.
     public Task SaveAsync(CancellationToken ct) { SaveCalls++; return Task.CompletedTask; }
 }
-sealed class FakeStaffs(Staff account) : IStaffRepository
+sealed class FakeStaffs(Staff account) : IStaffAuthRepository
 {
     public int SaveCalls { get; private set; }
     // Tìm tài khoản theo số điện thoại.
@@ -431,6 +438,8 @@ sealed class FakePets : IPetServices
 }
 sealed class FakeCustomerService : ICustomerService
 {
+    public Task<Result<List<CustomerResponse>>> GetAsync(CancellationToken ct)
+        => Task.FromResult(Result<List<CustomerResponse>>.Success([Customer(1)]));
     public long? LastUpdatedId { get; private set; }
     public int CreateCalls { get; private set; }
     // Tạo dữ liệu khách hàng mẫu.
