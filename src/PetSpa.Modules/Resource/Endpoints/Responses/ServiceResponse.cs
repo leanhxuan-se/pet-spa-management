@@ -1,3 +1,4 @@
+// Định nghĩa dữ liệu trao đổi ServiceResponse.
 using PetSpa.Modules.Resource.Domain.Enums;
 
 namespace PetSpa.Modules.Resource.Endpoints.Responses;

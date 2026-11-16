@@ -1,3 +1,4 @@
+// Định nghĩa giao tiếp giữa các module: IResourceModule.
 namespace PetSpa.Modules.Resource.Contracts;
 
 public interface IResourceModule

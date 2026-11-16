@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Cấu hình ánh xạ cơ sở dữ liệu cho Booking.
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Booking.Domain.Enums;
 
@@ -8,8 +9,10 @@ namespace PetSpa.Modules.Booking.Infrastructure.Persistence.Configurations
 {
     internal class BookingConfiguration: IEntityTypeConfiguration<BookingEntity>
     {
+        // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<BookingEntity> Builder)
         {
+            // 1. Cấu hình tên bảng và các ràng buộc.
             Builder.ToTable("booking", table =>
             {
                 table.HasCheckConstraint("ck_booking_status",
@@ -18,8 +21,10 @@ namespace PetSpa.Modules.Booking.Infrastructure.Persistence.Configurations
                     "check_out IS NULL OR check_in IS NULL OR check_out >= check_in");
             });
 
+            // 2. Cấu hình khóa chính.
             Builder.HasKey(x => x.Id);
 
+            // 3. Cấu hình các cột và kiểu dữ liệu.
             Builder.Property(x => x.Id)
                 .HasColumnName("id")
                 .UseIdentityByDefaultColumn();

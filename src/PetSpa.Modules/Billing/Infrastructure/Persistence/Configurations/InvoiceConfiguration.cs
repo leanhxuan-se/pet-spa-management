@@ -1,3 +1,4 @@
+// Cấu hình ánh xạ cơ sở dữ liệu cho Invoice.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Billing.Domain.Entities;
@@ -7,6 +8,7 @@ namespace PetSpa.Modules.Billing.Infrastructure.Persistence.Configurations;
 public class InvoiceConfiguration
     : IEntityTypeConfiguration<Invoice>
 {
+    // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
     public void Configure(EntityTypeBuilder<Invoice> builder)
     {
         // billing.invoice

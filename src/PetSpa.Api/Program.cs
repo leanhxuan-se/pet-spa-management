@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+// Khởi tạo ứng dụng, dịch vụ và các endpoint API.
 using PetSpa.Api.Composition;
 using PetSpa.Modules.Billing;
 using PetSpa.Modules.Booking;
@@ -22,6 +22,7 @@ builder.Services.AddResourceModule(connectionString);
 
 // Register Authentication Service 
 builder.Services.AddAuthenticationServices(builder.Configuration);
+builder.Services.AddAuthorizationServices();
 
 //Register CORS (cross-origin system) to allow fetching api
 builder.Services.AddCors(options =>
@@ -34,13 +35,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddSwaggerGen(option =>
-{
-    option.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
-});
-
-
-builder.Services.AddOpenApi();
+builder.Services.AddPetSpaOpenApi();
 
 
 //serializer chuyển enum sang string để trả về cho FE, tránh trả về số
@@ -55,8 +50,8 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     // Adding Swagger and OpenAPI endpoints for testing API
-    app.MapOpenApi();
-    app.UseSwagger();
+    app.MapOpenApi().AllowAnonymous();
+    app.MapOpenApi("/swagger/{documentName}/swagger.json").AllowAnonymous();
     app.UseSwaggerUI();
 }
 
@@ -71,7 +66,7 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
+app.MapHealthEndpoint();
 
 //Register EndpointMap
 app.MapCustomerModuleEndpoint();

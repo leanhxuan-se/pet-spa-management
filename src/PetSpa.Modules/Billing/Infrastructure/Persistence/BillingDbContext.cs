@@ -1,3 +1,4 @@
+// Quản lý truy cập cơ sở dữ liệu qua BillingDbContext.
 using Microsoft.EntityFrameworkCore;
 using PetSpa.Modules.Billing.Domain.Entities;
 
@@ -5,6 +6,7 @@ namespace PetSpa.Modules.Billing.Infrastructure.Persistence;
 
 public class BillingDbContext : DbContext
 {
+    // Khởi tạo DbContext với cấu hình được cung cấp.
     public BillingDbContext(DbContextOptions<BillingDbContext> options) : base(options)
     {
     }
@@ -12,6 +14,7 @@ public class BillingDbContext : DbContext
     public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
     public DbSet<Payment> Payments => Set<Payment>();
 
+    // Cấu hình mô hình dữ liệu của DbContext.
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

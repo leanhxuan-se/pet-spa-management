@@ -1,4 +1,5 @@
-﻿namespace PetSpa.Modules.Customer.Domain.Enums;
+﻿// Định nghĩa các giá trị PetStatus.
+namespace PetSpa.Modules.Customer.Domain.Enums;
 
 public enum PetStatus
 {

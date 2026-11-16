@@ -1,3 +1,4 @@
+// Định nghĩa thực thể Service và dữ liệu liên quan.
 using PetSpa.Modules.Resource.Domain.Enums;
 
 namespace PetSpa.Modules.Resource.Domain.Entities

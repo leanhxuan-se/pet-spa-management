@@ -1,4 +1,5 @@
-﻿namespace PetSpa.Modules.Booking.Domain.Enums;
+﻿// Định nghĩa các giá trị BookingDetailStatus.
+namespace PetSpa.Modules.Booking.Domain.Enums;
 
 public enum BookingDetailStatus
 {

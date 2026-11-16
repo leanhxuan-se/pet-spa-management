@@ -1,3 +1,4 @@
+// Định nghĩa dữ liệu trao đổi BookingDto.
 using PetSpa.Modules.Booking.Domain.Enums;
 
 namespace PetSpa.Modules.Booking.Application.Dtos;
@@ -12,5 +13,6 @@ public sealed record BookingDetailDto(
 
 public sealed record BookingActor(bool IsStaff, long? CustomerId)
 {
+    // Kiểm tra quyền truy cập dữ liệu.
     public bool CanAccess(long customerId) => IsStaff || CustomerId == customerId;
 }

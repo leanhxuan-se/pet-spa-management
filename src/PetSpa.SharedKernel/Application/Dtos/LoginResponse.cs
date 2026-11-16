@@ -1,3 +1,4 @@
+// Định nghĩa dữ liệu trao đổi LoginResponse.
 namespace PetSpa.SharedKernel.Application.Dtos;
 
 public record LoginResponse(

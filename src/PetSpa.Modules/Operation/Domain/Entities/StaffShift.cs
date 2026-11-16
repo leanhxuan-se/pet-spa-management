@@ -1,4 +1,5 @@
-﻿using PetSpa.Modules.Operation.Domain.Enums;
+﻿// Định nghĩa thực thể StaffShift và dữ liệu liên quan.
+using PetSpa.Modules.Operation.Domain.Enums;
 
 namespace PetSpa.Modules.Operation.Domain.Entities
 {

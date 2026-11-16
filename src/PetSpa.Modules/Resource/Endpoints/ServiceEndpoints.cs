@@ -1,3 +1,4 @@
+// Định nghĩa hoặc hỗ trợ các endpoint ServiceEndpoints.
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -10,11 +11,14 @@ namespace PetSpa.Modules.Resource.Endpoints;
 
 public static class ServiceEndpoints
 {
+    // Đăng ký endpoint dịch vụ.
     public static IEndpointRouteBuilder MapServiceEndpoints(this IEndpointRouteBuilder app)
     {
+        // 1. Tạo nhóm endpoint và cấu hình quyền truy cập.
         var group = app.MapGroup("/api/services").WithTags("Services");
-        group.MapGet("/", ListAsync).WithName("SearchServices").Produces<IReadOnlyList<ServiceResponse>>();
-        group.MapGet("/{id:long}", GetByIdAsync).WithName("GetServiceById").Produces<ServiceResponse>();
+        // 2. Đăng ký các đường dẫn và phương thức HTTP.
+        group.MapGet("/", ListAsync).WithName("SearchServices").Produces<IReadOnlyList<ServiceResponse>>().AllowAnonymous();
+        group.MapGet("/{id:long}", GetByIdAsync).WithName("GetServiceById").Produces<ServiceResponse>().AllowAnonymous();
         group.MapPost("/", CreateAsync).WithName("CreateService")
             .Produces<ServiceResponse>(StatusCodes.Status201Created).ProducesValidationProblem().RequireStaff();
         group.MapPut("/{id:long}", UpdateAsync).WithName("UpdateService")
@@ -22,36 +26,43 @@ public static class ServiceEndpoints
         group.MapDelete("/{id:long}", DeleteAsync).WithName("DeleteService")
             .Produces(StatusCodes.Status204NoContent).RequireStaff();
         app.MapGet("/api/categories/{categoryId:long}/services", ListByCategoryAsync)
-            .WithTags("Services").WithName("GetServicesByCategory").Produces<IReadOnlyList<ServiceResponse>>();
+            .WithTags("Services").WithName("GetServicesByCategory").Produces<IReadOnlyList<ServiceResponse>>().AllowAnonymous();
         return app;
     }
 
+    // Lấy danh sách đối tượng.
     public static async Task<IResult> ListAsync(
         long? categoryId, string? keyword, ServiceCatalogService service, CancellationToken ct)
         => (await service.ListAsync(categoryId, keyword, ct))
             .ToHttpResult(dtos => Results.Ok(dtos.Select(ToResponse).ToList()));
 
+    // Lấy danh sách dịch vụ theo danh mục.
     public static async Task<IResult> ListByCategoryAsync(
         long categoryId, string? keyword, ServiceCatalogService service, CancellationToken ct)
         => (await service.ListAsync(categoryId, keyword, ct))
             .ToHttpResult(dtos => Results.Ok(dtos.Select(ToResponse).ToList()));
 
+    // Tìm đối tượng theo mã.
     public static async Task<IResult> GetByIdAsync(long id, ServiceCatalogService service, CancellationToken ct)
         => (await service.GetByIdAsync(id, ct)).ToHttpResult(dto => Results.Ok(ToResponse(dto)));
 
+    // Tạo đối tượng mới.
     public static async Task<IResult> CreateAsync(
         SaveServiceRequest request, ServiceCatalogService service, CancellationToken ct)
         => (await service.CreateAsync(request.CategoryId, request.ServiceName, request.Description, request.Status, ct))
             .ToHttpResult(dto => Results.CreatedAtRoute("GetServiceById", new { id = dto.Id }, ToResponse(dto)));
 
+    // Cập nhật đối tượng.
     public static async Task<IResult> UpdateAsync(
         long id, SaveServiceRequest request, ServiceCatalogService service, CancellationToken ct)
         => (await service.UpdateAsync(id, request.CategoryId, request.ServiceName, request.Description, request.Status, ct))
             .ToHttpResult(dto => Results.Ok(ToResponse(dto)));
 
+    // Xóa đối tượng.
     public static async Task<IResult> DeleteAsync(long id, ServiceCatalogService service, CancellationToken ct)
         => (await service.DeleteAsync(id, ct)).ToHttpResult(_ => Results.NoContent());
 
+    // Chuyển đối tượng thành dữ liệu phản hồi.
     private static ServiceResponse ToResponse(ServiceDto dto)
         => new(dto.Id, dto.CategoryId, dto.ServiceName, dto.Description, dto.Status);
 }

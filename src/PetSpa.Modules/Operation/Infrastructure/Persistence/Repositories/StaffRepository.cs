@@ -1,4 +1,4 @@
-﻿using PetSpa.Modules.Operation.Application.Abstractions;
+using PetSpa.Modules.Operation.Application.Abstractions;
 using PetSpa.Modules.Operation.Endpoints.Responses;
 using PetSpa.Modules.Operation.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +27,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
                                 st.Staff.AvatarUrl)))
                 .Distinct()
                 .ToListAsync(ct);
-            
+
             return unavailableStaff;
         }
         public async Task<List<StaffResponse>> GetAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
@@ -52,7 +52,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
                     .Where(x => x.Status == StaffShiftStatus.SCHEDULED
                            && x.Staff.Status == StaffStatus.ACTIVE
                            && x.StartTime < start
-                           && x.EndTime > end 
+                           && x.EndTime > end
                            && x.ShiftDate == date
                            && !unAvailableStaff.Contains(x.Staff.Id))
                     .Select(st => new StaffResponse(
@@ -62,7 +62,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
                                 st.Staff.AvatarUrl))
                     .Distinct()
                     .ToListAsync(ct);
-            
+
             return AvailableStaff;
         }
     }

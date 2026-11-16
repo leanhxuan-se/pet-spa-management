@@ -1,4 +1,5 @@
-﻿
+﻿// Định nghĩa thực thể StaffAssignment và dữ liệu liên quan.
+
 
 namespace PetSpa.Modules.Operation.Domain.Entities
 {

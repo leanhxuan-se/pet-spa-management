@@ -6,6 +6,6 @@ using System.Text;
 //namespace PetSpa.Modules.Operation.Endpoints.Requests
 //{
 //    internal record CreateServiceSessionRequest(
-//        string 
+//        string
 //        )
 //}

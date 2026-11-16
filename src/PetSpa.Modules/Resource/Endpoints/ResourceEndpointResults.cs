@@ -1,11 +1,14 @@
+// Định nghĩa hoặc hỗ trợ các endpoint ResourceEndpointResults.
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using PetSpa.Modules.Resource.Application.Dtos;
+using PetSpa.SharedKernel.Application.Authentication;
 
 namespace PetSpa.Modules.Resource.Endpoints;
 
 internal static class ResourceEndpointResults
 {
+    // Chuyển kết quả xử lý thành phản hồi HTTP.
     public static IResult ToHttpResult<T>(this ResourceResult<T> result, Func<T, IResult> onSuccess)
         => result.Status switch
         {
@@ -16,7 +19,7 @@ internal static class ResourceEndpointResults
             _ => throw new InvalidOperationException("Unsupported resource result.")
         };
 
+    // Yêu cầu tài khoản nhân viên.
     public static RouteHandlerBuilder RequireStaff(this RouteHandlerBuilder builder)
-        => builder.RequireAuthorization(policy =>
-            policy.RequireAuthenticatedUser().RequireClaim("account_type", "staff"));
+        => builder.RequireAuthorization(AuthorizationPolicies.StaffOnly);
 }

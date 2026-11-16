@@ -1,4 +1,5 @@
-﻿using PetSpa.Modules.Customer.Domain.Enums;
+﻿// Định nghĩa dữ liệu trao đổi CustomerDto.
+using PetSpa.Modules.Customer.Domain.Enums;
 using PetSpa.Modules.Customer.Endpoints.Responses;
 
 namespace PetSpa.Modules.Customer.Contracts.Dtos;

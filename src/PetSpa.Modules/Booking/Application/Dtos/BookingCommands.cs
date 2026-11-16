@@ -1,3 +1,4 @@
+// Định nghĩa dữ liệu trao đổi BookingCommands.
 using System.Text.Json.Serialization;
 using PetSpa.Modules.Booking.Domain.Enums;
 

@@ -1,4 +1,6 @@
+// Xử lý nghiệp vụ và cung cấp dịch vụ StaffLoginService.
 using PetSpa.SharedKernel.Application.Abstractions;
+using PetSpa.SharedKernel.Application.Authentication;
 using PetSpa.Modules.Operation.Application.Dtos;
 using PetSpa.Modules.Operation.Domain.Enums;
 using PetSpa.Modules.Operation.Domain.Repositories;
@@ -9,9 +11,10 @@ namespace PetSpa.Modules.Operation.Application.Services;
 
 internal class StaffLoginService(
     IStaffAuthRepository staffs,
-    IPasswordService passwordService)
+    IPasswordService<Staff> passwordService)
 
 {
+    // Xác thực thông tin đăng nhập.
     public async Task<StaffLoginResult?> LoginAsync(
         string phone,
         string password,
@@ -29,6 +32,18 @@ internal class StaffLoginService(
         {
             return null;
         }
+
+        var role = staff.Role switch
+        {
+            StaffRole.STAFF => AccountRoles.Staff,
+            StaffRole.RECEPTIONIST => AccountRoles.Receptionist,
+            StaffRole.MANAGER => AccountRoles.Manager,
+            StaffRole.ADMIN => AccountRoles.Admin,
+            _ => null
+        };
+
+        if (role is null)
+            return null;
 
         // 3. So sánh mật khẩu nhập vào với hash đã lưu.
         var verification = passwordService.VerifyHashedPassword(
@@ -57,6 +72,6 @@ internal class StaffLoginService(
             staff.Id,
             staff.FullName,
             staff.Phone,
-            staff.Role);
+            role);
     }
 }

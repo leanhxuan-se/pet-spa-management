@@ -18,7 +18,7 @@ namespace PetSpa.Modules.Operation.Endpoints
 
             group.MapGet("/availability", GetAvailableRoomAsync).WithName("GetAvailableRoom").RequireAuthorization();
             group.MapGet("/unavailability", GetUnAvailableRoomAsync).WithName("GetUnAvailableRoom").RequireAuthorization();
-            
+
             return app;
         }
 

@@ -1,3 +1,4 @@
+// Định nghĩa thực thể InvoiceItem và dữ liệu liên quan.
 namespace PetSpa.Modules.Billing.Domain.Entities;
 
 public class InvoiceItem

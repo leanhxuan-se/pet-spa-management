@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿// Định nghĩa quy tắc kiểm tra dữ liệu CreateCustomerRequestValidator.
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using PetSpa.Modules.Customer.Endpoints.Requests;
 using PetSpa.Modules.Customer.Infrastructure.Persistence;
@@ -7,13 +8,21 @@ namespace PetSpa.Modules.Customer.Application.Validators
 {
     internal class CreateCustomerRequestValidator: AbstractValidator<CreateCustomerRequest>
     {
+        // Thiết lập quy tắc kiểm tra dữ liệu đầu vào.
         public CreateCustomerRequestValidator(CustomerDbContext db)
         {
+            // 1. Kiểm tra họ tên.
             RuleFor(x => x.FullName)
                 .NotEmpty().WithMessage("Họ và tên không được để trống")
                 .MaximumLength(100).WithMessage("Họ và tên tối đa 100 ký tự");
 
+            // 2. Kiểm tra mật khẩu.
+            RuleFor(x => x.Password)
+                .NotEmpty().WithMessage("Mật khẩu không được để trống.");
+
+            // 3. Kiểm tra số điện thoại.
             RuleFor(x => x.Phone)
+                .Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Số điện thoại không được để trống")
                 .Matches(@"^(0[3|5|7|8|9])[0-9]{8}$").WithMessage("Số điện thoại không đúng định dạng")
                 .MustAsync(async (phone, ct) =>
@@ -21,6 +30,7 @@ namespace PetSpa.Modules.Customer.Application.Validators
                     var PhoneExist = await db.Customers.AnyAsync(t => t.Phone == phone.Trim(), ct);
                     return !PhoneExist;
                 }).WithMessage("Số điện thoại này đã được đăng ký trong hệ thống");
+            // 4. Kiểm tra email.
             When(x => !string.IsNullOrWhiteSpace(x.Email), () => 
             {
                 RuleFor(x => x.Email)
@@ -32,11 +42,13 @@ namespace PetSpa.Modules.Customer.Application.Validators
                         return !EmailExist;
                     }).WithMessage("Email này đã được đăng ký trong hệ thống");
             });
+            // 5. Kiểm tra giới tính.
             When(x => x.Gender.HasValue, () => 
             {
                 RuleFor(x => x.Gender)
                     .IsInEnum().WithMessage("Giới tính không hợp lệ (chỉ chấp nhận Male, Female, Other)");
             });
+            // 6. Kiểm tra ngày sinh.
             When(x => x.DateOfBirth.HasValue, () =>
             {
                 RuleFor(x => x.DateOfBirth)

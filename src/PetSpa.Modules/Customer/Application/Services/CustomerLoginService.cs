@@ -1,3 +1,4 @@
+// Xử lý nghiệp vụ và cung cấp dịch vụ CustomerLoginService.
 using PetSpa.SharedKernel.Application.Abstractions;
 using PetSpa.Modules.Customer.Application.Dtos;
 using PetSpa.Modules.Customer.Domain.Enums;
@@ -10,6 +11,7 @@ internal class CustomerLoginService(
     ICustomerRepository customers,
     IPasswordService<CustomerTable> passwordService)
 {
+    // Xác thực thông tin đăng nhập.
     public async Task<CustomerLoginResult?> LoginAsync(
         string phone,
         string password,

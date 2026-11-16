@@ -1,3 +1,4 @@
+// Cấu hình ánh xạ cơ sở dữ liệu cho InvoiceItem.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Billing.Domain.Entities;
@@ -7,12 +8,16 @@ namespace PetSpa.Modules.Billing.Infrastructure.Persistence.Configurations;
 public class InvoiceItemConfiguration
     : IEntityTypeConfiguration<InvoiceItem>
 {
+    // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
     public void Configure(EntityTypeBuilder<InvoiceItem> builder)
     {
+        // 1. Cấu hình tên bảng và các ràng buộc.
         builder.ToTable("invoice_item", "billing");
 
+        // 2. Cấu hình khóa chính.
         builder.HasKey(x => x.Id);
 
+        // 3. Cấu hình các cột và kiểu dữ liệu.
         builder.Property(x => x.Id)
             .HasColumnName("id")
             .ValueGeneratedOnAdd();
@@ -44,6 +49,7 @@ public class InvoiceItemConfiguration
             .HasColumnType("bigint")
             .IsRequired();
 
+        // 4. Cấu hình quan hệ hoặc chỉ mục.
         builder.HasIndex(x => x.InvoiceId);
     }
 }

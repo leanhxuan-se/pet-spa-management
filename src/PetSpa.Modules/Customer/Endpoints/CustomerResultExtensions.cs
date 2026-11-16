@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿// Định nghĩa hoặc hỗ trợ các endpoint CustomerResultExtensions.
+using Microsoft.AspNetCore.Http;
 using PetSpa.SharedKernel.Application.Abstractions;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ namespace PetSpa.Modules.Customer.Endpoints
 {
     internal static class CustomerResultExtensions
     {
+        // Chuyển kết quả xử lý thành phản hồi HTTP.
         public static IResult ToHttpResult<T>(
             this Result<T> result,
             string? routeName = null,

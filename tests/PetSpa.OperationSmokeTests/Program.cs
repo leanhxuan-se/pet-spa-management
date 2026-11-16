@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PetSpa.Modules.Operation;
+using PetSpa.Api.Authentication;
+using Microsoft.AspNetCore.Identity;
+using Staff = PetSpa.Modules.Operation.Domain.Entities.Staff;
 using PetSpa.Modules.Operation.Application.Abstractions;
 using PetSpa.Modules.Operation.Application.Services;
 using PetSpa.Modules.Operation.Domain.Repositories;
@@ -29,6 +32,8 @@ void Check(bool condition, string message)
 
 var builder = WebApplication.CreateBuilder();
 builder.WebHost.UseUrls("http://127.0.0.1:0");
+builder.Services.AddScoped<IPasswordHasher<Staff>, PasswordHasher<Staff>>();
+builder.Services.AddScoped<IPasswordService<Staff>, IdentityPasswordService<Staff>>();
 builder.Services.AddOperationModule(Connection);
 builder.Services.AddSingleton<OperationTestStore>();
 builder.Services.AddScoped<IRoomRepository, FakeRoomRepository>();
@@ -47,7 +52,7 @@ app.MapOperationModuleEndpoint();
 using (var scope = app.Services.CreateScope())
 {
     var store = scope.ServiceProvider.GetRequiredService<OperationTestStore>();
-    var passwordService = scope.ServiceProvider.GetRequiredService<IPasswordService>();
+    var passwordService = scope.ServiceProvider.GetRequiredService<IPasswordService<Staff>>();
     var manager = store.StaffMembers.Single(staff => staff.Id == 1);
     manager.PasswordHash = passwordService.HashPassword(manager, StaffPassword);
 }
@@ -104,16 +109,16 @@ Check(unavailableStaff.GetArrayLength() == 1, "Staff unavailability should retur
 
 var login = await SendAsync(
     HttpMethod.Post,
-    "/api/staff/login",
+    "/api/auth/staff/login",
     HttpStatusCode.OK,
     new { phone = " 0900000001 ", password = StaffPassword },
     staffRole: null);
 Check(login.GetProperty("accessToken").GetString() == "operation-test-token", "Staff login should return a token");
-Check(login.GetProperty("staff").GetProperty("id").GetInt64() == 1, "Staff login should return the seeded staff record");
+Check(login.GetProperty("user").GetProperty("id").GetInt64() == 1, "Staff login should return the seeded staff record");
 Check(app.Services.GetRequiredService<OperationTestStore>().StaffSaveCount == 1, "Staff login should save the login timestamp");
 await SendAsync(
     HttpMethod.Post,
-    "/api/staff/login",
+    "/api/auth/staff/login",
     HttpStatusCode.Unauthorized,
     new { phone = "0900000001", password = "invalid" },
     staffRole: null);

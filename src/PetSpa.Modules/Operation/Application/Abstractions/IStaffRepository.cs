@@ -1,4 +1,4 @@
-﻿using PetSpa.Modules.Operation.Endpoints.Responses;
+using PetSpa.Modules.Operation.Endpoints.Responses;
 using System;
 using System.Collections.Generic;
 using System.Text;

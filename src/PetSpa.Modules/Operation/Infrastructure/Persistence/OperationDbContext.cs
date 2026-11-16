@@ -1,3 +1,4 @@
+// Quản lý truy cập cơ sở dữ liệu qua OperationDbContext.
 using Microsoft.EntityFrameworkCore;
 using PetSpa.Modules.Operation.Domain.Entities;
 
@@ -5,6 +6,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence;
 
 internal class OperationDbContext: DbContext
 {
+    // Khởi tạo DbContext với cấu hình được cung cấp.
     public OperationDbContext(DbContextOptions<OperationDbContext> options) : base(options)
     {
     }
@@ -14,6 +16,7 @@ internal class OperationDbContext: DbContext
     public DbSet<StaffAssignment> StaffAssignments=> Set<StaffAssignment>();
     public DbSet<StaffShift> StaffShifts => Set<StaffShift>();
 
+    // Cấu hình mô hình dữ liệu của DbContext.
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

@@ -1,3 +1,4 @@
+// Định nghĩa dữ liệu trao đổi CategoryDto.
 using PetSpa.Modules.Resource.Domain.Enums;
 
 namespace PetSpa.Modules.Resource.Application.Dtos;

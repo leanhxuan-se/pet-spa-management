@@ -1,8 +1,9 @@
 # Booking API
 
-Tất cả endpoint yêu cầu bearer token. Nhân viên (`account_type=staff`) có thể
-thao tác cho khách hàng; khách hàng (`account_type=customer`, `customer_id`)
-chỉ được đọc/tạo/sửa booking của chính mình. Chỉ nhân viên được thay đổi
+Tất cả endpoint dùng policy `AuthenticatedAccount` và yêu cầu bearer token
+có claim tài khoản hợp lệ. Các role `staff`, `receptionist`, `manager` và
+`admin` có thể thao tác cho khách hàng. Role `customer` chỉ được đọc, tạo và
+sửa booking của chính mình theo `customer_id` trong token. Chỉ nhân viên được thay đổi
 `status`, `checkIn`, `checkOut` hoặc chuyển booking sang khách hàng khác.
 Khách hàng chỉ được sửa booking đang `PENDING` hoặc `CONFIRMED`.
 
@@ -101,8 +102,8 @@ gồm `id` (ID chi tiết), `serviceOptionId`, `unitPrice`, `status`.
 |---|---|
 | 200 / 201 | Thành công |
 | 400 | JSON, trường dữ liệu hoặc contract không hợp lệ; lỗi theo trường trong ValidationProblem |
-| 401 | Chưa xác thực |
-| 403 | Không có quyền với khách hàng/booking hoặc thay đổi trường dành cho nhân viên |
+| 401 | Thiếu token hoặc không xác thực được token |
+| 403 | Claim tài khoản không hợp lệ, thiếu quyền với booking hoặc thay đổi trường dành cho nhân viên |
 | 404 | Booking không tồn tại |
 | 409 | Booking không cho phép sửa dịch vụ hoặc dịch vụ đang thực hiện/đã hoàn thành |
 

@@ -1,3 +1,4 @@
+// Định nghĩa dữ liệu đầu vào UpdateCategoryRequest.
 using PetSpa.Modules.Resource.Domain.Enums;
 
 namespace PetSpa.Modules.Resource.Endpoints.Requests;

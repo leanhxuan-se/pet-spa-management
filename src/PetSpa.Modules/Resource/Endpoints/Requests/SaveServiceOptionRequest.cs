@@ -1,3 +1,4 @@
+// Định nghĩa dữ liệu đầu vào SaveServiceOptionRequest.
 using System.Text.Json.Serialization;
 using PetSpa.Modules.Resource.Domain.Enums;
 

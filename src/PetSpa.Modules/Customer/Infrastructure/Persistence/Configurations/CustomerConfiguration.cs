@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Cấu hình ánh xạ cơ sở dữ liệu cho Customer.
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using CustomerTable = PetSpa.Modules.Customer.Domain.Entities.Customer;
@@ -7,12 +8,16 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
 {
     internal class CustomerConfiguration : IEntityTypeConfiguration<CustomerTable>
     {
+        // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<CustomerTable> builder)
         {
+            // 1. Cấu hình tên bảng và các ràng buộc.
             builder.ToTable("customer");
 
+            // 2. Cấu hình khóa chính.
             builder.HasKey(x => x.Id);
 
+            // 3. Cấu hình các cột và kiểu dữ liệu.
             builder.Property(x => x.FullName)
                 .HasColumnName("fullname")
                 .IsRequired()
@@ -30,6 +35,7 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
             builder.Property(x => x.Email)
                 .HasColumnName("email")
                 .HasMaxLength(50);
+            // 4. Cấu hình quan hệ hoặc chỉ mục.
             builder.HasIndex(x => x.Email).IsUnique();
 
             builder.Property(x => x.Phone)

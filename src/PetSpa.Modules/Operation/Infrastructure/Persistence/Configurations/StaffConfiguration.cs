@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Cấu hình ánh xạ cơ sở dữ liệu cho Staff.
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Operation.Domain.Entities;
 using PetSpa.Modules.Operation.Domain.Enums;
@@ -7,17 +8,21 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 {
     internal class StaffConfiguration : IEntityTypeConfiguration<Staff>
     {
+        // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<Staff> Builder)
         {
+            // 1. Cấu hình tên bảng và các ràng buộc.
             Builder.ToTable("staff", table =>
             {
                 table.HasCheckConstraint("ck_staff_gender", "gender IN ('MALE', 'FEMALE', 'OTHER')");
-                table.HasCheckConstraint("ck_staff_role", "role IN ('MANAGER', 'RECEPTIONIST', 'STAFF')");
+                table.HasCheckConstraint("ck_staff_role", "role IN ('MANAGER', 'RECEPTIONIST', 'STAFF', 'ADMIN')");
                 table.HasCheckConstraint("ck_staff_status", "status IN ('ACTIVE', 'INACTIVE')");
             });
 
+            // 2. Cấu hình khóa chính.
             Builder.HasKey(x => x.Id);
 
+            // 3. Cấu hình các cột và kiểu dữ liệu.
             Builder.Property(x => x.Id)
                 .HasColumnName("id")
                 .HasColumnType("bigint")
@@ -41,6 +46,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                 .HasColumnName("email")
                 .IsRequired()
                 .HasMaxLength(255);
+            // 4. Cấu hình quan hệ hoặc chỉ mục.
             Builder.HasIndex(x => x.Email).IsUnique();
 
             Builder.Property(x => x.Phone)
