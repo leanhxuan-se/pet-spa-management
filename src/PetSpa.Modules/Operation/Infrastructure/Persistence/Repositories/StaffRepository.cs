@@ -6,8 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
 {
-    internal class StaffRepository(
-        OperationDbContext db): IStaffRepository
+    internal class StaffRepository(OperationDbContext db): IStaffRepository
     {
         public async Task<List<StaffResponse>> GetUnAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
         {

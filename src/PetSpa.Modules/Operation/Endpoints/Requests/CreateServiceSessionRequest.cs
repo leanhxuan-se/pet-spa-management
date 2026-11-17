@@ -3,9 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-//namespace PetSpa.Modules.Operation.Endpoints.Requests
-//{
-//    internal record CreateServiceSessionRequest(
-//        string
-//        )
-//}
+namespace PetSpa.Modules.Operation.Endpoints.Requests
+{
+    internal record CreateServiceSessionRequest(
+        long BookingDetailId,
+        long RoomId,
+        DateTime? ExpectedStartAt,
+        DateTime? ExpectedFinishAt
+        );
+}
