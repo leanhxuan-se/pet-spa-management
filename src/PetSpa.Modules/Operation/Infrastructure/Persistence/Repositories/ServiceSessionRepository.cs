@@ -5,7 +5,7 @@ using PetSpa.Modules.Resource.Contracts;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
 {
-    internal class ServiceSessionRepository(OperationDbContext db): IServiceSession
+    internal class ServiceSessionRepository(OperationDbContext db): IServiceSessionRepository
     {
         public async Task<ServiceSession> CreateServiceSessionAsync(CreateServiceSessionRequest request, CancellationToken ct)
         {

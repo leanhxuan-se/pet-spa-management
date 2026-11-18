@@ -9,7 +9,7 @@ namespace PetSpa.Modules.Operation.Application.Services
 {
     internal class ServiceSessionService(IServiceSessionRepository _ServiceSessionRepository)
     {
-        public async Task<Result<ServiceSession>> GetAvailableStaffsAsync(CreateServiceSessionRequest request, string currentRole, CancellationToken ct)
+        public async Task<Result<ServiceSession>> CreateAsync(CreateServiceSessionRequest request, string currentRole, CancellationToken ct)
         {
 
             if (!(currentRole == "MANAGER" || currentRole == "RECEPTIONIST"))
