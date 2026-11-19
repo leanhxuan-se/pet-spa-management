@@ -44,7 +44,7 @@ public static class CustomerEndpoints
             return Results.NotFound(new { Message = $"Không tìm thấy khách hàng nào" });
         }
 
-        return Results.Ok<List<CustomerResponse>>(Customer.Value);
+        return Customer.ToHttpResult();
     }
 
     public static async Task<IResult> GetCustomerByIdAsync(
@@ -67,7 +67,7 @@ public static class CustomerEndpoints
         }
 
         // 3. Trả kết quả xử lý.
-        return Results.Ok<CustomerResponse>(Customer.Value);
+        return Customer.ToHttpResult();
     }
 
     // Tạo khách hàng mới.
