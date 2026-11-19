@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using PetSpa.SharedKernel.Application.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace PetSpa.Modules.Customer.Endpoints
+namespace PetSpa.Modules.Operation.Endpoints
 {
     internal static class OperationResultExtensions
     {
@@ -15,10 +12,8 @@ namespace PetSpa.Modules.Customer.Endpoints
         {
             return result.Status switch
             {
-                ResultStatus.Success => routeName != null && routeValues != null
-                    ? Results.CreatedAtRoute(routeName, routeValues(result.Value!), result.Value)
-                    : Results.Ok(result.Value),
-
+                ResultStatus.Success => Results.Ok(result.Value),
+                ResultStatus.Created => Results.Created(),
                 ResultStatus.ValidationFailed => Results.ValidationProblem(result?.Errors!),
                 ResultStatus.NotFound => Results.NotFound(result?.Errors),
                 ResultStatus.UnActive => Results.BadRequest(result?.Errors),

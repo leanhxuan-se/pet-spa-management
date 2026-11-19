@@ -9,6 +9,7 @@ namespace PetSpa.SharedKernel.Application.Abstractions
     public enum ResultStatus
     {
         Success,
+        Created,
         NotFound,
         ValidationFailed,
         TimeError,
@@ -39,6 +40,8 @@ namespace PetSpa.SharedKernel.Application.Abstractions
 
         // Tạo kết quả thành công.
         public static Result<T> Success(T value) => new(value);
+
+        public static Result<T> Created(T value) => new(value);
 
         // Tạo kết quả không tìm thấy.
         public static Result<T> NotFound(string message) =>
