@@ -2,6 +2,9 @@
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi;
+using PetSpa.Modules.Booking.Application.Dtos;
+using PetSpa.Modules.Booking.Domain.Enums;
+using PetSpa.Modules.Booking.Endpoints.Requests;
 using PetSpa.SharedKernel.Application.Authentication;
 using PetSpa.SharedKernel.Application.Dtos;
 
@@ -48,6 +51,11 @@ public static class OpenApiRegistration
                 operation.Responses ??= new OpenApiResponses();
                 operation.Responses.TryAdd("401", new OpenApiResponse { Description = "Authentication required." });
                 operation.Responses.TryAdd("403", new OpenApiResponse { Description = "Access denied." });
+                if (operation.OperationId == "ListBookings" &&
+                    operation.Parameters?.FirstOrDefault(parameter => parameter.Name == "status")?.Schema is OpenApiSchema status)
+                {
+                    status.Enum = Enum.GetNames<BookingStatus>().Select(name => (JsonNode)JsonValue.Create(name)!).ToList();
+                }
                 return Task.CompletedTask;
             });
 
@@ -71,6 +79,18 @@ public static class OpenApiRegistration
                 else if (context.JsonTypeInfo.Type == typeof(LoginUser))
                 {
                     schema.Required = new HashSet<string> { "id", "fullName", "phone" };
+                }
+                else if (context.JsonTypeInfo.Type == typeof(ChangeBookingStatusRequest) &&
+                    schema.Properties?["status"] is OpenApiSchema status)
+                {
+                    schema.AdditionalPropertiesAllowed = false;
+                    schema.Required = new HashSet<string> { "status" };
+                    status.Enum = [JsonValue.Create("confirmed"), JsonValue.Create("completed")];
+                }
+                else if (context.JsonTypeInfo.Type == typeof(UpdateBookingCommand))
+                {
+                    schema.AdditionalPropertiesAllowed = false;
+                    schema.MinProperties = 1;
                 }
                 return Task.CompletedTask;
             });

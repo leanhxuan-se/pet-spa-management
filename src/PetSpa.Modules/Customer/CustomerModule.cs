@@ -12,8 +12,6 @@ using PetSpa.Modules.Customer.Domain.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Persistence.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Services;
 using PetSpa.Modules.Customer.Contracts;
-using PetSpa.Modules.Customer.Endpoints.Requests;
-using PetSpa.SharedKernel.Application.Validators;
 
 
 namespace PetSpa.Modules.Customer;
@@ -38,7 +36,6 @@ public static class CustomerModule
         // Find UpdateCustomerRequestValidator and regis all the class that inherit AbstractValidator<T>
         services.AddValidatorsFromAssemblyContaining<UpdateCustomerRequestValidator>(includeInternalTypes: true);
         // 2. Đăng ký các dịch vụ cần sử dụng.
-        services.AddScoped<IValidator<CustomerLoginRequest>, LoginRequestValidator<CustomerLoginRequest>>();
 
         // Đăng ký các interface và dịch vụ liên quan đến CustomerModule
         services.AddScoped<ICustomerContract, CustomerContract>();

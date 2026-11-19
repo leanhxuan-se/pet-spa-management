@@ -6,5 +6,7 @@ public static class AuthorizationPolicies
     public const string AuthenticatedAccount = nameof(AuthenticatedAccount);
     public const string StaffOnly = nameof(StaffOnly);
     public const string CustomerManagement = nameof(CustomerManagement);
+    public const string FrontDesk = nameof(FrontDesk);
+    public const string ResourceManager = nameof(ResourceManager);
     public const string ManagerOrAdmin = nameof(ManagerOrAdmin);
 }

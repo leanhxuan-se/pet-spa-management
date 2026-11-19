@@ -15,13 +15,13 @@ public class ServiceCatalogService(IServiceRepository repository, ICategoryRepos
 
     // Lấy danh sách đối tượng.
     public async Task<ResourceResult<IReadOnlyList<ServiceDto>>> ListAsync(
-        long? categoryId, string? keyword, CancellationToken ct)
+        long? categoryId, string? keyword, CancellationToken ct, bool activeOnly = false)
     {
         if (categoryId.HasValue && await categories.GetByIdAsync(categoryId.Value, ct) is null)
             return ResourceResult<IReadOnlyList<ServiceDto>>.NotFound("Không tìm thấy danh mục.");
 
         // 1. Lấy thông tin dịch vụ.
-        var services = await repository.ListAsync(categoryId, keyword, ct);
+        var services = await repository.ListAsync(categoryId, keyword, ct, activeOnly);
         // 2. Trả kết quả xử lý.
         return ResourceResult<IReadOnlyList<ServiceDto>>.Success(services.Select(ToDto).ToList());
     }

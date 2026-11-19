@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PetSpa.Modules.Resource.Application.Abstractions;
 using PetSpa.Modules.Resource.Domain.Entities;
+using PetSpa.Modules.Resource.Domain.Enums;
 using PetSpa.Modules.Resource.Infrastructure.Persistence;
 
 namespace PetSpa.Modules.Resource.Infrastructure.Repositories;
@@ -10,13 +11,16 @@ namespace PetSpa.Modules.Resource.Infrastructure.Repositories;
 public class ServiceRepository(ResourceDbContext db) : IServiceRepository
 {
     // Lấy danh sách đối tượng.
-    public async Task<IReadOnlyList<Service>> ListAsync(long? categoryId, string? keyword, CancellationToken ct)
+    public async Task<IReadOnlyList<Service>> ListAsync(
+        long? categoryId, string? keyword, CancellationToken ct, bool activeOnly = false)
     {
         // 1. Tạo truy vấn dữ liệu ban đầu.
         var query = db.Services.AsNoTracking();
         // 2. Lọc theo danh mục nếu được chọn.
         if (categoryId.HasValue)
             query = query.Where(s => s.CategoryId == categoryId.Value);
+        if (activeOnly)
+            query = query.Where(s => s.Status == ResourceStatus.ACTIVE && s.Category.Status == ResourceStatus.ACTIVE);
         // 3. Lọc theo từ khóa nếu có.
         if (!string.IsNullOrWhiteSpace(keyword))
         {

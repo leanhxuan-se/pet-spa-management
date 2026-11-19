@@ -6,7 +6,8 @@ namespace PetSpa.Modules.Resource.Application.Abstractions;
 public interface IServiceRepository
 {
     // Lấy danh sách đối tượng.
-    Task<IReadOnlyList<Service>> ListAsync(long? categoryId, string? keyword, CancellationToken ct);
+    Task<IReadOnlyList<Service>> ListAsync(
+        long? categoryId, string? keyword, CancellationToken ct, bool activeOnly = false);
     // Tìm đối tượng theo mã.
     Task<Service?> GetByIdAsync(long id, CancellationToken ct);
     // Kiểm tra tên đã tồn tại.

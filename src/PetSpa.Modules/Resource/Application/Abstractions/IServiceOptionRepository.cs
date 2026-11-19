@@ -1,12 +1,14 @@
 // Định nghĩa thao tác lưu trữ và truy vấn IServiceOptionRepository.
 using PetSpa.Modules.Resource.Domain.Entities;
+using PetSpa.Modules.Resource.Domain.Enums;
 
 namespace PetSpa.Modules.Resource.Application.Abstractions;
 
 public interface IServiceOptionRepository
 {
     // Lấy danh sách đối tượng.
-    Task<IReadOnlyList<ServiceOption>> ListAsync(long? serviceId, CancellationToken ct);
+    Task<IReadOnlyList<ServiceOption>> ListAsync(
+        long? serviceId, CancellationToken ct, bool activeOnly = false, Species? species = null, decimal? weight = null);
     // Tìm đối tượng theo mã.
     Task<ServiceOption?> GetByIdAsync(long id, CancellationToken ct);
     // Thêm đối tượng mới.

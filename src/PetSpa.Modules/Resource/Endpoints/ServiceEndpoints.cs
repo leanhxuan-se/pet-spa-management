@@ -17,30 +17,33 @@ public static class ServiceEndpoints
         // 1. Tạo nhóm endpoint và cấu hình quyền truy cập.
         var group = app.MapGroup("/api/services").WithTags("Services");
         // 2. Đăng ký các đường dẫn và phương thức HTTP.
-        group.MapGet("/", ListAsync).WithName("SearchServices").Produces<IReadOnlyList<ServiceResponse>>().AllowAnonymous();
+        group.MapGet("/", ListAsync).WithName("SearchServices").Produces<IReadOnlyList<ServiceResponse>>()
+            .Produces(StatusCodes.Status404NotFound).AllowAnonymous();
         group.MapGet("/{id:long}", GetByIdAsync).WithName("GetServiceById").Produces<ServiceResponse>().AllowAnonymous();
         group.MapPost("/", CreateAsync).WithName("CreateService")
-            .Produces<ServiceResponse>(StatusCodes.Status201Created).ProducesValidationProblem().RequireStaff();
+            .Produces<ServiceResponse>(StatusCodes.Status201Created).ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound).Produces(StatusCodes.Status409Conflict).RequireResourceManager();
         group.MapPut("/{id:long}", UpdateAsync).WithName("UpdateService")
-            .Produces<ServiceResponse>().ProducesValidationProblem().RequireStaff();
+            .Produces<ServiceResponse>().ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound).Produces(StatusCodes.Status409Conflict).RequireResourceManager();
         group.MapDelete("/{id:long}", DeleteAsync).WithName("DeleteService")
-            .Produces(StatusCodes.Status204NoContent).RequireStaff();
+            .Produces(StatusCodes.Status204NoContent).Produces(StatusCodes.Status404NotFound).RequireResourceManager();
         app.MapGet("/api/categories/{categoryId:long}/services", ListByCategoryAsync)
-            .WithTags("Services").WithName("GetServicesByCategory").Produces<IReadOnlyList<ServiceResponse>>().AllowAnonymous();
+            .WithTags("Services").WithName("GetServicesByCategory").Produces<IReadOnlyList<ServiceResponse>>()
+            .Produces(StatusCodes.Status404NotFound).AllowAnonymous();
         return app;
     }
 
     // Lấy danh sách đối tượng.
     public static async Task<IResult> ListAsync(
-        long? categoryId, string? keyword, ServiceCatalogService service, CancellationToken ct)
-        => (await service.ListAsync(categoryId, keyword, ct))
+        long? categoryId, string? keyword, ServiceCatalogService service, CancellationToken ct, bool activeOnly = false)
+        => (await service.ListAsync(categoryId, keyword, ct, activeOnly))
             .ToHttpResult(dtos => Results.Ok(dtos.Select(ToResponse).ToList()));
 
     // Lấy danh sách dịch vụ theo danh mục.
-    public static async Task<IResult> ListByCategoryAsync(
-        long categoryId, string? keyword, ServiceCatalogService service, CancellationToken ct)
-        => (await service.ListAsync(categoryId, keyword, ct))
-            .ToHttpResult(dtos => Results.Ok(dtos.Select(ToResponse).ToList()));
+    public static Task<IResult> ListByCategoryAsync(
+        long categoryId, string? keyword, ServiceCatalogService service, CancellationToken ct, bool activeOnly = false)
+        => ListAsync(categoryId, keyword, service, ct, activeOnly);
 
     // Tìm đối tượng theo mã.
     public static async Task<IResult> GetByIdAsync(long id, ServiceCatalogService service, CancellationToken ct)

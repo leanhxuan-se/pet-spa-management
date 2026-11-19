@@ -1,11 +1,11 @@
-﻿// Định nghĩa hoặc hỗ trợ các endpoint PetEndpoints.
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Customer.Application.Abstractions;
 using PetSpa.Modules.Customer.Endpoints.Requests;
 using PetSpa.Modules.Customer.Endpoints.Responses;
-using System.Security.Claims;
 using PetSpa.SharedKernel.Application.Abstractions;
 using PetSpa.SharedKernel.Application.Authentication;
 
@@ -13,123 +13,117 @@ namespace PetSpa.Modules.Customer.Endpoints;
 
 public static class PetEndpoints
 {
-    // Đăng ký endpoint thú cưng.
     public static IEndpointRouteBuilder MapPetEndpoint(this IEndpointRouteBuilder app)
     {
         var customerPets = app.MapGroup("/api/customers/{customerId:long}/pets").WithTags("Pets")
             .RequireAuthorization(AuthorizationPolicies.AuthenticatedAccount);
-        // 1. Đăng ký các đường dẫn và phương thức HTTP.
-        customerPets.MapGet("/", GetAllPetsAsync).WithName("GetAllPets");
-        customerPets.MapPost("/", CreatePetAsync).WithName("CreatePet");
+        customerPets.MapGet("/", GetAllPetsAsync).WithName("GetAllPets")
+            .Produces<List<PetResponse>>()
+            .Produces(StatusCodes.Status404NotFound);
+        customerPets.MapPost("/", CreatePetAsync).WithName("CreatePet")
+            .RequireAuthorization(AuthorizationPolicies.CustomerManagement)
+            .Produces<PetResponse>(StatusCodes.Status201Created)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status422UnprocessableEntity);
 
-        // 2. Tạo nhóm endpoint và cấu hình quyền truy cập.
         var group = app.MapGroup("/api/pets").WithTags("Pets")
             .RequireAuthorization(AuthorizationPolicies.AuthenticatedAccount);
-        group.MapGet("/{id:long}", GetPetByIdAsync).WithName("GetPet");
-        group.MapPut("/{id:long}", UpdatePetAsync).WithName("UpdatePet");
+        group.MapGet("/{id:long}", GetPetByIdAsync).WithName("GetPet")
+            .Produces<PetResponse>()
+            .Produces(StatusCodes.Status404NotFound);
+        group.MapPut("/{id:long}", UpdatePetAsync).WithName("UpdatePet")
+            .RequireAuthorization(AuthorizationPolicies.CustomerManagement)
+            .Produces<PetResponse>(StatusCodes.Status201Created)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound);
+        group.MapPut("/{id:long}/special-note", UpdatePetSpecialNoteAsync).WithName("UpdatePetSpecialNote")
+            .RequireAuthorization(AuthorizationPolicies.CustomerManagement)
+            .RequireAuthorization(policy => policy.RequireRole(AccountRoles.Receptionist))
+            .Produces<PetResponse>()
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status422UnprocessableEntity);
 
         return app;
     }
 
-    // Lấy thông tin thú cưng theo mã.
-    public static async Task<IResult> GetPetByIdAsync(
+    private static async Task<IResult> GetPetByIdAsync(
         long id,
         ClaimsPrincipal currentUser,
+        IAuthorizationService authorization,
         IPetServices petServices,
-        CancellationToken ct
-    )
+        CancellationToken ct)
     {
-        // 1. Lấy thông tin thú cưng.
-        var pet = await petServices.GetByIdAsync(id, ct);
-        if (pet.Status == ResultStatus.NotFound)
-        {
-            return Results.NotFound(pet.Errors);
-        }
-        // 2. Kiểm tra quyền truy cập của tài khoản.
-        if (pet.Value is null || !currentUser.CanAccessCustomer(pet.Value.CustomersId))
-            return Results.NotFound();
-        // 3. Trả kết quả xử lý.
-        return Results.Ok<PetResponse>(pet.Value);
-    }   
-
-    // Lấy danh sách thú cưng của khách hàng.
-    public static async Task<IResult> GetAllPetsAsync(
-        long customerId,
-        ClaimsPrincipal currentUser,
-        IPetServices petServices,
-        CancellationToken ct
-    )
-    {
-        // 1. Kiểm tra quyền truy cập của tài khoản.
-        if (!currentUser.CanAccessCustomer(customerId))
+        var owner = currentUser.GetCustomerId();
+        var canManage = (await authorization.AuthorizeAsync(currentUser, AuthorizationPolicies.CustomerManagement)).Succeeded;
+        if (!canManage && owner is null)
             return Results.Forbid();
 
-        // 2. Lấy thông tin thú cưng.
-        var Pets = await petServices.GetAllByIdAsync(customerId, ct);
+        var pet = await petServices.GetByIdAsync(id, ct);
+        if (pet.Status == ResultStatus.NotFound)
+            return pet.ToHttpResult();
 
-        if (Pets.Status == ResultStatus.NotFound)
-        {
-            return Results.NotFound(new { Message = $"User hiện tại không có pet nào" });
-        }
+        if (pet.Value is null || (!canManage && owner != pet.Value.CustomersId))
+            return Results.NotFound();
 
-        // 3. Trả kết quả xử lý.
-        return Results.Ok<List<PetResponse>>(Pets.Value);
+        return pet.ToHttpResult();
     }
 
-    // Tạo thú cưng mới.
-    public static async Task<IResult> CreatePetAsync(
+    private static async Task<IResult> GetAllPetsAsync(
+        long customerId,
+        ClaimsPrincipal currentUser,
+        IAuthorizationService authorization,
+        IPetServices petServices,
+        CancellationToken ct)
+    {
+        if (currentUser.GetCustomerId() != customerId &&
+            !(await authorization.AuthorizeAsync(currentUser, AuthorizationPolicies.CustomerManagement)).Succeeded)
+        {
+            return Results.Forbid();
+        }
+
+        return (await petServices.GetAllByIdAsync(customerId, ct)).ToHttpResult();
+    }
+
+    private static async Task<IResult> CreatePetAsync(
         long customerId,
         CreatePetRequest req,
         IPetServices petServices,
         ClaimsPrincipal currentUser,
         CancellationToken ct)
     {
-        // 1. Kiểm tra quyền truy cập của tài khoản.
-        if (!currentUser.CanAccessCustomer(customerId))
+        if (req.HasSpecialNote && !currentUser.IsInRole(AccountRoles.Receptionist))
             return Results.Forbid();
 
         if (req.CustomersId != customerId)
             return Results.BadRequest(new { Message = "ID khách hàng trong URL và body phải giống nhau" });
 
-        // 2. Gọi dịch vụ xử lý thông tin thú cưng.
-        var pet = await petServices.CreateAsync(req, ct);
-
-
-        // 3. Trả kết quả xử lý.
-        return pet.ToHttpResult(
-            "GetPet",
-            p => new { id = p?.Id }
-        );
-
+        return (await petServices.CreateAsync(req, ct)).ToHttpResult("GetPet", pet => new { id = pet.Id });
     }
 
-    // Cập nhật thông tin thú cưng.
-    public static async Task<IResult> UpdatePetAsync(
+    private static async Task<IResult> UpdatePetAsync(
         long id,
         UpdatePetRequest req,
         IPetServices petServices,
         ClaimsPrincipal currentUser,
         CancellationToken ct)
     {
-        // 1. Lấy thông tin thú cưng.
-        var existing = await petServices.GetByIdAsync(id, ct);
-        // 2. Kiểm tra quyền truy cập của tài khoản.
-        if (existing.Status == ResultStatus.NotFound || existing.Value is null || !currentUser.CanAccessCustomer(existing.Value.CustomersId))
-            return Results.NotFound();
+        if (req.HasSpecialNote && !currentUser.IsInRole(AccountRoles.Receptionist))
+            return Results.Forbid();
+
         var pet = await petServices.UpdateAsync(id, req, ct);
-
-        switch (pet.Status)
-        {
-            case ResultStatus.Success:
-                return Results.CreatedAtRoute("GetPet", new { id = pet?.Value?.Id }, pet?.Value);
-            case ResultStatus.ValidationFailed:
-                return Results.ValidationProblem(pet?.Errors!);
-            case ResultStatus.NotFound:
-                return Results.NotFound(pet.Errors);
-            default:
-                return Results.BadRequest(new { errors = pet.Errors });
         }
-
+        return pet.Status == ResultStatus.ValidationFailed
+            ? Results.ValidationProblem(pet.Errors!)
+            : pet.ToHttpResult("GetPet", value => new { id = value.Id });
     }
-}
 
+    private static async Task<IResult> UpdatePetSpecialNoteAsync(
+        long id,
+        UpdatePetSpecialNoteRequest req,
+        IPetServices petServices,
+        CancellationToken ct)
+        => (await petServices.UpdateAsync(id, new UpdatePetRequest { SpecialNote = req.SpecialNote }, ct)).ToHttpResult();
+}
