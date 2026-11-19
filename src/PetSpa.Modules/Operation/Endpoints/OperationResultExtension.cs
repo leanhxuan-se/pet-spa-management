@@ -19,7 +19,7 @@ namespace PetSpa.Modules.Customer.Endpoints
                     ? Results.CreatedAtRoute(routeName, routeValues(result.Value!), result.Value)
                     : Results.Ok(result.Value),
 
-                ResultStatus.ValidationFailed => Results.ValidationProblem(result?.Errors),
+                ResultStatus.ValidationFailed => Results.ValidationProblem(result?.Errors!),
                 ResultStatus.NotFound => Results.NotFound(result?.Errors),
                 ResultStatus.UnActive => Results.BadRequest(result?.Errors),
                 ResultStatus.TimeError => Results.BadRequest(result.Errors),

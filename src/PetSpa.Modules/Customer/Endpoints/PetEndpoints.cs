@@ -123,7 +123,7 @@ public static class PetEndpoints
             case ResultStatus.Success:
                 return Results.CreatedAtRoute("GetPet", new { id = pet?.Value?.Id }, pet?.Value);
             case ResultStatus.ValidationFailed:
-                return Results.ValidationProblem(pet?.Errors);
+                return Results.ValidationProblem(pet?.Errors!);
             case ResultStatus.NotFound:
                 return Results.NotFound(pet.Errors);
             default:

@@ -27,6 +27,6 @@ namespace PetSpa.Modules.Operation.Endpoints
             ServiceSessionService service,
             ClaimsPrincipal currentUser,
             CancellationToken ct)
-        => (await service.CreateAsync(req, currentUser?.FindFirst("account_role")?.Value, ct)).ToHttpResult();
+        => (await service.CreateAsync(req, currentUser?.FindFirst("account_role")?.Value!, ct)).ToHttpResult();
     }
 }

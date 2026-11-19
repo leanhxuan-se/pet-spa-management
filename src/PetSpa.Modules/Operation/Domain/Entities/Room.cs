@@ -8,7 +8,7 @@ namespace PetSpa.Modules.Operation.Domain.Entities
     {
         public long Id { get; set; }
         public string RoomName { get; set; } = null!;
-        public string? RoomType { get; set; }
+        public string RoomType { get; set; } = null!;
         public RoomStatus Status { get; set; } = RoomStatus.AVAILABLE;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
