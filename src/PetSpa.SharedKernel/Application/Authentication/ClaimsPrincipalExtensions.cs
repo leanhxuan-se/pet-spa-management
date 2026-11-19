@@ -18,6 +18,8 @@ public static class ClaimsPrincipalExtensions
         ReadAccount(user) is { Type: AccountTypes.Customer } account ? account.Id : null;
 
     // Kiểm tra quyền quản lý khách hàng.
+    public static bool CanManageStaff(this ClaimsPrincipal user) =>
+        ReadAccount(user) is { Role: AccountRoles.Manager or AccountRoles.Admin };
     public static bool CanManageCustomers(this ClaimsPrincipal user) =>
         ReadAccount(user) is { Role: AccountRoles.Receptionist or AccountRoles.Manager or AccountRoles.Admin };
 
