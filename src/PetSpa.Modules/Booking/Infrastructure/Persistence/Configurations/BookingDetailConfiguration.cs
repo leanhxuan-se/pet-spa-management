@@ -21,6 +21,7 @@ namespace PetSpa.Modules.Booking.Infrastructure.Persistence.Configurations
 
             // 2. Cấu hình khóa chính.
             Builder.HasKey(x => x.Id);
+            Builder.HasIndex(x => new { x.Id, x.BookingId }).IsUnique();
 
             // 3. Cấu hình các cột và kiểu dữ liệu.
             Builder.Property(x => x.Id)

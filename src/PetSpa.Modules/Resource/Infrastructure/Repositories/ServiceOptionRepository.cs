@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using PetSpa.Modules.Resource.Application.Abstractions;
 using PetSpa.Modules.Resource.Domain.Entities;
+using PetSpa.Modules.Resource.Domain.Enums;
 using PetSpa.Modules.Resource.Infrastructure.Persistence;
 
 namespace PetSpa.Modules.Resource.Infrastructure.Repositories;
@@ -9,15 +10,18 @@ namespace PetSpa.Modules.Resource.Infrastructure.Repositories;
 public class ServiceOptionRepository(ResourceDbContext db) : IServiceOptionRepository
 {
     // Lấy danh sách đối tượng.
-    public async Task<IReadOnlyList<ServiceOption>> ListAsync(long? serviceId, CancellationToken ct)
+    public async Task<IReadOnlyList<ServiceOption>> ListAsync(
+        long? serviceId, CancellationToken ct, bool activeOnly = false, Species? species = null, decimal? weight = null)
     {
-        // 1. Tạo truy vấn tùy chọn dịch vụ.
-        var query = db.ServiceOptions.AsNoTracking();
-        // 2. Lọc theo dịch vụ nếu có.
-        if (serviceId.HasValue)
-            query = query.Where(o => o.ServiceId == serviceId.Value);
+        var query = (activeOnly ? db.BookableServiceOptions : db.ServiceOptions).AsNoTracking();
+        if (serviceId is { } selectedService)
+            query = query.Where(o => o.ServiceId == selectedService);
+        if (species is { } selectedSpecies)
+            query = query.Where(o => o.Species == selectedSpecies);
+        if (weight is { } petWeight)
+            query = query.Where(o => (o.MinWeight == null || o.MinWeight <= petWeight) &&
+                (o.MaxWeight == null || o.MaxWeight >= petWeight));
 
-        // 3. Sắp xếp và lấy kết quả.
         return await query.OrderBy(o => o.Species).ThenBy(o => o.MinWeight).ThenBy(o => o.Id).ToListAsync(ct);
     }
 

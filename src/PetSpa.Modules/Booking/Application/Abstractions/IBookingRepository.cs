@@ -1,17 +1,19 @@
 // Định nghĩa thao tác lưu trữ và truy vấn IBookingRepository.
 using PetSpa.Modules.Booking.Domain.Entities;
+using PetSpa.Modules.Booking.Application.Dtos;
 using BookingEntity = PetSpa.Modules.Booking.Domain.Entities.Booking;
 
 namespace PetSpa.Modules.Booking.Application.Abstractions;
 
 public interface IBookingRepository
 {
-    // Tìm đối tượng theo mã.
     Task<BookingEntity?> GetByIdAsync(long id, CancellationToken ct);
-    // Thêm đối tượng mới.
+    Task<BookingEntity?> GetForUpdateAsync(long id, CancellationToken ct);
+    Task<IReadOnlyList<BookingEntity>> ReadPageAsync(
+        BookingListQuery query, BookingCursor? after, int limit, CancellationToken ct);
+    Task<T> InTransactionAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct);
+
     void Add(BookingEntity booking);
-    // Xóa chi tiết lịch hẹn.
     void RemoveDetail(BookingDetail detail);
-    // Lưu thay đổi vào cơ sở dữ liệu.
     Task SaveChangesAsync(CancellationToken ct);
 }

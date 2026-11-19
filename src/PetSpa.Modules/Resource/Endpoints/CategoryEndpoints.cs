@@ -20,11 +20,13 @@ public static class CategoryEndpoints
         group.MapGet("/", ListAsync).WithName("GetCategories").Produces<IReadOnlyList<CategoryResponse>>().AllowAnonymous();
         group.MapGet("/{id:long}", GetByIdAsync).WithName("GetCategoryById").Produces<CategoryResponse>().AllowAnonymous();
         group.MapPost("/", CreateAsync).WithName("CreateCategory")
-            .Produces<CategoryResponse>(StatusCodes.Status201Created).ProducesValidationProblem().RequireStaff();
+            .Produces<CategoryResponse>(StatusCodes.Status201Created).ProducesValidationProblem()
+            .Produces(StatusCodes.Status409Conflict).RequireResourceManager();
         group.MapPut("/{id:long}", UpdateAsync).WithName("UpdateCategory")
-            .Produces<CategoryResponse>().ProducesValidationProblem().RequireStaff();
+            .Produces<CategoryResponse>().ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound).Produces(StatusCodes.Status409Conflict).RequireResourceManager();
         group.MapDelete("/{id:long}", DeleteAsync).WithName("DeleteCategory")
-            .Produces(StatusCodes.Status204NoContent).RequireStaff();
+            .Produces(StatusCodes.Status204NoContent).Produces(StatusCodes.Status404NotFound).RequireResourceManager();
         return app;
     }
 

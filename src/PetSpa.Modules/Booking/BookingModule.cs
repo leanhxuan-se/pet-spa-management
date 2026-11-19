@@ -5,8 +5,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Booking.Application.Abstractions;
 using PetSpa.Modules.Booking.Application.Services;
+using PetSpa.Modules.Booking.Contracts;
 using PetSpa.Modules.Booking.Endpoints;
 using PetSpa.Modules.Booking.Infrastructure.Repositories;
+using PetSpa.Modules.Booking.Infrastructure.Services;
 
 namespace PetSpa.Modules.Booking;
 
@@ -26,6 +28,7 @@ public static class BookingModule
         });
         // 2. Đăng ký các dịch vụ cần sử dụng.
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IBookingModule, BookingModuleContract>();
         services.AddScoped<BookingService>();
         return services;
     }

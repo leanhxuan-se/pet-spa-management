@@ -15,13 +15,22 @@ public class ServiceOptionService(IServiceOptionRepository repository, IServiceR
             option.DurationMinutes, option.UnitPrice, option.Status);
 
     // Lấy danh sách đối tượng.
-    public async Task<ResourceResult<IReadOnlyList<ServiceOptionDto>>> ListAsync(long? serviceId, CancellationToken ct)
+    public async Task<ResourceResult<IReadOnlyList<ServiceOptionDto>>> ListAsync(
+        long? serviceId, CancellationToken ct, bool activeOnly = false, Species? species = null, decimal? weight = null)
     {
+        var errors = new Dictionary<string, string[]>();
+        if (species is { } selectedSpecies && !Enum.IsDefined(selectedSpecies))
+            errors["Species"] = ["Loài thú cưng không hợp lệ."];
+        if (weight < 0)
+            errors["Weight"] = ["Cân nặng không được âm."];
+        if (errors.Count > 0)
+            return ResourceResult<IReadOnlyList<ServiceOptionDto>>.Invalid(errors);
+
         if (serviceId.HasValue && await services.GetByIdAsync(serviceId.Value, ct) is null)
             return ResourceResult<IReadOnlyList<ServiceOptionDto>>.NotFound("Không tìm thấy dịch vụ.");
 
         // 1. Lấy thông tin tùy chọn dịch vụ.
-        var options = await repository.ListAsync(serviceId, ct);
+        var options = await repository.ListAsync(serviceId, ct, activeOnly, species, weight);
         // 2. Trả kết quả xử lý.
         return ResourceResult<IReadOnlyList<ServiceOptionDto>>.Success(options.Select(ToDto).ToList());
     }

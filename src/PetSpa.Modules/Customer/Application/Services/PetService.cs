@@ -36,10 +36,12 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
         public async Task<Result<List<PetResponse>>> GetAllByIdAsync(long id, CancellationToken ct)
         {
             // 1. Lấy thông tin thú cưng từ cơ sở dữ liệu.
-            var pets = await db.Pets
-                .Where(c => c.CustomersId == id)
-                .AsNoTracking()
-                .ToListAsync(ct);
+            var pets = await db.Customers.AsNoTracking()
+                .Where(c => c.Id == id)
+                .Select(c => c.Pets.OrderBy(p => p.Id).ToList())
+                .SingleOrDefaultAsync(ct);
+            if (pets is null)
+                return Result<List<PetResponse>>.NotFound($"Customer with id {id} not found");
 
             // 2. Chuyển dữ liệu sang dạng trả về.
             var petResponse = pets.Adapt<List<PetResponse>>();
@@ -59,15 +61,18 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
             }         
             
             // 2. Lấy thông tin khách hàng từ cơ sở dữ liệu.
-            var customer = await db.Customers
-                .FirstOrDefaultAsync(x => x.Id == req.CustomersId, ct);
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            var customer = await db.Customers.FromSql(
+                    $"""SELECT * FROM customer.customer WHERE "Id" = {req.CustomersId} FOR SHARE""")
+                .AsNoTracking()
+                .SingleOrDefaultAsync(ct);
 
             if(customer is null)
             {
                 return Result<PetResponse>.NotFound($"Customer with id {req.CustomersId} not found");
             }
 
-            if (customer?.Status == CustomerStatus.INACTIVE)
+            if (customer.Status != CustomerStatus.ACTIVE)
             {
                 return Result<PetResponse>.UnActive("CustomerInactive", $"Customer with id {req.CustomersId} is inactive");
             }
@@ -76,8 +81,8 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
             var pet = new Pet
             {
                 CustomersId = req.CustomersId,
-                Name = req.Name,
-                Species = req.Species,
+                Name = req.Name.Trim(),
+                Species = req.Species!.Value,
                 Gender = req.Gender,
                 Weight = req.Weight,
                 Height = req.Height,
@@ -90,6 +95,7 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
             db.Pets.Add(pet);
             // 5. Lưu các thay đổi.
             await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
 
             // 6. Chuyển dữ liệu sang dạng trả về.
             var petResponse = pet.Adapt<PetResponse>();
@@ -116,14 +122,16 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
                 return Result<PetResponse>.NotFound($"Pet with id {petId} not found");
             }
             // 3. Cập nhật thông tin thú cưng.
-            pet.Name = req.Name ?? pet.Name;
+            pet.Name = req.Name?.Trim() ?? pet.Name;
             pet.Species = req.Species ?? pet.Species;
             pet.Gender = req.Gender ?? pet.Gender;
             pet.Weight = req.Weight ?? pet.Weight;
             pet.Height = req.Height ?? pet.Height;
             pet.DateOfBirth = req.DateOfBirth ?? pet.DateOfBirth;
-            pet.SpecialNote = req.SpecialNote ?? pet.SpecialNote;
+            if (req.HasSpecialNote)
+                pet.SpecialNote = req.SpecialNote;
             pet.Status = req.Status ?? pet.Status;
+            pet.UpdatedAt = DateTime.UtcNow;
 
             // 4. Lưu các thay đổi.
             await db.SaveChangesAsync(ct);

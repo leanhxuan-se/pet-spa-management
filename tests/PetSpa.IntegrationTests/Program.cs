@@ -18,12 +18,15 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.IdentityModel.Tokens;
 using PetSpa.Api.Composition;
 using PetSpa.Modules.Booking.Application.Abstractions;
+using PetSpa.Modules.Booking.Application.Dtos;
 using PetSpa.Modules.Booking.Application.Services;
 using PetSpa.Modules.Booking.Domain.Entities;
 using PetSpa.Modules.Booking.Endpoints;
 using PetSpa.Modules.Customer.Application.Abstractions;
 using PetSpa.Modules.Customer.Application.Services;
+using PetSpa.Modules.Customer.Application.Validators;
 using PetSpa.Modules.Customer.Contracts;
+using PetSpa.Modules.Customer.Contracts.Dtos;
 using PetSpa.Modules.Customer.Domain.Entities;
 using PetSpa.Modules.Customer.Domain.Repositories;
 using PetSpa.Modules.Customer.Endpoints;
@@ -88,7 +91,7 @@ builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<CustomerLoginService>();
 builder.Services.AddScoped<StaffLoginService>();
-builder.Services.AddScoped<IValidator<CustomerLoginRequest>, LoginRequestValidator<CustomerLoginRequest>>();
+builder.Services.AddScoped<IValidator<CustomerLoginRequest>, CustomerLoginRequestValidator>();
 builder.Services.AddScoped<IValidator<StaffLoginRequest>, LoginRequestValidator<StaffLoginRequest>>();
 await using var app = builder.Build();
 app.UseSwaggerUI();
@@ -200,6 +203,15 @@ try
         Check(roles.SequenceEqual(new[] { "customer", "staff", "receptionist", "manager", "admin" }),
             "generated OpenAPI lists all canonical roles");
         var categories = paths.GetProperty("/api/categories");
+        Check(paths.GetProperty("/api/bookings").TryGetProperty("get", out _)
+            && paths.GetProperty("/api/bookings/{id}").GetProperty("delete").GetProperty("responses").TryGetProperty("204", out _)
+            && paths.GetProperty("/api/booking/{id}").TryGetProperty("patch", out _), "generated OpenAPI exposes the Booking routes");
+        var schemas = document.GetProperty("components").GetProperty("schemas");
+        var patch = schemas.GetProperty("ChangeBookingStatusRequest");
+        Check(!patch.GetProperty("additionalProperties").GetBoolean()
+            && patch.GetProperty("properties").GetProperty("status").GetProperty("enum").EnumerateArray()
+                .Select(value => value.GetString()).SequenceEqual(new[] { "confirmed", "completed" }),
+            "generated OpenAPI documents the strict Booking status body");
         var categoryRead = categories.GetProperty("get");
         Check(!categoryRead.TryGetProperty("security", out var readSecurity) || readSecurity.GetArrayLength() == 0,
             "generated OpenAPI treats category reads as public");
@@ -212,7 +224,7 @@ try
     using (var write = await Send(HttpMethod.Post, "/api/categories", body: categoryBody))
         Check(write.StatusCode == HttpStatusCode.Unauthorized && categoryRepository.AddCalls == 0,
             "anonymous category write -> 401");
-    var customerToken = await Login("customer", " " + customer.Phone + " ", AccountRoles.Customer, 1);
+    var customerToken = await Login("customer", " +84" + customer.Phone[1..] + " ", AccountRoles.Customer, 1);
     Check(customer.LastLoginAt.HasValue && customer.PasswordHash != customerHash && customerRepository.SaveCalls == 1,
         "customer login rehashes and records LastLoginAt");
     using (var write = await Send(HttpMethod.Post, "/api/categories", customerToken, categoryBody))
@@ -226,6 +238,8 @@ try
         Check(other.StatusCode == HttpStatusCode.Forbidden, "customer cannot read another profile");
     using (var own = await Send(HttpMethod.Put, "/api/customers/1", customerToken, new { fullName = "Updated" }))
         Check(own.StatusCode == HttpStatusCode.Created && customerService.LastUpdatedId == 1, "customer updates own profile");
+    using (var own = await Send(HttpMethod.Put, "/api/customers/1", customerToken, new { fullName = "Denied", status = (string?)null }))
+        Check(own.StatusCode == HttpStatusCode.Forbidden && customerService.UpdateCalls == 1, "customer cannot send status even as null");
     using (var other = await Send(HttpMethod.Put, "/api/customers/999", customerToken, new { fullName = "Updated" }))
         Check(other.StatusCode == HttpStatusCode.Forbidden && customerService.LastUpdatedId == 1,
             "customer cannot update another profile");
@@ -241,37 +255,51 @@ try
         Check(!json.GetProperty("isStaff").GetBoolean() && json.GetProperty("customerId").GetInt64() == 1,
             "booking actor uses customer role and customer identity");
     }
+    string? receptionistToken = null;
     foreach (var role in Enum.GetValues<StaffRole>())
     {
         staff.Role = role;
         var token = await Login("staff", staff.Phone, role.ToString().ToLowerInvariant(), 1);
+        var frontDesk = role is StaffRole.RECEPTIONIST or StaffRole.MANAGER;
+        if (role == StaffRole.RECEPTIONIST) receptionistToken = token;
         if (role == StaffRole.STAFF)
             Check(staff.LastLoginAt.HasValue && staff.PasswordHash != staffHash && staffRepository.SaveCalls == 1,
                 "staff login rehashes and records LastLoginAt");
         using (var allowed = await Send(HttpMethod.Get, "/test/staff", token))
-            Check(allowed.StatusCode == HttpStatusCode.OK, role + " accepted by resource staff policy");
+            Check(allowed.StatusCode == HttpStatusCode.OK, role + " accepted by the shared staff policy");
         using (var manager = await Send(HttpMethod.Get, "/test/manager", token))
             Check(manager.StatusCode == (role is StaffRole.MANAGER or StaffRole.ADMIN ? HttpStatusCode.OK : HttpStatusCode.Forbidden),
                 role + " manager/admin RequireRole policy");
         using (var list = await Send(HttpMethod.Get, "/api/customers", token))
-            Check(list.StatusCode == (role == StaffRole.STAFF ? HttpStatusCode.Forbidden : HttpStatusCode.OK),
+            Check(list.StatusCode == (frontDesk ? HttpStatusCode.OK : HttpStatusCode.Forbidden),
                 role + " customer list policy");
         using (var profile = await Send(HttpMethod.Get, "/api/customers/999", token))
-            Check(profile.StatusCode == (role == StaffRole.STAFF ? HttpStatusCode.Forbidden : HttpStatusCode.OK),
+            Check(profile.StatusCode == (frontDesk ? HttpStatusCode.OK : HttpStatusCode.Forbidden),
                 role + " customer management permissions");
         using (var sameId = await Send(HttpMethod.Get, "/api/customers/1", token))
-            Check(sameId.StatusCode == (role == StaffRole.STAFF ? HttpStatusCode.Forbidden : HttpStatusCode.OK),
+            Check(sameId.StatusCode == (frontDesk ? HttpStatusCode.OK : HttpStatusCode.Forbidden),
                 role + " staff ID does not grant customer ownership");
         using (var profile = await Send(HttpMethod.Post, "/api/customers", token, profileBody))
-            Check(profile.StatusCode == (role == StaffRole.STAFF ? HttpStatusCode.Forbidden : HttpStatusCode.Created),
+            Check(profile.StatusCode == (frontDesk ? HttpStatusCode.Created : HttpStatusCode.Forbidden),
                 role + " create customer policy");
         using (var write = await Send(HttpMethod.Post, "/api/categories", token, categoryBody))
-            Check(write.StatusCode == HttpStatusCode.Created, role + " can write to real category endpoint");
+            Check(write.StatusCode == (role == StaffRole.MANAGER ? HttpStatusCode.Created : HttpStatusCode.Forbidden),
+                role + " category write policy");
         using (var booking = await Send(HttpMethod.Get, "/api/bookings/2", token))
-            Check(booking.StatusCode == HttpStatusCode.OK, role + " can read a customer's booking");
+            Check(booking.StatusCode == (frontDesk ? HttpStatusCode.OK : HttpStatusCode.Forbidden), role + " booking detail policy");
+        using (var page = await Send(HttpMethod.Get, "/api/bookings?status=pending&pageSize=1", token))
+            Check(page.StatusCode == (frontDesk ? HttpStatusCode.OK : HttpStatusCode.Forbidden), role + " booking list policy");
         using (var list = await Send(HttpMethod.Get, "/api/customers/999/pets", token))
-            Check(list.StatusCode == (role == StaffRole.STAFF ? HttpStatusCode.Forbidden : HttpStatusCode.OK)
-                && (role == StaffRole.STAFF || pets.ListOwner == 999), role + " pet list permissions and requested owner");
+            Check(list.StatusCode == (frontDesk ? HttpStatusCode.OK : HttpStatusCode.Forbidden)
+                && (!frontDesk || pets.ListOwner == 999), role + " pet list permissions and requested owner");
+        if (role == StaffRole.MANAGER)
+        {
+            using var update = await Send(HttpMethod.Put, "/api/pets/77", token, new { name = "Denied", specialNote = (string?)null });
+            Check(update.StatusCode == HttpStatusCode.Forbidden && pets.UpdateCalls == 0, "manager cannot clear notes or change a second field in the same request");
+            using var create = await Send(HttpMethod.Post, "/api/customers/1/pets", token,
+                new { customersId = 1, name = "Denied", species = "DOG", specialNote = (string?)null });
+            Check(create.StatusCode == HttpStatusCode.Forbidden && pets.CreateCalls == 0, "manager cannot include a special note when creating a pet");
+        }
         using (var actor = await Send(HttpMethod.Get, "/test/booking-actor", token))
         {
             var json = await actor.Content.ReadFromJsonAsync<JsonElement>();
@@ -297,13 +325,21 @@ try
         Check(update.StatusCode == HttpStatusCode.Forbidden && bookings.SaveCalls == 0,
             owner == 999 ? "customer cannot change booking owner" : "customer cannot change booking status");
     }
-    using (var update = await Send(HttpMethod.Put, "/api/bookings/1", customerToken,
-        new { customerId = 1L, petId = 20L, bookingTime = DateTime.UtcNow.AddDays(1), status = "PENDING" }))
-        Check(update.StatusCode == HttpStatusCode.BadRequest && bookings.SaveCalls == 0,
-            "booking rejects a pet that belongs to a different customer");
     using (var create = await Send(HttpMethod.Post, "/api/bookings", customerToken,
         new { customerId = 1L, petId = 10L, bookingTime = DateTime.UtcNow.AddDays(1), serviceOptionIds = new[] { 1L } }))
-        Check(create.StatusCode == HttpStatusCode.Created && bookings.SaveCalls == 1, "customer can book for their own pet");
+        Check(create.StatusCode == HttpStatusCode.Forbidden && bookings.SaveCalls == 0, "customer cannot book for their own pet");
+    using (var create = await Send(HttpMethod.Post, "/api/bookings", receptionistToken,
+        new { customerId = 1L, petId = 20L, bookingTime = DateTime.UtcNow.AddDays(1), serviceOptionIds = new[] { 1L } }))
+        Check(create.StatusCode == HttpStatusCode.BadRequest && bookings.SaveCalls == 0, "booking rejects a pet of another customer");
+    using (var update = await Send(HttpMethod.Put, "/api/bookings/1", receptionistToken, new { contactName = "Valid", customerId = 2 }))
+        Check(update.StatusCode == HttpStatusCode.BadRequest && bookings.SaveCalls == 0, "booking PUT rejects unknown members before writing");
+    using (var patch = await Send(HttpMethod.Patch, "/api/booking/1", receptionistToken, new { status = "confirmed", note = "extra" }))
+        Check(patch.StatusCode == HttpStatusCode.BadRequest && bookings.SaveCalls == 0, "booking PATCH rejects unknown members before writing");
+    using (var invalidFilter = await Send(HttpMethod.Get, "/api/bookings?status=42", receptionistToken))
+        Check(invalidFilter.StatusCode == HttpStatusCode.BadRequest, "booking rejects unknown numeric status filters");
+    using (var create = await Send(HttpMethod.Post, "/api/bookings", receptionistToken,
+        new { customerId = 1L, petId = 10L, bookingTime = DateTime.UtcNow.AddDays(1), serviceOptionIds = new[] { 1L } }))
+        Check(create.StatusCode == HttpStatusCode.Created && bookings.SaveCalls == 1, "receptionist can create a booking");
     using (var list = await Send(HttpMethod.Get, "/api/customers/1/pets", customerToken))
         Check(list.StatusCode == HttpStatusCode.OK && pets.ListOwner == 1, "customer lists own pets");
     using (var list = await Send(HttpMethod.Get, "/api/customers/999/pets", customerToken))
@@ -315,8 +351,8 @@ try
     using (var read = await Send(HttpMethod.Get, "/api/pets/77", customerToken))
         Check(read.StatusCode == HttpStatusCode.NotFound, "pet read validates actual owner");
     using (var update = await Send(HttpMethod.Put, "/api/pets/77", customerToken, new { name = "Not allowed" }))
-        Check(update.StatusCode == HttpStatusCode.NotFound && pets.UpdateCalls == 0, "pet update rejects another owner's pet");
-    using (var create = await Send(HttpMethod.Post, "/api/customers/1/pets", customerToken,
+        Check(update.StatusCode == HttpStatusCode.Forbidden && pets.UpdateCalls == 0, "customer cannot update a pet");
+    using (var create = await Send(HttpMethod.Post, "/api/customers/1/pets", receptionistToken,
         new { customersId = 999, name = "Not allowed", species = Species.DOG }))
         Check(create.StatusCode == HttpStatusCode.BadRequest && pets.CreateCalls == 0, "pet creation rejects mismatched body owner");
     foreach (var kind in new[] { "customer", "staff" })
@@ -441,6 +477,7 @@ sealed class FakeCustomerService : ICustomerService
     public Task<Result<List<CustomerResponse>>> GetAsync(CancellationToken ct)
         => Task.FromResult(Result<List<CustomerResponse>>.Success([Customer(1)]));
     public long? LastUpdatedId { get; private set; }
+    public int UpdateCalls { get; private set; }
     public int CreateCalls { get; private set; }
     // Tạo dữ liệu khách hàng mẫu.
     static CustomerResponse Customer(long id) => new(id, "Customer", null, null, null, "0900000001", null, null, []);
@@ -451,7 +488,7 @@ sealed class FakeCustomerService : ICustomerService
     { CreateCalls++; return Task.FromResult(Result<CustomerResponse>.Success(Customer(999))); }
     // Cập nhật đối tượng.
     public Task<Result<CustomerResponse>> UpdateAsync(long id, UpdateCustomerRequest req, CancellationToken ct)
-    { LastUpdatedId = id; return Task.FromResult(Result<CustomerResponse>.Success(Customer(id))); }
+    { UpdateCalls++; LastUpdatedId = id; return Task.FromResult(Result<CustomerResponse>.Success(Customer(id))); }
 }
 
 sealed class FakeBookings : IBookingRepository
@@ -465,6 +502,10 @@ sealed class FakeBookings : IBookingRepository
     public int SaveCalls { get; private set; }
     // Tìm đối tượng theo mã.
     public Task<Booking?> GetByIdAsync(long id, CancellationToken ct) => Task.FromResult(records.GetValueOrDefault(id));
+    public Task<Booking?> GetForUpdateAsync(long id, CancellationToken ct) => GetByIdAsync(id, ct);
+    public Task<IReadOnlyList<Booking>> ReadPageAsync(BookingListQuery query, BookingCursor? after, int limit, CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<Booking>>([]);
+    public Task<T> InTransactionAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct) => action(ct);
     // Thêm đối tượng mới.
     public void Add(Booking booking) => records.Add(booking.Id = records.Count + 1, booking);
     // Xóa chi tiết lịch hẹn.
@@ -478,6 +519,10 @@ sealed class FakeCustomerModule : ICustomerModule
     // Kiểm tra thú cưng thuộc khách hàng.
     public Task<bool> PetBelongsToCustomerAsync(long petId, long customerId, CancellationToken ct) =>
         Task.FromResult((petId, customerId) is (10, 1) or (20, 999));
+    public async Task<BookingCustomerDto?> GetBookingCustomerAsync(long customerId, long petId, CancellationToken ct) =>
+        await PetBelongsToCustomerAsync(petId, customerId, ct) ? new(customerId, petId, "Customer", "0900000001", "DOG", 5) : null;
+    public Task<BookingContactDto?> GetBookingContactAsync(long customerId, CancellationToken ct) =>
+        Task.FromResult<BookingContactDto?>(new(customerId, "Customer", "0900000001"));
 }
 
 sealed class FakeResourceModule : IResourceModule
@@ -485,7 +530,9 @@ sealed class FakeResourceModule : IResourceModule
     // Lấy các tùy chọn dịch vụ đang hoạt động.
     public Task<IReadOnlyList<BookableServiceOption>> GetActiveServiceOptionsAsync(
         IReadOnlyCollection<long> ids, CancellationToken ct) =>
-        Task.FromResult<IReadOnlyList<BookableServiceOption>>([new(1, 100_000)]);
+        Task.FromResult<IReadOnlyList<BookableServiceOption>>([new(1, 100_000) { DurationMinutes = 30 }]);
+    public Task<IReadOnlyList<ServiceOptionDescription>> GetServiceOptionDescriptionsAsync(
+        IReadOnlyCollection<long> ids, CancellationToken ct) => Task.FromResult<IReadOnlyList<ServiceOptionDescription>>([]);
 }
 
 sealed class FakeCategories : ICategoryRepository
