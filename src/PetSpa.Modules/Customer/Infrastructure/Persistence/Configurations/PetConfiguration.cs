@@ -2,16 +2,23 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PetSpa.Modules.Customer.Domain.Entities;
+using PetSpa.Modules.Customer.Domain.Enums;
 
 namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
 {
     internal class PetConfiguration: IEntityTypeConfiguration<Pet>
     {
+        public const int NameMaxLength = 100;
+
         // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<Pet> builder)
         {
             // 1. Cấu hình tên bảng và các ràng buộc.
-            builder.ToTable("pet");
+            builder.ToTable("pet", table =>
+            {
+                table.HasCheckConstraint("ck_pet_weight_positive", "weight > 0");
+                table.HasCheckConstraint("ck_pet_height_positive", "height > 0");
+            });
 
             // 2. Cấu hình khóa chính.
             builder.HasKey(x => x.Id);
@@ -26,11 +33,11 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
                 .WithMany(y => y.Pets)
                 .HasForeignKey(z => z.CustomersId)
                 .HasConstraintName("fk_pet_customer")
-                .OnDelete(DeleteBehavior.Cascade); // auto delete Pet when Customer is deleted
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Property(x => x.Name)
                 .HasColumnName("name")
-                .HasMaxLength(50)
+                .HasMaxLength(NameMaxLength)
                 .IsRequired();
 
             builder.Property(x => x.Species)
@@ -38,8 +45,6 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
                 .HasConversion<string>()
                 .HasMaxLength(50)
                 .IsRequired();
-
-            // No minValue so we will validate value later in Application.validator
 
             builder.Property(x => x.Weight)
                 .HasColumnName("weight")
@@ -51,7 +56,8 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.Gender)
                 .HasColumnName("gender")
-                .HasConversion<string>();
+                .HasConversion<string>()
+                .HasMaxLength(20);
 
             builder.Property(x => x.DateOfBirth)
                 .HasColumnName("date_of_birth")
@@ -60,8 +66,9 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
             builder.Property(x => x.Status)
                 .HasColumnName("status")
                 .HasConversion<string>()
-                .HasMaxLength(10)
-                .IsRequired();
+                .HasMaxLength(30)
+                .IsRequired()
+                .HasDefaultValue(PetStatus.ACTIVE);
 
             builder.Property(x => x.SpecialNote)
                 .HasColumnName("special_note")
@@ -69,11 +76,13 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.CreatedAt)
                 .HasColumnName("created_at")
-                .HasColumnType("timestamp with time zone");
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("now()");
 
             builder.Property(x => x.UpdatedAt)
                 .HasColumnName("updated_at")
-                .HasColumnType("timestamp with time zone");
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("now()");
         }
     }
 }

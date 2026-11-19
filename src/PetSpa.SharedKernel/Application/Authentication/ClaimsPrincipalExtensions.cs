@@ -13,6 +13,9 @@ public static class ClaimsPrincipalExtensions
     public static bool HasStaffRole(this ClaimsPrincipal user) =>
         ReadAccount(user) is { Type: AccountTypes.Staff };
 
+    public static bool HasFrontDeskRole(this ClaimsPrincipal user) =>
+        ReadAccount(user) is { Type: AccountTypes.Staff, Role: AccountRoles.Receptionist or AccountRoles.Manager };
+
     // Lấy mã khách hàng từ tài khoản.
     public static long? GetCustomerId(this ClaimsPrincipal user) =>
         ReadAccount(user) is { Type: AccountTypes.Customer } account ? account.Id : null;

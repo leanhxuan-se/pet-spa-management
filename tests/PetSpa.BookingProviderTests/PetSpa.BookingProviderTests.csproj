@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/PetSpa.Modules/Booking/PetSpa.Modules.Booking.csproj" />
+    <ProjectReference Include="../../src/PetSpa.Modules/Customer/PetSpa.Modules.Customer.csproj" />
+    <ProjectReference Include="../../src/PetSpa.Modules/Resource/PetSpa.Modules.Resource.csproj" />
+    <Compile Include="../../src/PetSpa.Api/Composition/AuthorizationRegistration.cs" Link="AuthorizationRegistration.cs" />
+    <Compile Include="../../src/PetSpa.Api/Authentication/IdentityPasswordService.cs" Link="IdentityPasswordService.cs" />
+  </ItemGroup>
+</Project>

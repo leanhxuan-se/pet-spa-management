@@ -35,7 +35,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/LoginRequest" }
+            schema: { $ref: "#/components/schemas/CustomerLoginRequest" }
       responses:
         "200":
           description: "Thành công."
@@ -70,7 +70,7 @@ paths:
       tags: ["Khách hàng"]
       summary: "Xem hồ sơ khách hàng"
       operationId: GetCustomerById
-      description: "Chủ hồ sơ hoặc nhân viên có vai trò receptionist, manager hoặc admin."
+      description: "Dành cho chủ hồ sơ, receptionist hoặc manager."
       responses:
         "200":
           description: "Thành công."
@@ -84,7 +84,7 @@ paths:
       tags: ["Khách hàng"]
       summary: "Cập nhật hồ sơ khách hàng"
       operationId: UpdateCustomer
-      description: "Chủ hồ sơ hoặc nhân viên có vai trò receptionist, manager hoặc admin. Có thể gửi riêng password để đổi mật khẩu. Mật khẩu hiện tại được giữ khi bỏ qua password hoặc gửi null."
+      description: "Dành cho chủ hồ sơ, receptionist hoặc manager. Chỉ receptionist và manager được gửi status. Bỏ qua password hoặc gửi null để giữ mật khẩu hiện tại."
       requestBody:
         required: true
         content:
@@ -105,12 +105,27 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/BadRequest" }
   /api/customers:
+    get:
+      tags: ["Khách hàng"]
+      summary: "Liệt kê khách hàng"
+      operationId: GetCustomers
+      description: "Dành cho receptionist và manager."
+      responses:
+        "200":
+          description: "Danh sách hồ sơ khách hàng."
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Customer" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
     post:
       tags: ["Khách hàng"]
       summary: "Tạo hồ sơ khách hàng"
       operationId: CreateCustomer
-      description: "Dành cho receptionist, manager và admin. Mật khẩu là bắt buộc và được băm trước khi lưu."
+      description: "Dành cho receptionist và manager. Hồ sơ tạo mới ở trạng thái ACTIVE. Điện thoại được chuẩn hóa và mật khẩu được băm trước khi lưu."
       requestBody:
         required: true
         content:
@@ -130,6 +145,8 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/BadRequest" }
   /api/customers/{customerId}/pets:
     parameters:
       - $ref: "#/components/parameters/CustomerId"
@@ -137,7 +154,7 @@ paths:
       tags: ["Thú cưng"]
       summary: "Liệt kê thú cưng của khách hàng"
       operationId: GetAllPets
-      description: "Chủ hồ sơ hoặc nhân viên có vai trò receptionist, manager hoặc admin."
+      description: "Dành cho chủ hồ sơ, receptionist hoặc manager. Hồ sơ chưa có thú cưng trả 200 với mảng rỗng."
       responses:
         "200":
           description: "Thành công."
@@ -153,7 +170,7 @@ paths:
       tags: ["Thú cưng"]
       summary: "Tạo hồ sơ thú cưng"
       operationId: CreatePet
-      description: "Chủ hồ sơ hoặc nhân viên có vai trò receptionist, manager hoặc admin. Dùng cùng ID khách hàng cho customerId trên URL và customersId trong body."
+      description: "Dành cho receptionist và manager. Chủ phải ACTIVE và customerId trên URL phải khớp customersId trong body. Chỉ receptionist được gửi specialNote, kể cả null."
       requestBody:
         required: true
         content:
@@ -174,6 +191,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/BadRequest" }
   /api/pets/{id}:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -181,7 +199,7 @@ paths:
       tags: ["Thú cưng"]
       summary: "Xem chi tiết thú cưng"
       operationId: GetPet
-      description: "Chủ thú cưng hoặc nhân viên có vai trò receptionist, manager hoặc admin. Trả 404 nếu thú cưng thuộc khách hàng khác hoặc role không được phép đọc thú cưng đó."
+      description: "Dành cho chủ thú cưng, receptionist hoặc manager. Khách đọc thú cưng của người khác nhận 404."
       responses:
         "200":
           description: "Thành công."
@@ -195,7 +213,7 @@ paths:
       tags: ["Thú cưng"]
       summary: "Cập nhật hồ sơ thú cưng"
       operationId: UpdatePet
-      description: "Chủ thú cưng hoặc nhân viên có vai trò receptionist, manager hoặc admin. Trả 404 nếu tài khoản không được phép sửa thú cưng đó."
+      description: "Dành cho receptionist và manager. Chỉ receptionist được gửi specialNote, kể cả null. Bỏ qua trường này để giữ ghi chú hiện tại."
       requestBody:
         required: true
         content:
@@ -216,6 +234,34 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/pets/{id}/special-note:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: ["Thú cưng"]
+      summary: "Cập nhật ghi chú chăm sóc"
+      operationId: UpdatePetSpecialNote
+      description: "Dành cho receptionist. Gửi specialNote null để xóa ghi chú."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [specialNote]
+              properties:
+                specialNote: { type: string, nullable: true }
+      responses:
+        "200":
+          description: "Hồ sơ thú cưng sau khi lưu."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pet" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/BadRequest" }
   /api/categories:
     get:
       tags: ["Danh mục dịch vụ"]
@@ -234,7 +280,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Tạo danh mục"
       operationId: CreateCategory
-      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
+      description: "Dành cho manager."
       requestBody:
         required: true
         content:
@@ -274,7 +320,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Cập nhật danh mục"
       operationId: UpdateCategory
-      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
+      description: "Dành cho manager."
       requestBody:
         required: true
         content:
@@ -295,10 +341,10 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Xóa danh mục"
       operationId: DeleteCategory
-      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
+      description: "Dành cho manager."
       responses:
         "204":
-          description: "Đã xóa."
+          description: "Đã chuyển sang INACTIVE."
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -312,6 +358,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/CategoryFilter"
         - $ref: "#/components/parameters/Keyword"
+        - $ref: "#/components/parameters/ActiveOnly"
       responses:
         "200":
           description: "Thành công."
@@ -326,7 +373,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Tạo dịch vụ"
       operationId: CreateService
-      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
+      description: "Dành cho manager."
       requestBody:
         required: true
         content:
@@ -367,7 +414,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Cập nhật dịch vụ"
       operationId: UpdateService
-      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
+      description: "Dành cho manager."
       requestBody:
         required: true
         content:
@@ -388,10 +435,10 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Xóa dịch vụ"
       operationId: DeleteService
-      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
+      description: "Dành cho manager."
       responses:
         "204":
-          description: "Đã xóa."
+          description: "Đã chuyển sang INACTIVE."
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -403,6 +450,9 @@ paths:
       security: []
       parameters:
         - $ref: "#/components/parameters/ServiceFilter"
+        - $ref: "#/components/parameters/ActiveOnly"
+        - $ref: "#/components/parameters/OptionSpecies"
+        - $ref: "#/components/parameters/OptionWeight"
       responses:
         "200":
           description: "Thành công."
@@ -417,7 +467,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Tạo tùy chọn dịch vụ"
       operationId: CreateServiceOption
-      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
+      description: "Dành cho manager."
       requestBody:
         required: true
         content:
@@ -457,7 +507,7 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Cập nhật tùy chọn dịch vụ"
       operationId: UpdateServiceOption
-      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
+      description: "Dành cho manager."
       requestBody:
         required: true
         content:
@@ -477,10 +527,10 @@ paths:
       tags: ["Danh mục dịch vụ"]
       summary: "Xóa tùy chọn dịch vụ"
       operationId: DeleteServiceOption
-      description: "Yêu cầu định danh nhân viên hợp lệ với role staff, receptionist, manager hoặc admin."
+      description: "Dành cho manager."
       responses:
         "204":
-          description: "Đã xóa."
+          description: "Đã chuyển sang INACTIVE."
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -494,6 +544,7 @@ paths:
       security: []
       parameters:
         - $ref: "#/components/parameters/Keyword"
+        - $ref: "#/components/parameters/ActiveOnly"
       responses:
         "200":
           description: "Thành công."
@@ -511,6 +562,10 @@ paths:
       summary: "Liệt kê tùy chọn theo dịch vụ"
       operationId: GetOptionsByService
       security: []
+      parameters:
+        - $ref: "#/components/parameters/ActiveOnly"
+        - $ref: "#/components/parameters/OptionSpecies"
+        - $ref: "#/components/parameters/OptionWeight"
       responses:
         "200":
           description: "Thành công."
@@ -519,13 +574,35 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/ServiceOption" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/bookings:
+    get:
+      tags: ["Lịch hẹn"]
+      summary: "Tìm kiếm và phân trang lịch hẹn"
+      operationId: ListBookings
+      description: "Dành cho receptionist và manager. Sắp theo COMPLETED, CONFIRMED, PAID, PENDING, CANCELLED, rồi theo giờ hẹn tăng dần (trống cuối) và ID tăng dần."
+      parameters:
+        - { name: date, in: query, description: "Ngày UTC.", schema: { type: string, format: date } }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/BookingStatus" } }
+        - { name: customerId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: contactPhone, in: query, schema: { type: string } }
+        - { name: cursor, in: query, description: "Giá trị nextCursor của trang trước.", schema: { type: string } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+      responses:
+        "200":
+          description: "Trang kết quả, kể cả khi items rỗng."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
     post:
       tags: ["Lịch hẹn"]
       summary: "Tạo lịch hẹn"
       operationId: CreateBooking
-      description: "Nhân viên có thể thao tác cho khách hàng. Khách hàng thao tác trên lịch hẹn của mình."
+      description: "Dành cho receptionist và manager. Cần đúng cặp khách và thú cưng đang ACTIVE cùng các tùy chọn hợp lệ. Lịch giữ đơn giá hiện hành và bản sao liên hệ của khách."
       requestBody:
         required: true
         content:
@@ -552,7 +629,7 @@ paths:
       tags: ["Lịch hẹn"]
       summary: "Xem lịch hẹn"
       operationId: GetBookingById
-      description: "Nhân viên có thể thao tác cho khách hàng. Khách hàng thao tác trên lịch hẹn của mình."
+      description: "Dành cho receptionist, manager hoặc khách sở hữu lịch."
       responses:
         "200":
           description: "Thành công."
@@ -566,12 +643,13 @@ paths:
       tags: ["Lịch hẹn"]
       summary: "Cập nhật thông tin lịch hẹn"
       operationId: UpdateBooking
-      description: "Nhân viên có thể thao tác cho khách hàng. Khách hàng thao tác trên lịch hẹn của mình. Chỉ nhân viên được thay đổi status, checkIn, checkOut hoặc chuyển lịch hẹn sang khách hàng khác."
+      description: "Dành cho receptionist và manager khi lịch còn PENDING. Trường bỏ qua giữ giá trị hiện tại. Gửi note null để xóa ghi chú."
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: "#/components/schemas/UpdateBookingRequest" }
+            example: { bookingTime: "2026-11-20T03:00:00Z", contactName: "Nguyễn An", contactPhone: "0900000001", note: "Đón tại quầy" }
       responses:
         "200":
           description: "Thành công."
@@ -583,6 +661,17 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: ["Lịch hẹn"]
+      summary: "Hủy lịch hẹn"
+      operationId: CancelBooking
+      description: "Dành cho receptionist và manager. Hủy lịch trước bàn giao hoặc khi mọi dòng đã bàn giao đều được hủy. Gọi lại trả 204 và giữ mốc hủy đã lưu."
+      responses:
+        "204": { description: "Lịch đã hủy." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/bookings/{id}/services:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -590,7 +679,7 @@ paths:
       tags: ["Lịch hẹn"]
       summary: "Thay toàn bộ tùy chọn dịch vụ của lịch hẹn"
       operationId: ReplaceBookingServices
-      description: "Nhân viên có thể thao tác cho khách hàng. Khách hàng thao tác trên lịch hẹn của mình. Lịch hẹn phải ở trạng thái PENDING hoặc CONFIRMED."
+      description: "Dành cho receptionist và manager trước khi bàn giao lịch PENDING hoặc CONFIRMED. Giữ ID và giá đã chốt cho các dòng còn lại."
       requestBody:
         required: true
         content:
@@ -607,10 +696,51 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
+  /api/booking/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      tags: ["Lịch hẹn"]
+      summary: "Tiếp nhận hoặc chốt lịch hẹn"
+      operationId: ChangeBookingStatus
+      description: "Dành cho receptionist và manager. confirmed tiếp nhận lịch đủ điều kiện. completed chốt lịch đã bàn giao khi tất cả dòng kết thúc và có ít nhất một dòng COMPLETED. Gọi lại khi đã ở trạng thái đích trả kết quả đã lưu."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChangeBookingStatusRequest" }
+            examples:
+              confirm: { value: { status: confirmed } }
+              complete: { value: { status: completed } }
+      responses:
+        "200":
+          description: "Lịch sau khi tiếp nhận hoặc chốt."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
 components:
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
   parameters:
+    ActiveOnly:
+      name: activeOnly
+      in: query
+      description: "Khi true, chỉ trả dữ liệu ACTIVE cùng các cấp cha ACTIVE."
+      schema: { type: boolean, default: false }
+    OptionSpecies:
+      name: species
+      in: query
+      schema: { $ref: "#/components/schemas/Species" }
+    OptionWeight:
+      name: weight
+      in: query
+      description: "Cân nặng theo kg, gồm cả hai biên của khoảng."
+      schema: { type: number, minimum: 0 }
     Id:
       name: id
       in: path
@@ -665,7 +795,7 @@ components:
         type: string
   responses:
     BadRequest:
-      description: "Request không hợp lệ. Route Pet cũng trả mã này khi từ chối quyền. Lỗi binding có thể có body rỗng."
+      description: "Request không hợp lệ. Lỗi binding có thể có body rỗng."
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/ValidationProblem" }
@@ -696,6 +826,12 @@ components:
       properties:
         phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001" }
         password: { type: string, format: password, minLength: 1, example: example-password }
+    CustomerLoginRequest:
+      type: object
+      required: [phone, password]
+      properties:
+        phone: { type: string, minLength: 1, maxLength: 30, example: "+84900000001" }
+        password: { type: string, format: password, minLength: 1, example: example-password }
     LoginResponse:
       type: object
       required: [accessToken, tokenType, expiresAtUtc, role, user]
@@ -716,36 +852,36 @@ components:
       type: object
       required: [fullName, phone, password]
       properties:
-        fullName: { type: string, minLength: 1, maxLength: 100 }
+        fullName: { type: string, minLength: 1, maxLength: 150 }
         gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
         dateOfBirth: { type: string, format: date, nullable: true }
-        email: { type: string, format: email, nullable: true }
-        phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001" }
+        email: { type: string, format: email, maxLength: 255, nullable: true }
+        phone: { type: string, pattern: '^(0|\+84)[35789][0-9]{8}$', example: "0900000001" }
         password: { type: string, format: password, minLength: 1, writeOnly: true }
-        status: { type: string, enum: [ACTIVE, INACTIVE], default: ACTIVE, description: "Handler hiện tạo khách hàng ở trạng thái ACTIVE." }
+        status: { type: string, enum: [ACTIVE], default: ACTIVE }
     UpdateCustomerRequest:
       type: object
       minProperties: 1
       properties:
-        fullName: { type: string, minLength: 1, maxLength: 100, nullable: true }
+        fullName: { type: string, minLength: 1, maxLength: 150, nullable: true }
         gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
         dateOfBirth: { type: string, format: date, nullable: true }
-        email: { type: string, format: email, nullable: true }
-        phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001", nullable: true }
+        email: { type: string, format: email, maxLength: 255, description: "Gửi null hoặc chuỗi rỗng để xóa email.", nullable: true }
+        phone: { type: string, pattern: '^(0|\+84)[35789][0-9]{8}$', example: "0900000001", nullable: true }
         password: { type: string, format: password, minLength: 1, writeOnly: true, nullable: true }
-        avtURL: { type: string, description: "Handler hiện chưa lưu thay đổi trường này.", nullable: true }
-        note: { type: string, nullable: true }
+        avtURL: { type: string, maxLength: 2048, nullable: true }
+        note: { type: string, maxLength: 1024, nullable: true }
         status: { type: string, enum: [ACTIVE, INACTIVE, null], nullable: true }
     Customer:
       type: object
       required: [id, fullName, gender, dateOfBirth, email, phone, avtURL, note, pets, status]
       properties:
         id: { type: integer, format: int64 }
-        fullName: { type: string, minLength: 1, maxLength: 100 }
+        fullName: { type: string, minLength: 1, maxLength: 150 }
         gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
         dateOfBirth: { type: string, format: date, nullable: true }
-        email: { type: string, format: email, nullable: true }
-        phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001" }
+        email: { type: string, format: email, maxLength: 255, nullable: true }
+        phone: { type: string, minLength: 1, maxLength: 30, example: "0900000001" }
         avtURL: { type: string, nullable: true }
         note: { type: string, nullable: true }
         pets: { type: array, items: { $ref: "#/components/schemas/Pet" }, nullable: true }
@@ -758,8 +894,8 @@ components:
         name: { type: string, minLength: 1, maxLength: 100 }
         species: { $ref: "#/components/schemas/Species" }
         gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
-        weight: { type: number, nullable: true }
-        height: { type: number, nullable: true }
+        weight: { type: number, minimum: 0, exclusiveMinimum: true, maximum: 9999.99, nullable: true }
+        height: { type: number, minimum: 0, exclusiveMinimum: true, maximum: 9999.99, nullable: true }
         dateOfBirth: { type: string, format: date, nullable: true }
         specialNote: { type: string, nullable: true }
         status: { type: string, enum: [ACTIVE, INACTIVE], default: ACTIVE }
@@ -770,8 +906,8 @@ components:
         name: { type: string, minLength: 1, maxLength: 100, nullable: true }
         species: { type: string, enum: [DOG, CAT, CHICKEN, FISH, OTHER, null], nullable: true }
         gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
-        weight: { type: number, nullable: true }
-        height: { type: number, nullable: true }
+        weight: { type: number, minimum: 0, exclusiveMinimum: true, maximum: 9999.99, nullable: true }
+        height: { type: number, minimum: 0, exclusiveMinimum: true, maximum: 9999.99, nullable: true }
         dateOfBirth: { type: string, format: date, nullable: true }
         specialNote: { type: string, nullable: true }
         status: { type: string, enum: [ACTIVE, INACTIVE, null], nullable: true }
@@ -785,7 +921,7 @@ components:
         species: { $ref: "#/components/schemas/Species" }
         gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
         weight: { type: number, nullable: true }
-        height: { type: integer, format: int32, nullable: true }
+        height: { type: number, nullable: true }
         dateOfBirth: { type: string, format: date, nullable: true }
         specialNote: { type: string, nullable: true }
         status: { type: string, enum: [ACTIVE, INACTIVE] }
@@ -849,6 +985,7 @@ components:
         status: { $ref: "#/components/schemas/ResourceStatus" }
     CreateBookingRequest:
       type: object
+      additionalProperties: false
       required: [customerId, petId, bookingTime, serviceOptionIds]
       properties:
         customerId: { type: integer, format: int64, minimum: 1 }
@@ -858,28 +995,33 @@ components:
         serviceOptionIds: { type: array, items: { type: integer, format: int64, minimum: 1 }, minItems: 1, uniqueItems: true, example: [100, 200] }
     UpdateBookingRequest:
       type: object
-      required: [customerId, petId, bookingTime, status]
+      additionalProperties: false
+      minProperties: 1
       properties:
-        customerId: { type: integer, format: int64, minimum: 1 }
-        petId: { type: integer, format: int64, minimum: 1 }
         bookingTime: { type: string, format: date-time, example: "2026-11-20T03:00:00Z" }
+        contactName: { type: string, minLength: 1, maxLength: 150 }
+        contactPhone: { type: string, pattern: '^\+?[0-9]{7,15}$', example: "0900000001" }
         note: { type: string, nullable: true }
-        status: { $ref: "#/components/schemas/BookingStatus" }
-        checkIn: { type: string, format: date-time, nullable: true }
-        checkOut: { type: string, format: date-time, nullable: true }
+    ChangeBookingStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: { type: string, enum: [confirmed, completed] }
     ReplaceBookingServicesRequest:
       type: object
+      additionalProperties: false
       required: [serviceOptionIds]
       properties:
         serviceOptionIds: { type: array, items: { type: integer, format: int64, minimum: 1 }, minItems: 1, uniqueItems: true, example: [100, 200] }
     Booking:
       type: object
-      required: [id, customerId, petId, bookingTime, note, status, checkIn, checkOut, createdAt, updatedAt, services]
+      required: [id, customerId, petId, bookingTime, note, status, checkIn, checkOut, createdAt, updatedAt, services, contactName, contactPhone, sessionsCreatedAt, cancelledAt]
       properties:
         id: { type: integer, format: int64 }
         customerId: { type: integer, format: int64, minimum: 1 }
         petId: { type: integer, format: int64, minimum: 1 }
-        bookingTime: { type: string, format: date-time, example: "2026-11-20T03:00:00Z" }
+        bookingTime: { type: string, format: date-time, nullable: true, example: "2026-11-20T03:00:00Z" }
         note: { type: string, nullable: true }
         status: { $ref: "#/components/schemas/BookingStatus" }
         checkIn: { type: string, format: date-time, nullable: true }
@@ -887,7 +1029,17 @@ components:
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
         services: { type: array, items: { $ref: "#/components/schemas/BookingDetail" } }
-    BookingStatus: { type: string, enum: [PENDING, CONFIRMED, CHECKED_IN, COMPLETED, CANCELLED] }
+        contactName: { type: string, nullable: true }
+        contactPhone: { type: string, nullable: true }
+        sessionsCreatedAt: { type: string, format: date-time, nullable: true }
+        cancelledAt: { type: string, format: date-time, nullable: true }
+    BookingPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Booking" } }
+        nextCursor: { type: string, nullable: true }
+    BookingStatus: { type: string, enum: [PENDING, CONFIRMED, COMPLETED, PAID, CANCELLED] }
     BookingDetail:
       type: object
       required: [id, serviceOptionId, unitPrice, status]

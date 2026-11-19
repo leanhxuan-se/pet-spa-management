@@ -1,6 +1,7 @@
 // Quản lý truy cập cơ sở dữ liệu qua ResourceDbContext.
 using Microsoft.EntityFrameworkCore;
 using PetSpa.Modules.Resource.Domain.Entities;
+using PetSpa.Modules.Resource.Domain.Enums;
 
 namespace PetSpa.Modules.Resource.Infrastructure.Persistence;
 
@@ -14,6 +15,12 @@ public class ResourceDbContext: DbContext
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Service> Services => Set<Service>();
     public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>();
+
+    internal IQueryable<ServiceOption> BookableServiceOptions => ServiceOptions.Where(option =>
+        option.Status == ResourceStatus.ACTIVE &&
+        option.Service.Status == ResourceStatus.ACTIVE &&
+        option.Service.Category.Status == ResourceStatus.ACTIVE);
+
     // Cấu hình mô hình dữ liệu của DbContext.
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

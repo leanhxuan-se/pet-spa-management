@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Resource.Application.Dtos;
 using PetSpa.Modules.Resource.Application.Services;
+using PetSpa.Modules.Resource.Domain.Enums;
 using PetSpa.Modules.Resource.Endpoints.Requests;
 using PetSpa.Modules.Resource.Endpoints.Responses;
 
@@ -17,28 +18,35 @@ public static class ServiceOptionEndpoints
         // 1. Tạo nhóm endpoint và cấu hình quyền truy cập.
         var group = app.MapGroup("/api/service-options").WithTags("Service Options");
         // 2. Đăng ký các đường dẫn và phương thức HTTP.
-        group.MapGet("/", ListAsync).WithName("GetServiceOptions").Produces<IReadOnlyList<ServiceOptionResponse>>().AllowAnonymous();
+        group.MapGet("/", ListAsync).WithName("GetServiceOptions").Produces<IReadOnlyList<ServiceOptionResponse>>()
+            .ProducesValidationProblem().Produces(StatusCodes.Status404NotFound).AllowAnonymous();
         group.MapGet("/{id:long}", GetByIdAsync).WithName("GetServiceOptionById").Produces<ServiceOptionResponse>().AllowAnonymous();
         group.MapPost("/", CreateAsync).WithName("CreateServiceOption")
-            .Produces<ServiceOptionResponse>(StatusCodes.Status201Created).ProducesValidationProblem().RequireStaff();
+            .Produces<ServiceOptionResponse>(StatusCodes.Status201Created).ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound).RequireResourceManager();
         group.MapPut("/{id:long}", UpdateAsync).WithName("UpdateServiceOption")
-            .Produces<ServiceOptionResponse>().ProducesValidationProblem().RequireStaff();
+            .Produces<ServiceOptionResponse>().ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound).RequireResourceManager();
         group.MapDelete("/{id:long}", DeleteAsync).WithName("DeleteServiceOption")
-            .Produces(StatusCodes.Status204NoContent).RequireStaff();
+            .Produces(StatusCodes.Status204NoContent).Produces(StatusCodes.Status404NotFound).RequireResourceManager();
         app.MapGet("/api/services/{serviceId:long}/options", ListByServiceAsync)
-            .WithTags("Service Options").WithName("GetOptionsByService").Produces<IReadOnlyList<ServiceOptionResponse>>().AllowAnonymous();
+            .WithTags("Service Options").WithName("GetOptionsByService").Produces<IReadOnlyList<ServiceOptionResponse>>()
+            .ProducesValidationProblem().Produces(StatusCodes.Status404NotFound).AllowAnonymous();
         return app;
     }
 
     // Lấy danh sách đối tượng.
-    public static async Task<IResult> ListAsync(long? serviceId, ServiceOptionService service, CancellationToken ct)
-        => (await service.ListAsync(serviceId, ct))
+    public static async Task<IResult> ListAsync(
+        long? serviceId, ServiceOptionService service, CancellationToken ct,
+        bool activeOnly = false, Species? species = null, decimal? weight = null)
+        => (await service.ListAsync(serviceId, ct, activeOnly, species, weight))
             .ToHttpResult(dtos => Results.Ok(dtos.Select(ToResponse).ToList()));
 
     // Lấy tùy chọn theo dịch vụ.
-    public static async Task<IResult> ListByServiceAsync(long serviceId, ServiceOptionService service, CancellationToken ct)
-        => (await service.ListAsync(serviceId, ct))
-            .ToHttpResult(dtos => Results.Ok(dtos.Select(ToResponse).ToList()));
+    public static Task<IResult> ListByServiceAsync(
+        long serviceId, ServiceOptionService service, CancellationToken ct,
+        bool activeOnly = false, Species? species = null, decimal? weight = null)
+        => ListAsync(serviceId, service, ct, activeOnly, species, weight);
 
     // Tìm đối tượng theo mã.
     public static async Task<IResult> GetByIdAsync(long id, ServiceOptionService service, CancellationToken ct)

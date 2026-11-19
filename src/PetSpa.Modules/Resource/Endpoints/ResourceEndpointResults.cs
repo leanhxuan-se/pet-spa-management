@@ -19,7 +19,8 @@ internal static class ResourceEndpointResults
             _ => throw new InvalidOperationException("Unsupported resource result.")
         };
 
-    // Yêu cầu tài khoản nhân viên.
-    public static RouteHandlerBuilder RequireStaff(this RouteHandlerBuilder builder)
-        => builder.RequireAuthorization(AuthorizationPolicies.StaffOnly);
+    public static RouteHandlerBuilder RequireResourceManager(this RouteHandlerBuilder builder)
+        => builder.RequireAuthorization(AuthorizationPolicies.ResourceManager)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden);
 }

@@ -17,7 +17,7 @@ internal class CustomerLoginService(
         string password,
         CancellationToken ct)
     {
-        var normalizedPhone = phone.Trim();
+        var normalizedPhone = CustomerContact.NormalizePhone(phone);
 
         // 1. Tìm khách hàng theo số điện thoại.
         var customer = await customers.GetByPhoneAsync(normalizedPhone, ct);

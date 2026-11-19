@@ -24,9 +24,17 @@ public static class AuthorizationRegistration
                 policy.RequireAuthenticatedUser()
                     .RequireAssertion(context => context.User.HasStaffRole()));
 
-            options.AddPolicy(AuthorizationPolicies.CustomerManagement, policy =>
+            var frontDesk = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .RequireAssertion(context => context.User.HasFrontDeskRole())
+                .Build();
+            options.AddPolicy(AuthorizationPolicies.CustomerManagement, frontDesk);
+            options.AddPolicy(AuthorizationPolicies.FrontDesk, frontDesk);
+
+            options.AddPolicy(AuthorizationPolicies.ResourceManager, policy =>
                 policy.RequireAuthenticatedUser()
-                    .RequireAssertion(context => context.User.CanManageCustomers()));
+                    .RequireAssertion(context => context.User.HasStaffRole())
+                    .RequireRole(AccountRoles.Manager));
 
             options.AddPolicy(AuthorizationPolicies.ManagerOrAdmin, policy =>
                 policy.RequireAuthenticatedUser()

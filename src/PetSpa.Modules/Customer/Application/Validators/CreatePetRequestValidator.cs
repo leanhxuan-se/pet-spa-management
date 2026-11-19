@@ -1,70 +1,31 @@
-﻿// Định nghĩa quy tắc kiểm tra dữ liệu CreatePetRequestValidator.
 using FluentValidation;
-using Microsoft.Extensions.Options;
 using PetSpa.Modules.Customer.Endpoints.Requests;
+using PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations;
 
-namespace PetSpa.Modules.Customer.Application.Validators
+namespace PetSpa.Modules.Customer.Application.Validators;
+
+public sealed class CreatePetRequestValidator : AbstractValidator<CreatePetRequest>
 {
-    public class CreatePetRequestValidator : AbstractValidator<CreatePetRequest>
+    public CreatePetRequestValidator()
     {
-        // Thiết lập quy tắc kiểm tra dữ liệu đầu vào.
-        public CreatePetRequestValidator()
-        {
-
-         
-            // 1. Kiểm tra tên.
-            RuleFor(x => x.Name!)
-                .NotEmpty().WithMessage("Tên pet không được để trống.")
-                .MaximumLength(100).WithMessage("Tên pet không được vượt quá 100 ký tự.");
-
-            // 2. Kiểm tra mã khách hàng.
-            RuleFor(x => x.CustomersId)
-                .GreaterThan(0).WithMessage("ID khách hàng phải là số dương.");
-
-            // 3. Kiểm tra giới tính.
-            When(x => x.Gender.HasValue, () =>
-            {
-                RuleFor(x => x.Gender!.Value)
-                    .IsInEnum().WithMessage("Giới tính không hợp lệ (chỉ chấp nhận Male, Female, Other).");
-            });
-
-            // 4. Kiểm tra loài thú cưng.
-            RuleFor(x => x.Species)
-                .IsInEnum().WithMessage("Loại pet không hợp lệ.");
-
-            // 5. Kiểm tra ngày sinh.
-            When(x => x.DateOfBirth.HasValue, () =>
-            {
-                RuleFor(x => x.DateOfBirth!.Value)
-                    .LessThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow))
-                    .WithMessage("Ngày sinh không thể lớn hơn ngày hiện tại.");
-            });
-
-            // 6. Kiểm tra cân nặng.
-            When(x => x.Weight.HasValue, () =>
-            {
-                RuleFor(x => x.Weight!.Value)
-                    .GreaterThan(0).WithMessage("Cân nặng phải là số dương  .");
-            });
-
-            // 7. Kiểm tra chiều cao.
-            When(x => x.Height.HasValue, () =>
-            {
-                RuleFor(x => x.Height!.Value)
-                    .GreaterThan(0).WithMessage("Chiều cao phải là số dương.");
-            });
-
-            // 8. Kiểm tra ghi chú đặc biệt.
-            When(x => !string.IsNullOrWhiteSpace(x.SpecialNote), () =>
-            {
-                RuleFor(x => x.SpecialNote!)
-                    .MaximumLength(1024).WithMessage("Ghi chú không được vượt quá 1024 ký tự.");
-            });
-
-                RuleFor(x => x.Status)
-                    .IsInEnum().WithMessage("Trạng thái khách hàng không hợp lệ.");
-
-
-        }
+        RuleFor(x => x.CustomersId).GreaterThan(0).WithMessage("ID khách hàng phải là số dương.");
+        RuleFor(x => x.Name == null ? null : x.Name.Trim())
+            .NotEmpty().WithMessage("Tên pet không được để trống.")
+            .MaximumLength(PetConfiguration.NameMaxLength).WithMessage("Tên pet tối đa 100 ký tự.")
+            .OverridePropertyName(nameof(CreatePetRequest.Name));
+        RuleFor(x => x.Species)
+            .NotNull().WithMessage("Cần cung cấp loài thú cưng.")
+            .IsInEnum().WithMessage("Loài thú cưng không hợp lệ.");
+        RuleFor(x => x.Gender).IsInEnum().WithMessage("Giới tính không hợp lệ.");
+        RuleFor(x => x.DateOfBirth).LessThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow))
+            .WithMessage("Ngày sinh không thể lớn hơn ngày hiện tại.");
+        RuleFor(x => x.Weight)
+            .GreaterThan(0).WithMessage("Cân nặng phải là số dương.")
+            .PrecisionScale(6, 2, ignoreTrailingZeros: true).WithMessage("Cân nặng tối đa 4 chữ số nguyên và 2 chữ số thập phân.");
+        RuleFor(x => x.Height)
+            .GreaterThan(0).WithMessage("Chiều cao phải là số dương.")
+            .PrecisionScale(6, 2, ignoreTrailingZeros: true).WithMessage("Chiều cao tối đa 4 chữ số nguyên và 2 chữ số thập phân.");
+        RuleFor(x => x.SpecialNote).MaximumLength(1024).WithMessage("Ghi chú đặc biệt tối đa 1024 ký tự.");
+        RuleFor(x => x.Status).IsInEnum().WithMessage("Trạng thái thú cưng không hợp lệ.");
     }
 }

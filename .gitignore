@@ -2,7 +2,11 @@
 # Local documentation, VS Code settings, and tests
 /docs/
 /.vscode/
-/tests/
+/tests/*
+!/tests/PetSpa.BookingProviderTests/
+/tests/PetSpa.BookingProviderTests/*
+!/tests/PetSpa.BookingProviderTests/PetSpa.BookingProviderTests.csproj
+!/tests/PetSpa.BookingProviderTests/Program.cs
 
 # .NET build output and packages
 **/bin/
