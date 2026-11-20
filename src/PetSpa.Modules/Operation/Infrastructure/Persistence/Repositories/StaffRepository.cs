@@ -6,14 +6,14 @@ using PetSpa.Modules.Operation.Endpoints.Requests;
 using Mapster;
 
 using Microsoft.EntityFrameworkCore;
-using PetSpa.SharedKernel.Application.Abstractions;
+using PetSpa.SharedKernel.Application.Authentication;
 
 
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
 {
     
-    internal class StaffRepository(OperationDbContext db, IPasswordService<Staff> pass): IStaffRepository
+    internal class StaffRepository(OperationDbContext db): IStaffRepository
     {
         
         public async Task<List<StaffResponse>> GetAsync(CancellationToken ct)
@@ -23,7 +23,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
                 .ToListAsync(ct);
             return staffList;
         }
-        public async Task<StaffResponse> GetByIdAsync(long id, CancellationToken ct)
+        public async Task<StaffResponse?> GetByIdAsync(long id, CancellationToken ct)
         {
             var staff = await db.Staffs
                 .AsNoTracking()
@@ -40,8 +40,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
                 Gender = request.Gender,
                 DateOfBirth = request.DateOfBirth,
                 Email = request.Email,
-                Phone = request.Phone,
-                PasswordHash = pass.HashPassword(new Staff(), request.Password),
+                Phone = AccountPhone.Normalize(request.Phone),
                 Position = request.Position,
                 Role = request.Role,
                 HiredDate = request.HiredDate,
@@ -54,7 +53,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
             await db.SaveChangesAsync(ct);
             return staff.Adapt<StaffResponse>();
         }
-        public async Task<StaffResponse> UpdateAsync(long id, UpdateStaffRequest request, CancellationToken ct)
+        public async Task<StaffResponse?> UpdateAsync(long id, UpdateStaffRequest request, CancellationToken ct)
         {
             var staff = await db.Staffs.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
             if (staff is null)
@@ -63,9 +62,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
             staff.Gender = request.Gender ?? staff.Gender;
             staff.DateOfBirth = request.DateOfBirth ?? staff.DateOfBirth;
             staff.Email = request.Email ?? staff.Email;
-            staff.Phone = request.Phone ?? staff.Phone;
-            if (!string.IsNullOrWhiteSpace(request.Password))
-                staff.PasswordHash = pass.HashPassword(staff, request.Password);
+            staff.Phone = request.Phone is null ? staff.Phone : AccountPhone.Normalize(request.Phone);
             staff.Position = request.Position ?? staff.Position;
             staff.Role = request.Role ?? staff.Role;
             staff.HiredDate = request.HiredDate ?? staff.HiredDate;
@@ -75,7 +72,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
             await db.SaveChangesAsync(ct);
             return staff.Adapt<StaffResponse>();
         }
-        public async Task<StaffResponse> DeleteAsync(long id, CancellationToken ct)
+        public async Task<StaffResponse?> DeleteAsync(long id, CancellationToken ct)
         {
             var staff = await db.Staffs.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
             if (staff is null)

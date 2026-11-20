@@ -8,12 +8,10 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using PetSpa.Api.Authentication;
-using PetSpa.Api.Composition;
+using PetSpa.Modules.Auth;
 using PetSpa.Modules.Booking;
 using PetSpa.Modules.Booking.Contracts;
 using PetSpa.Modules.Booking.Domain.Enums;
@@ -42,11 +40,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddCustomerModule(httpConnection.ConnectionString);
 builder.Services.AddResourceModule(httpConnection.ConnectionString);
 builder.Services.AddBookingModule(httpConnection.ConnectionString);
-builder.Services.AddScoped(typeof(IPasswordHasher<>), typeof(PasswordHasher<>));
-builder.Services.AddScoped(typeof(IPasswordService<>), typeof(IdentityPasswordService<>));
 builder.Services.AddAuthentication(QaAuthentication.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, QaAuthentication>(QaAuthentication.SchemeName, _ => { });
-builder.Services.AddAuthorizationServices();
+builder.Services.AddAuthPolicies();
 await using var app = builder.Build();
 app.UseExceptionHandler(error => error.Run(context =>
 {
@@ -228,7 +224,7 @@ var fullName = "Booking QA " + marker;
 var originalPhone = "09" + Random.Shared.Next(10_000_000, 99_999_999).ToString();
 const string separatePhone = "0987654321";
 var customer = Id(await Request(HttpStatusCode.Created, HttpMethod.Post, "/api/customers",
-    new { fullName, phone = originalPhone, password = "PetSpa Qa password 2026#" }));
+    new { fullName, phone = originalPhone }));
 var pet = Id(await Request(HttpStatusCode.Created, HttpMethod.Post, $"/api/customers/{customer}/pets",
     new { customersId = customer, name = "Pixel", species = "DOG", weight = 4, height = 25 }));
 var category = Id(await Manager(HttpStatusCode.Created, HttpMethod.Post, "/api/categories", new { name = marker }));

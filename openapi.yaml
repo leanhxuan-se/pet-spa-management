@@ -25,30 +25,35 @@ paths:
                 required: [status]
                 properties:
                   status: { type: string, enum: [ok] }
-  /api/auth/customer/login:
+  /api/auth/register:
     post:
-      tags: ["Đăng nhập"]
-      summary: "Đăng nhập khách hàng"
-      operationId: CustomerLogin
+      tags: ["Auth"]
+      summary: "Đăng ký cho hồ sơ khách hàng đã được xác minh"
+      operationId: Register
       security: []
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/CustomerLoginRequest" }
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
       responses:
-        "200":
-          description: "Thành công."
+        "201":
+          description: "Đã liên kết tài khoản với hồ sơ khách hàng."
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/LoginResponse" }
+              schema:
+                type: object
+                required: [customerId]
+                properties:
+                  customerId: { type: integer, format: int64 }
         "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-  /api/auth/staff/login:
+        "409": { description: "Hồ sơ hoặc số đăng nhập đã có tài khoản." }
+        "429": { description: "Quá giới hạn số lần đăng ký." }
+  /api/auth/login:
     post:
-      tags: ["Đăng nhập"]
-      summary: "Đăng nhập nhân viên"
-      operationId: StaffLogin
+      tags: ["Auth"]
+      summary: "Đăng nhập chung cho khách hàng và nhân viên"
+      operationId: Login
       security: []
       requestBody:
         required: true
@@ -57,12 +62,98 @@ paths:
             schema: { $ref: "#/components/schemas/LoginRequest" }
       responses:
         "200":
-          description: "Thành công."
+          description: "Đã đăng nhập."
           content:
             application/json:
               schema: { $ref: "#/components/schemas/LoginResponse" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { description: "Quá giới hạn số lần đăng nhập." }
+  /api/auth/logout:
+    post:
+      tags: ["Auth"]
+      summary: "Đăng xuất trên mọi thiết bị"
+      operationId: Logout
+      responses:
+        "204": { description: "Đã thu hồi các JWT trước đó của tài khoản." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/auth/customers/{customerId}/activation:
+    post:
+      tags: ["Auth"]
+      summary: "Cấp mã kích hoạt cho khách hàng đã xác minh tại quầy"
+      operationId: IssueCustomerActivation
+      parameters:
+        - { name: customerId, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200":
+          description: "Mã kích hoạt có thời hạn 15 phút."
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [activationToken]
+                properties:
+                  activationToken: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/auth/staff-accounts:
+    post:
+      tags: ["Auth"]
+      summary: "Cấp tài khoản cho hồ sơ nhân viên"
+      operationId: CreateStaffAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [staffId, password]
+              properties:
+                staffId: { type: integer, format: int64, minimum: 1 }
+                password: { type: string, format: password, minLength: 12, maxLength: 128 }
+      responses:
+        "201":
+          description: "Đã cấp tài khoản."
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [staffId]
+                properties:
+                  staffId: { type: integer, format: int64 }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "Hồ sơ ngừng hoạt động, đã có tài khoản hoặc trùng số đăng nhập." }
+  /api/auth/staff-accounts/{staffId}:
+    patch:
+      tags: ["Auth"]
+      summary: "Đổi mật khẩu, khóa hoặc mở tài khoản nhân viên"
+      operationId: UpdateStaffAccount
+      parameters:
+        - { name: staffId, in: path, required: true, schema: { type: integer, format: int64 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              properties:
+                password: { type: string, format: password, minLength: 12, maxLength: 128 }
+                isEnabled: { type: boolean }
+      responses:
+        "204": { description: "Đã cập nhật và thu hồi JWT cũ của tài khoản." }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "Trạng thái hiện tại không cho phép thao tác." }
+
   /api/customers/{id}:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -84,7 +175,7 @@ paths:
       tags: ["Khách hàng"]
       summary: "Cập nhật hồ sơ khách hàng"
       operationId: UpdateCustomer
-      description: "Dành cho chủ hồ sơ, receptionist hoặc manager. Chỉ receptionist và manager được gửi status. Bỏ qua password hoặc gửi null để giữ mật khẩu hiện tại."
+      description: "Dành cho chủ hồ sơ, receptionist hoặc manager. Chỉ receptionist và manager được gửi status."
       requestBody:
         required: true
         content:
@@ -824,14 +915,17 @@ components:
       type: object
       required: [phone, password]
       properties:
-        phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001" }
+        phone: { type: string, minLength: 1, maxLength: 30, example: "0900000001" }
         password: { type: string, format: password, minLength: 1, example: example-password }
-    CustomerLoginRequest:
+    RegisterRequest:
       type: object
-      required: [phone, password]
+      additionalProperties: false
+      required: [phone, password, activationToken]
       properties:
-        phone: { type: string, minLength: 1, maxLength: 30, example: "+84900000001" }
-        password: { type: string, format: password, minLength: 1, example: example-password }
+        phone: { type: string, maxLength: 30, example: "+84900000001" }
+        password: { type: string, format: password, minLength: 12, maxLength: 128 }
+        activationToken: { type: string, minLength: 1, maxLength: 1024, writeOnly: true }
+
     LoginResponse:
       type: object
       required: [accessToken, tokenType, expiresAtUtc, role, user]
@@ -850,14 +944,13 @@ components:
         phone: { type: string }
     CreateCustomerRequest:
       type: object
-      required: [fullName, phone, password]
+      required: [fullName, phone]
       properties:
         fullName: { type: string, minLength: 1, maxLength: 150 }
         gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
         dateOfBirth: { type: string, format: date, nullable: true }
         email: { type: string, format: email, maxLength: 255, nullable: true }
         phone: { type: string, pattern: '^(0|\+84)[35789][0-9]{8}$', example: "0900000001" }
-        password: { type: string, format: password, minLength: 1, writeOnly: true }
         status: { type: string, enum: [ACTIVE], default: ACTIVE }
     UpdateCustomerRequest:
       type: object
@@ -868,7 +961,6 @@ components:
         dateOfBirth: { type: string, format: date, nullable: true }
         email: { type: string, format: email, maxLength: 255, description: "Gửi null hoặc chuỗi rỗng để xóa email.", nullable: true }
         phone: { type: string, pattern: '^(0|\+84)[35789][0-9]{8}$', example: "0900000001", nullable: true }
-        password: { type: string, format: password, minLength: 1, writeOnly: true, nullable: true }
         avtURL: { type: string, maxLength: 2048, nullable: true }
         note: { type: string, maxLength: 1024, nullable: true }
         status: { type: string, enum: [ACTIVE, INACTIVE, null], nullable: true }

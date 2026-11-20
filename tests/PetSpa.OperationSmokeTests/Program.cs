@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
@@ -10,18 +9,12 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PetSpa.Modules.Operation;
-using PetSpa.Api.Authentication;
-using Microsoft.AspNetCore.Identity;
-using Staff = PetSpa.Modules.Operation.Domain.Entities.Staff;
+using PetSpa.Modules.Auth;
 using PetSpa.Modules.Operation.Application.Abstractions;
 using PetSpa.Modules.Operation.Application.Services;
-using PetSpa.Modules.Operation.Domain.Repositories;
 using PetSpa.OperationSmokeTests;
-using PetSpa.SharedKernel.Application.Abstractions;
-using PetSpa.SharedKernel.Application.Dtos;
 
 const string Connection = "Host=localhost;Database=unused_operation_tests;Username=unused";
-const string StaffPassword = "TestPassword123!";
 var checks = 0;
 void Check(bool condition, string message)
 {
@@ -32,30 +25,18 @@ void Check(bool condition, string message)
 
 var builder = WebApplication.CreateBuilder();
 builder.WebHost.UseUrls("http://127.0.0.1:0");
-builder.Services.AddScoped<IPasswordHasher<Staff>, PasswordHasher<Staff>>();
-builder.Services.AddScoped<IPasswordService<Staff>, IdentityPasswordService<Staff>>();
 builder.Services.AddOperationModule(Connection);
 builder.Services.AddSingleton<OperationTestStore>();
 builder.Services.AddScoped<IRoomRepository, FakeRoomRepository>();
 builder.Services.AddScoped<IStaffRepository, FakeStaffRepository>();
-builder.Services.AddScoped<IStaffAuthRepository, FakeStaffAuthRepository>();
-builder.Services.AddSingleton<ITokenService, TestTokenService>();
 builder.Services.AddAuthentication("OperationStaffTest")
     .AddScheme<AuthenticationSchemeOptions, OperationTestAuthentication>("OperationStaffTest", _ => { });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthPolicies();
 
 await using var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapOperationModuleEndpoint();
-
-using (var scope = app.Services.CreateScope())
-{
-    var store = scope.ServiceProvider.GetRequiredService<OperationTestStore>();
-    var passwordService = scope.ServiceProvider.GetRequiredService<IPasswordService<Staff>>();
-    var manager = store.StaffMembers.Single(staff => staff.Id == 1);
-    manager.PasswordHash = passwordService.HashPassword(manager, StaffPassword);
-}
 
 await app.StartAsync();
 var address = app.Services.GetRequiredService<IServer>().Features
@@ -107,31 +88,6 @@ var unavailableStaff = await SendAsync(
     HttpMethod.Get, $"/api/staff/unavailability?{ValidRange}", HttpStatusCode.OK);
 Check(unavailableStaff.GetArrayLength() == 1, "Staff unavailability should return one unavailable staff member");
 
-var login = await SendAsync(
-    HttpMethod.Post,
-    "/api/auth/staff/login",
-    HttpStatusCode.OK,
-    new { phone = " 0900000001 ", password = StaffPassword },
-    staffRole: null);
-Check(login.GetProperty("accessToken").GetString() == "operation-test-token", "Staff login should return a token");
-Check(login.GetProperty("user").GetProperty("id").GetInt64() == 1, "Staff login should return the seeded staff record");
-Check(app.Services.GetRequiredService<OperationTestStore>().StaffSaveCount == 1, "Staff login should save the login timestamp");
-await SendAsync(
-    HttpMethod.Post,
-    "/api/auth/staff/login",
-    HttpStatusCode.Unauthorized,
-    new { phone = "0900000001", password = "invalid" },
-    staffRole: null);
+await SendAsync(HttpMethod.Post, "/api/auth/staff/login", HttpStatusCode.NotFound);
 
 Console.WriteLine($"Operation module smoke tests passed ({checks} checks).");
-
-internal sealed class TestTokenService : ITokenService
-{
-    public TokenResult Generate(IEnumerable<Claim> claims)
-    {
-        var tokenClaims = claims.ToArray();
-        if (!tokenClaims.Any(claim => claim.Type == "account_type" && claim.Value == "staff"))
-            throw new InvalidOperationException("Operation login must generate staff authentication claims.");
-        return new TokenResult("operation-test-token", DateTime.UtcNow.AddMinutes(5));
-    }
-}

@@ -13,8 +13,6 @@ public sealed class UpdateCustomerRequestValidator : AbstractValidator<UpdateCus
             .MaximumLength(CustomerContact.FullNameMaxLength).WithMessage("Họ và tên tối đa 150 ký tự.")
             .OverridePropertyName(nameof(UpdateCustomerRequest.FullName))
             .When(x => x.FullName is not null);
-        RuleFor(x => x.Password).NotEmpty().WithMessage("Mật khẩu không được để trống.")
-            .When(x => x.Password is not null);
         RuleFor(x => x.Phone).Must(CustomerContact.IsValidPhone)
             .WithMessage("Số điện thoại không đúng định dạng số di động Việt Nam.")
             .When(x => x.Phone is not null);
@@ -32,6 +30,6 @@ public sealed class UpdateCustomerRequestValidator : AbstractValidator<UpdateCus
 
     private static bool HasChanges(UpdateCustomerRequest req)
         => req.FullName is not null || req.Gender is not null || req.DateOfBirth is not null || req.HasEmail ||
-            req.Phone is not null || req.AvtURL is not null || req.Note is not null || req.Password is not null ||
+            req.Phone is not null || req.AvtURL is not null || req.Note is not null ||
             req.Status is not null;
 }

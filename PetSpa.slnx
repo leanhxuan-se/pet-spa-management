@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/PetSpa.Api/PetSpa.Api.csproj" />
+    <Project Path="src/PetSpa.Modules/Auth/PetSpa.Modules.Auth.csproj" />
     <Project Path="src/PetSpa.Modules/Billing/PetSpa.Modules.Billing.csproj" />
     <Project Path="src/PetSpa.Modules/Booking/PetSpa.Modules.Booking.csproj" />
     <Project Path="src/PetSpa.Modules/Customer/PetSpa.Modules.Customer.csproj" />

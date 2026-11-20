@@ -49,11 +49,6 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
                 .HasMaxLength(CustomerContact.PhoneMaxLength);
             builder.HasIndex(x => x.Phone).IsUnique().HasDatabaseName(UniquePhoneIndex);
 
-            builder.Property(x => x.PasswordHash)
-                .HasColumnName("password_hash")
-                .IsRequired()
-                .HasMaxLength(128);
-
             builder.Property(x => x.AvtURL)
                 .HasColumnName("avatar_url")
                 .HasColumnType("text");
@@ -78,9 +73,6 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
                 .HasColumnType("timestamp with time zone")
                 .HasDefaultValueSql("now()");
 
-            builder.Property(x=> x.LastLoginAt)
-                .HasColumnName("last_login_at")
-                .HasColumnType("timestamp with time zone");
         }
     }
 }

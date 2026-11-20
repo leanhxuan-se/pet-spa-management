@@ -1,5 +1,6 @@
 // Khởi tạo ứng dụng, dịch vụ và các endpoint API.
 using PetSpa.Api.Composition;
+using PetSpa.Modules.Auth;
 using PetSpa.Modules.Billing;
 using PetSpa.Modules.Booking;
 using PetSpa.Modules.Customer;
@@ -21,8 +22,7 @@ builder.Services.AddOperationModule(connectionString);
 builder.Services.AddResourceModule(connectionString);
 
 // Register Authentication Service 
-builder.Services.AddAuthenticationServices(builder.Configuration);
-builder.Services.AddAuthorizationServices();
+builder.Services.AddAuthModule(builder.Configuration, connectionString);
 
 //Register CORS (cross-origin system) to allow fetching api
 builder.Services.AddCors(options =>
@@ -65,8 +65,10 @@ app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapHealthEndpoint();
+app.MapAuthModuleEndpoint();
 
 //Register EndpointMap
 app.MapCustomerModuleEndpoint();

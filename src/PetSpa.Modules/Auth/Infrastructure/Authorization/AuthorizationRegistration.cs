@@ -1,11 +1,11 @@
+using Microsoft.Extensions.DependencyInjection;
 // Đăng ký và cấu hình thành phần AuthorizationRegistration.
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.DependencyInjection;
 using PetSpa.SharedKernel.Application.Authentication;
 
-namespace PetSpa.Modules.Auth.Infrastructure.Authorization;
+namespace PetSpa.Modules.Auth;
 
-internal static class AuthorizationRegistration
+public static class AuthorizationRegistration
 {
     // Đăng ký các chính sách phân quyền.
     public static IServiceCollection AddAuthPolicies(this IServiceCollection services)
@@ -25,19 +25,22 @@ internal static class AuthorizationRegistration
                 policy.RequireAuthenticatedUser()
                     .RequireAssertion(context => context.User.HasStaffRole()));
 
-            options.AddPolicy(AuthorizationPolicies.CustomerManagement, policy =>
+            var frontDesk = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .RequireAssertion(context => context.User.HasFrontDeskRole())
+                .Build();
+            options.AddPolicy(AuthorizationPolicies.CustomerManagement, frontDesk);
+            options.AddPolicy(AuthorizationPolicies.FrontDesk, frontDesk);
+
+            options.AddPolicy(AuthorizationPolicies.ResourceManager, policy =>
                 policy.RequireAuthenticatedUser()
-                    .RequireAssertion(context => context.User.CanManageCustomers()));
+                    .RequireAssertion(context => context.User.HasStaffRole())
+                    .RequireRole(AccountRoles.Manager));
 
             options.AddPolicy(AuthorizationPolicies.ManagerOrAdmin, policy =>
                 policy.RequireAuthenticatedUser()
                     .RequireAssertion(context => context.User.HasStaffRole())
                     .RequireRole(AccountRoles.Manager, AccountRoles.Admin));
-
-            options.AddPolicy(AuthorizationPolicies.OperationAvailability, policy =>
-                policy.RequireAuthenticatedUser()
-                    .RequireAssertion(context => context.User.HasStaffRole())
-                    .RequireRole(AccountRoles.Receptionist, AccountRoles.Manager));
         });
     }
 }

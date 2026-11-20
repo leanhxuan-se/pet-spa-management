@@ -12,7 +12,6 @@ internal sealed class CreateCustomerRequestValidator : AbstractValidator<CreateC
             .NotEmpty().WithMessage("Họ và tên không được để trống.")
             .MaximumLength(CustomerContact.FullNameMaxLength).WithMessage("Họ và tên tối đa 150 ký tự.")
             .OverridePropertyName(nameof(CreateCustomerRequest.FullName));
-        RuleFor(x => x.Password).NotEmpty().WithMessage("Mật khẩu không được để trống.");
         RuleFor(x => x.Phone).Must(CustomerContact.IsValidPhone)
             .WithMessage("Số điện thoại không đúng định dạng số di động Việt Nam.");
         RuleFor(x => CustomerContact.NormalizeEmail(x.Email))

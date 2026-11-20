@@ -12,6 +12,7 @@ using PetSpa.Modules.Customer.Domain.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Persistence.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Services;
 using PetSpa.Modules.Customer.Contracts;
+using PetSpa.SharedKernel.Application.Authentication;
 
 
 namespace PetSpa.Modules.Customer;
@@ -42,7 +43,7 @@ public static class CustomerModule
         services.AddScoped<IPetServices, PetServices>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
-        services.AddScoped<CustomerLoginService>();
+        services.AddScoped<ICustomerAuthProfiles, CustomerAuthProfiles>();
         services.AddScoped<ICustomerModule, CustomerModuleContract>();
         return services;
     }
@@ -51,7 +52,6 @@ public static class CustomerModule
     public static IEndpointRouteBuilder MapCustomerModuleEndpoint(this IEndpointRouteBuilder app) // Register Module's Endpoints
     {
         //....
-        app.MapCustomerAuthEndpoints();
         app.MapCustomerEndpoint();
         app.MapPetEndpoint();
 

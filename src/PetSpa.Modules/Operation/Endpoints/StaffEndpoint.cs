@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Operation.Application.Services;
 using System.Security.Claims;
 using PetSpa.Modules.Operation.Endpoints.Requests;
+using PetSpa.SharedKernel.Application.Authentication;
 
 
 namespace PetSpa.Modules.Operation.Endpoints
@@ -17,6 +18,12 @@ namespace PetSpa.Modules.Operation.Endpoints
 
             group.MapGet("/availability", GetAvailableStaffAsync).WithName("GetAvailableStaffs").RequireAuthorization();
             group.MapGet("/unavailability", GetUnAvailableStaffAsync).WithName("GetUnavailableStaffs").RequireAuthorization();
+            var management = group.MapGroup("").RequireAuthorization(AuthorizationPolicies.ManagerOrAdmin);
+            management.MapGet("", GetStaffsAsync).WithName("GetStaffs");
+            management.MapGet("/{id:long}", GetStaffByIdAsync).WithName("GetStaffById");
+            management.MapPost("", CreateStaffAsync).WithName("CreateStaff");
+            management.MapPut("/{id:long}", UpdateStaffAsync).WithName("UpdateStaff");
+            management.MapDelete("/{id:long}", DeleteStaffAsync).WithName("DeactivateStaff");
 
             return app;
         }
