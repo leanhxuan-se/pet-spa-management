@@ -4,6 +4,7 @@ namespace PetSpa.Modules.Operation.Domain.Enums;
 public enum StaffShiftStatus
 {
     SCHEDULED,
+    WORKING,
     COMPLETED,
     CANCELLED
 }

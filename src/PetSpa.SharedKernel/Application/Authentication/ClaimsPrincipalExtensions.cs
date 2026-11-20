@@ -20,9 +20,22 @@ public static class ClaimsPrincipalExtensions
     public static long? GetCustomerId(this ClaimsPrincipal user) =>
         ReadAccount(user) is { Type: AccountTypes.Customer } account ? account.Id : null;
 
+    // Lấy mã nhân viên từ tài khoản.
+    public static long? GetStaffId(this ClaimsPrincipal user) =>
+        ReadAccount(user) is { Type: AccountTypes.Staff } account ? account.Id : null;
+
     // Kiểm tra quyền quản lý khách hàng.
     public static bool CanManageStaff(this ClaimsPrincipal user) =>
         ReadAccount(user) is { Role: AccountRoles.Manager or AccountRoles.Admin };
+
+    // Kiểm tra quyền ghi nhận vào ca hoặc kết thúc ca làm việc.
+    public static bool CanRecordStaffShift(this ClaimsPrincipal user, long shiftStaffId) =>
+        shiftStaffId > 0 && ReadAccount(user) switch
+        {
+            { Role: AccountRoles.Manager or AccountRoles.Admin } => true,
+            { Type: AccountTypes.Staff } account => account.Id == shiftStaffId,
+            _ => false
+        };
     public static bool CanManageCustomers(this ClaimsPrincipal user) =>
         ReadAccount(user) is { Role: AccountRoles.Receptionist or AccountRoles.Manager or AccountRoles.Admin };
 

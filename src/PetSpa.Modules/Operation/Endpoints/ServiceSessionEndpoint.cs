@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using PetSpa.Modules.Customer.Endpoints;
 using PetSpa.Modules.Operation.Application.Services;
 using PetSpa.Modules.Operation.Endpoints.Requests;
 using System.Security.Claims;

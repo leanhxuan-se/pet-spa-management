@@ -14,8 +14,11 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
             // 1. Cấu hình tên bảng và các ràng buộc.
             Builder.ToTable("staff_shift", table =>
             {
-                table.HasCheckConstraint("ck_staff_shift_status", "status IN ('SCHEDULED', 'COMPLETED', 'CANCELLED')");
+                table.HasCheckConstraint("ck_staff_shift_status", "status IN ('SCHEDULED', 'WORKING', 'COMPLETED', 'CANCELLED')");
                 table.HasCheckConstraint("ck_staff_shift_time_order", "end_time > start_time");
+                table.HasCheckConstraint(
+                    "ck_staff_shift_actual_time_order",
+                    "started_at IS NULL OR finished_at IS NULL OR finished_at >= started_at");
             });
 
             // 2. Cấu hình khóa chính.
@@ -59,6 +62,14 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                 .HasDefaultValue(StaffShiftStatus.SCHEDULED)
                 .IsRequired()
                 .HasMaxLength(30);
+
+            Builder.Property(x => x.StartedAt)
+                .HasColumnName("started_at")
+                .HasColumnType("timestamp with time zone");
+
+            Builder.Property(x => x.FinishedAt)
+                .HasColumnName("finished_at")
+                .HasColumnType("timestamp with time zone");
 
             Builder.Property(x => x.CreatedAt)
                 .HasColumnName("created_at")
