@@ -7,11 +7,16 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
 {
     internal class StaffAssignmentConfiguration : IEntityTypeConfiguration<StaffAssignment>
     {
-        // Cấu hình ánh xạ thực thể vào cơ sở dữ liệu.
+        // Cấu hình ánh xạ thực thể phân công nhân viên vào cơ sở dữ liệu.
         public void Configure(EntityTypeBuilder<StaffAssignment> Builder)
         {
-            // 1. Cấu hình tên bảng và các ràng buộc.
-            Builder.ToTable("staff_assignment");
+            // 1. Cấu hình tên bảng và ràng buộc nhất quán trạng thái hiệu lực.
+            Builder.ToTable("staff_assignment", table =>
+            {
+                table.HasCheckConstraint(
+                    "ck_staff_assignment_active_state",
+                    "(is_active = TRUE AND revoked_at IS NULL) OR (is_active = FALSE AND revoked_at IS NOT NULL)");
+            });
 
             // 2. Cấu hình khóa chính.
             Builder.HasKey(x => x.Id);
@@ -22,12 +27,16 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                 .HasColumnType("bigint")
                 .UseIdentityByDefaultColumn();
 
-            // Một nhân viên chỉ được phân công vào một lượt dịch vụ một lần
+            // Chỉ ngăn trùng lặp giữa các phân công còn hiệu lực; giữ lại lịch sử nhân viên cũ nếu đổi người rồi giao lại.
             Builder.HasIndex(x => new { x.ServiceSessionId, x.StaffId })
-                .IsUnique();
-            // 4. Cấu hình quan hệ hoặc chỉ mục.
+                .IsUnique()
+                .HasFilter("is_active = TRUE");
+
+            // 4. Cấu hình quan hệ và chỉ mục truy vấn nhanh theo trạng thái hiệu lực.
             Builder.HasIndex(x => x.ServiceSessionId);
             Builder.HasIndex(x => x.StaffId);
+            Builder.HasIndex(x => new { x.StaffId, x.IsActive });
+            Builder.HasIndex(x => new { x.ServiceSessionId, x.IsActive });
 
             Builder.Property(x => x.ServiceSessionId)
                 .HasColumnName("service_session_id");
@@ -47,12 +56,23 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                 .HasConstraintName("fk_staff_assignment_staff")
                 .OnDelete(DeleteBehavior.Restrict);
 
+            Builder.Property(x => x.IsActive)
+                .HasColumnName("is_active")
+                .HasDefaultValue(true)
+                .IsRequired();
+
             Builder.Property(x => x.AssignedAt)
                 .HasColumnName("assigned_at")
                 .HasColumnType("timestamp with time zone")
                 .HasDefaultValueSql("NOW()");
 
+            Builder.Property(x => x.RevokedAt)
+                .HasColumnName("revoked_at")
+                .HasColumnType("timestamp with time zone");
 
+            Builder.Property(x => x.ReplacedByAssignmentId)
+                .HasColumnName("replaced_by_assignment_id")
+                .HasColumnType("bigint");
         }
     }
 }

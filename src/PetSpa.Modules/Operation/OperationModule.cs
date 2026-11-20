@@ -35,12 +35,18 @@ public static class OperationModule
         services.AddScoped<IStaffRepository, StaffRepository>();
         services.AddScoped<IStaffShiftRepository, StaffShiftRepository>();
         services.AddScoped<IRoomRepository, RoomRepository>();
+        services.AddScoped<IServiceSessionRepository, ServiceSessionRepository>();
+        services.AddScoped<IStaffAssignmentRepository, StaffAssignmentRepository>();
+        services.AddScoped<IStaffNotificationRepository, StaffNotificationRepository>();
         services.AddScoped<IStaffAuthRepository, StaffAuthRepository>();
         services.AddScoped<IValidator<StaffLoginRequest>, LoginRequestValidator<StaffLoginRequest>>();
         services.AddScoped<StaffLoginService>();
         services.AddScoped<RoomService>();
         services.AddScoped<StaffService>();
         services.AddScoped<StaffShiftService>();
+        services.AddScoped<ServiceSessionService>();
+        services.AddScoped<StaffNotificationService>();
+        services.AddScoped<StaffAssignmentService>();
         return services;
     }
      // Đăng ký các endpoint của module vận hành.
@@ -52,7 +58,8 @@ public static class OperationModule
         app.MapRoomEndpoint();
         app.MapStaffEndpoint();
         app.MapStaffShiftEndpoint();
-        //app.MapServiceSessionEndpoint();
+        app.MapServiceSessionEndpoint();
+        app.MapMeEndpoint();
 
         return app;
     }

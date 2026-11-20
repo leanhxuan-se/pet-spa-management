@@ -14,6 +14,7 @@ internal class OperationDbContext: DbContext
     public DbSet<ServiceSession> ServiceSessions => Set<ServiceSession>();
     public DbSet<Staff> Staffs => Set<Staff>();
     public DbSet<StaffAssignment> StaffAssignments=> Set<StaffAssignment>();
+    public DbSet<StaffNotification> StaffNotifications => Set<StaffNotification>();
     public DbSet<StaffShift> StaffShifts => Set<StaffShift>();
 
     // Cấu hình mô hình dữ liệu của DbContext.

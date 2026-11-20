@@ -1,37 +1,33 @@
-using PetSpa.Modules.Operation.Application.Abstractions;
-using PetSpa.Modules.Operation.Endpoints.Responses;
-using PetSpa.Modules.Operation.Domain.Enums;
-using PetSpa.Modules.Operation.Domain.Entities;
-using PetSpa.Modules.Operation.Endpoints.Requests;
 using Mapster;
-
 using Microsoft.EntityFrameworkCore;
+using PetSpa.Modules.Operation.Application.Abstractions;
+using PetSpa.Modules.Operation.Domain.Entities;
+using PetSpa.Modules.Operation.Domain.Enums;
+using PetSpa.Modules.Operation.Endpoints.Requests;
+using PetSpa.Modules.Operation.Endpoints.Responses;
 using PetSpa.SharedKernel.Application.Abstractions;
-
-
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
 {
-    
-    internal class StaffRepository(OperationDbContext db, IPasswordService<Staff> pass): IStaffRepository
+    internal class StaffRepository(OperationDbContext db, IPasswordService<Staff> pass) : IStaffRepository
     {
-        
         public async Task<List<StaffResponse>> GetAsync(CancellationToken ct)
         {
-            var staffList = await db.Staffs
+            return await db.Staffs
+                .AsNoTracking()
                 .ProjectToType<StaffResponse>()
                 .ToListAsync(ct);
-            return staffList;
         }
-        public async Task<StaffResponse> GetByIdAsync(long id, CancellationToken ct)
+
+        public async Task<StaffResponse?> GetByIdAsync(long id, CancellationToken ct)
         {
-            var staff = await db.Staffs
+            return await db.Staffs
                 .AsNoTracking()
                 .Where(st => st.Id == id)
                 .ProjectToType<StaffResponse>()
                 .FirstOrDefaultAsync(ct);
-            return staff;
         }
+
         public async Task<StaffResponse> CreateAsync(CreateStaffRequest request, CancellationToken ct)
         {
             var staff = new Staff
@@ -49,16 +45,18 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
                 Note = request.Note,
                 Status = request.Status
             };
-                
+
             db.Staffs.Add(staff);
             await db.SaveChangesAsync(ct);
             return staff.Adapt<StaffResponse>();
         }
-        public async Task<StaffResponse> UpdateAsync(long id, UpdateStaffRequest request, CancellationToken ct)
+
+        public async Task<StaffResponse?> UpdateAsync(long id, UpdateStaffRequest request, CancellationToken ct)
         {
             var staff = await db.Staffs.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
             if (staff is null)
                 return null;
+
             staff.FullName = request.FullName ?? staff.FullName;
             staff.Gender = request.Gender ?? staff.Gender;
             staff.DateOfBirth = request.DateOfBirth ?? staff.DateOfBirth;
@@ -75,87 +73,128 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
             await db.SaveChangesAsync(ct);
             return staff.Adapt<StaffResponse>();
         }
-        public async Task<StaffResponse> DeleteAsync(long id, CancellationToken ct)
+
+        public async Task<StaffResponse?> DeleteAsync(long id, CancellationToken ct)
         {
             var staff = await db.Staffs.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
             if (staff is null)
                 return null;
+
             staff.Status = StaffStatus.INACTIVE;
             await db.SaveChangesAsync(ct);
             return staff.Adapt<StaffResponse>();
         }
-        
-        public async Task<List<StaffResponse>> GetUnAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
-        {
-            var unavailableStaff = await db.ServiceSessions
-                .AsNoTracking()
-                .Where(x =>
-                    x.Status != ServiceSessionStatus.CANCELLED
-                    && x.Status != ServiceSessionStatus.COMPLETED
-                    && x.ExpectedStartAt < endTime
-                    && x.ExpectedFinishAt > startTime)
-                .SelectMany(x => x.StaffAssignments
-                            .Where(st => st.Staff.Status != StaffStatus.INACTIVE)
-                            .Select(st => new StaffResponse(
-                                st.Staff.Id,
-                                st.Staff.FullName,
-                                st.Staff.Gender,
-                                st.Staff.DateOfBirth,
-                                st.Staff.Email,
-                                st.Staff.Phone,
-                                st.Staff.Position,
-                                st.Staff.Role,
-                                st.Staff.HiredDate,
-                                st.Staff.AvatarUrl,
-                                st.Staff.Note,
-                                st.Staff.Status)))
-                .Distinct()
-                .ToListAsync(ct);
 
-            return unavailableStaff;
+        public Task<List<StaffResponse>> GetAvailableAtAsync(DateTime nowUtc, CancellationToken ct)
+        {
+            // Tra rảnh hiện tại: nhân viên ACTIVE đang trong ca WORKING và chưa có phân công chiếm chỗ tại nowUtc.
+            var query = db.Staffs
+                .AsNoTracking()
+                .Where(st =>
+                    st.Status == StaffStatus.ACTIVE
+                    && st.StaffShifts.Any(sh => sh.Status == StaffShiftStatus.WORKING)
+                    && !st.StaffAssignments.Any(sa =>
+                        sa.IsActive
+                        && sa.ServiceSession.Status != ServiceSessionStatus.CANCELLED
+                        && sa.ServiceSession.Status != ServiceSessionStatus.COMPLETED
+                        && (sa.ServiceSession.Status == ServiceSessionStatus.IN_PROGRESS
+                            || (sa.ServiceSession.ExpectedStartAt != null
+                                && sa.ServiceSession.ExpectedFinishAt != null
+                                && sa.ServiceSession.ExpectedStartAt <= nowUtc
+                                && sa.ServiceSession.ExpectedFinishAt > nowUtc))));
+
+            return ProjectStaffListAsync(query, ct);
         }
-        public async Task<List<StaffResponse>> GetAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
+
+        public Task<List<StaffResponse>> GetUnAvailableAtAsync(DateTime nowUtc, CancellationToken ct)
         {
-            var unAvailableStaff = await db.ServiceSessions
+            // Tra bận hiện tại: nhân viên ACTIVE đang có phân công hiệu lực chiếm chỗ tại nowUtc.
+            var query = db.Staffs
                 .AsNoTracking()
-                .Where(x =>
-                    x.Status != ServiceSessionStatus.CANCELLED
-                    && x.ExpectedStartAt < endTime
-                    && x.ExpectedFinishAt > startTime)
-                .SelectMany(x => x.StaffAssignments
-                            .Where(st => st.Staff.Status != StaffStatus.INACTIVE)
-                            .Select(st => st.Staff.Id))
-                .Distinct()
+                .Where(st =>
+                    st.Status == StaffStatus.ACTIVE
+                    && st.StaffAssignments.Any(sa =>
+                        sa.IsActive
+                        && sa.ServiceSession.Status != ServiceSessionStatus.CANCELLED
+                        && sa.ServiceSession.Status != ServiceSessionStatus.COMPLETED
+                        && (sa.ServiceSession.Status == ServiceSessionStatus.IN_PROGRESS
+                            || (sa.ServiceSession.ExpectedStartAt != null
+                                && sa.ServiceSession.ExpectedFinishAt != null
+                                && sa.ServiceSession.ExpectedStartAt <= nowUtc
+                                && sa.ServiceSession.ExpectedFinishAt > nowUtc))));
+
+            return ProjectStaffListAsync(query, ct);
+        }
+
+        public Task<List<StaffResponse>> GetAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
+        {
+            var startDate = DateOnly.FromDateTime(startTime);
+            var endDate = DateOnly.FromDateTime(endTime);
+            if (startDate != endDate)
+                return Task.FromResult(new List<StaffResponse>());
+
+            var start = TimeOnly.FromDateTime(startTime);
+            var end = TimeOnly.FromDateTime(endTime);
+
+            // Tra rảnh theo khoảng: ca SCHEDULED/WORKING bao phủ trọn khoảng và không trùng phân công hiệu lực.
+            var query = db.Staffs
+                .AsNoTracking()
+                .Where(st =>
+                    st.Status == StaffStatus.ACTIVE
+                    && st.StaffShifts.Any(sh =>
+                        (sh.Status == StaffShiftStatus.SCHEDULED || sh.Status == StaffShiftStatus.WORKING)
+                        && sh.ShiftDate == startDate
+                        && sh.StartTime <= start
+                        && sh.EndTime >= end)
+                    && !st.StaffAssignments.Any(sa =>
+                        sa.IsActive
+                        && sa.ServiceSession.Status != ServiceSessionStatus.CANCELLED
+                        && sa.ServiceSession.Status != ServiceSessionStatus.COMPLETED
+                        && sa.ServiceSession.ExpectedStartAt != null
+                        && sa.ServiceSession.ExpectedFinishAt != null
+                        && sa.ServiceSession.ExpectedStartAt < endTime
+                        && sa.ServiceSession.ExpectedFinishAt > startTime));
+
+            return ProjectStaffListAsync(query, ct);
+        }
+
+        public Task<List<StaffResponse>> GetUnAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
+        {
+            // Tra bận theo khoảng: nhân viên ACTIVE có phân công hiệu lực giao khoảng [startTime, endTime).
+            var query = db.Staffs
+                .AsNoTracking()
+                .Where(st =>
+                    st.Status == StaffStatus.ACTIVE
+                    && st.StaffAssignments.Any(sa =>
+                        sa.IsActive
+                        && sa.ServiceSession.Status != ServiceSessionStatus.CANCELLED
+                        && sa.ServiceSession.Status != ServiceSessionStatus.COMPLETED
+                        && sa.ServiceSession.ExpectedStartAt != null
+                        && sa.ServiceSession.ExpectedFinishAt != null
+                        && sa.ServiceSession.ExpectedStartAt < endTime
+                        && sa.ServiceSession.ExpectedFinishAt > startTime));
+
+            return ProjectStaffListAsync(query, ct);
+        }
+
+        private static Task<List<StaffResponse>> ProjectStaffListAsync(IQueryable<Staff> query, CancellationToken ct)
+        {
+            return query
+                .OrderBy(st => st.Id)
+                .Select(st => new StaffResponse(
+                    st.Id,
+                    st.FullName,
+                    st.Gender,
+                    st.DateOfBirth,
+                    st.Email,
+                    st.Phone,
+                    st.Position,
+                    st.Role,
+                    st.HiredDate,
+                    st.AvatarUrl,
+                    st.Note,
+                    st.Status))
                 .ToListAsync(ct);
-
-            DateOnly date = DateOnly.FromDateTime(startTime);
-            TimeOnly start = TimeOnly.FromDateTime(startTime);
-            TimeOnly end = TimeOnly.FromDateTime(endTime);
-
-            var AvailableStaff = await db.StaffShifts
-                    .Where(x => x.Status == StaffShiftStatus.SCHEDULED
-                           && x.Staff.Status == StaffStatus.ACTIVE
-                           && x.StartTime < start
-                           && x.EndTime > end
-                           && x.ShiftDate == date
-                           && !unAvailableStaff.Contains(x.Staff.Id))
-                    .Select(st => new StaffResponse(
-                                 st.Staff.Id,
-                                st.Staff.FullName,
-                                st.Staff.Gender,
-                                st.Staff.DateOfBirth,
-                                st.Staff.Email,
-                                st.Staff.Phone,
-                                st.Staff.Position,
-                                st.Staff.Role,
-                                st.Staff.HiredDate,
-                                st.Staff.AvatarUrl,
-                                st.Staff.Note,
-                                st.Staff.Status))
-                    .Distinct()
-                    .ToListAsync(ct);
-
-            return AvailableStaff;
         }
     }
 }
