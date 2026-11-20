@@ -12,6 +12,8 @@ namespace PetSpa.Modules.Operation.Domain.Entities
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
         public StaffShiftStatus Status { get; set; } = StaffShiftStatus.SCHEDULED;
+        public DateTime? StartedAt { get; set; }
+        public DateTime? FinishedAt { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
        

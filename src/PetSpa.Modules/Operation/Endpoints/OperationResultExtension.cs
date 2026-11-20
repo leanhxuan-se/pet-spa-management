@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using PetSpa.SharedKernel.Application.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace PetSpa.Modules.Customer.Endpoints
+namespace PetSpa.Modules.Operation.Endpoints
 {
     internal static class OperationResultExtensions
     {
@@ -15,16 +12,20 @@ namespace PetSpa.Modules.Customer.Endpoints
         {
             return result.Status switch
             {
-                ResultStatus.Success => routeName != null && routeValues != null
-                    ? Results.CreatedAtRoute(routeName, routeValues(result.Value!), result.Value)
-                    : Results.Ok(result.Value),
-
-                ResultStatus.ValidationFailed => Results.ValidationProblem(result?.Errors),
-                ResultStatus.NotFound => Results.NotFound(result?.Errors),
-                ResultStatus.UnActive => Results.BadRequest(result?.Errors),
+                ResultStatus.Success => Results.Ok(result.Value),
+                ResultStatus.Created => routeName is not null && routeValues is not null && result.Value is not null
+                    ? Results.CreatedAtRoute(routeName, routeValues(result.Value), result.Value)
+                    : Results.Created((string?)null, result.Value),
+                ResultStatus.NoContent => Results.NoContent(),
+                ResultStatus.ValidationFailed => Results.ValidationProblem(result.Errors ?? new Dictionary<string, string[]>()),
+                ResultStatus.NotFound => Results.NotFound(result.Errors),
+                ResultStatus.Forbidden => Results.Json(result.Errors, statusCode: StatusCodes.Status403Forbidden),
+                ResultStatus.Conflict => Results.Conflict(result.Errors),
+                ResultStatus.Duplicate => Results.Conflict(result.Errors),
+                ResultStatus.UnActive => Results.BadRequest(result.Errors),
                 ResultStatus.TimeError => Results.BadRequest(result.Errors),
                 ResultStatus.BadRequest => Results.BadRequest(result.Errors),
-                _ => Results.BadRequest(result?.Errors)
+                _ => Results.BadRequest(result.Errors)
             };
         }
     }

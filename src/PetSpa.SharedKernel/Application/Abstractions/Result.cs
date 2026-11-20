@@ -9,12 +9,16 @@ namespace PetSpa.SharedKernel.Application.Abstractions
     public enum ResultStatus
     {
         Success,
+        Created,
+        NoContent,
         NotFound,
         ValidationFailed,
         TimeError,
         UnActive,
         BadRequest,
         Duplicate,
+        Forbidden,
+        Conflict,
     }
 
     public class Result<T>
@@ -24,9 +28,9 @@ namespace PetSpa.SharedKernel.Application.Abstractions
         public IDictionary<string, string[]>? Errors { get; }
 
         // Tạo kết quả trả về.
-        private Result(T value)
+        private Result(T? value, ResultStatus status)
         {
-            Status = ResultStatus.Success;
+            Status = status;
             Value = value;
         }
 
@@ -38,7 +42,11 @@ namespace PetSpa.SharedKernel.Application.Abstractions
         }
 
         // Tạo kết quả thành công.
-        public static Result<T> Success(T value) => new(value);
+        public static Result<T> Success(T value) => new(value, ResultStatus.Success);
+
+        public static Result<T> Created(T value) => new(value, ResultStatus.Created);
+
+        public static Result<T> NoContent() => new(default(T), ResultStatus.NoContent);
 
         // Tạo kết quả không tìm thấy.
         public static Result<T> NotFound(string message) =>
@@ -60,6 +68,18 @@ namespace PetSpa.SharedKernel.Application.Abstractions
 
         public static Result<T> Duplicate(string key, string message) =>
             new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.Duplicate);
+
+        public static Result<T> Forbidden(string message) =>
+            new(new Dictionary<string, string[]> { { "message", [message] } }, ResultStatus.Forbidden);
+
+        public static Result<T> Forbidden(string key, string message) =>
+            new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.Forbidden);
+
+        public static Result<T> Conflict(string message) =>
+            new(new Dictionary<string, string[]> { { "message", [message] } }, ResultStatus.Conflict);
+
+        public static Result<T> Conflict(string key, string message) =>
+            new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.Conflict);
         
     }
 }

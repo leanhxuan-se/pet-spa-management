@@ -8,7 +8,7 @@ namespace PetSpa.Modules.Operation.Domain.Entities
     {
         public long Id { get; set; }
         public string FullName { get; set; } = null!;
-        public Gender? Gender { get; set; }
+        public Gender Gender { get; set; }
         public DateOnly? DateOfBirth { get; set; }
         public string Email { get; set; } = null!;
         public string Phone { get; set; } = null!;
