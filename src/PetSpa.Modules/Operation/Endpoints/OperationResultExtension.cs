@@ -19,6 +19,9 @@ namespace PetSpa.Modules.Operation.Endpoints
                 ResultStatus.NoContent => Results.NoContent(),
                 ResultStatus.ValidationFailed => Results.ValidationProblem(result.Errors ?? new Dictionary<string, string[]>()),
                 ResultStatus.NotFound => Results.NotFound(result.Errors),
+                ResultStatus.Unauthorized => result.Errors is not null
+                    ? Results.Json(result.Errors, statusCode: StatusCodes.Status401Unauthorized)
+                    : Results.Unauthorized(),
                 ResultStatus.Forbidden => Results.Json(result.Errors, statusCode: StatusCodes.Status403Forbidden),
                 ResultStatus.Conflict => Results.Conflict(result.Errors),
                 ResultStatus.Duplicate => Results.Conflict(result.Errors),

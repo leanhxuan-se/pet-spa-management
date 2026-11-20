@@ -106,6 +106,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .Where(sa =>
                     sa.StaffId == staffId
+                    && sa.IsActive
                     && sa.ServiceSession.Status != ServiceSessionStatus.COMPLETED
                     && sa.ServiceSession.Status != ServiceSessionStatus.CANCELLED
                     && (
@@ -150,6 +151,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .AnyAsync(sa =>
                     sa.StaffId == staffId
+                    && sa.IsActive
                     && sa.ServiceSession.Status != ServiceSessionStatus.COMPLETED
                     && sa.ServiceSession.Status != ServiceSessionStatus.CANCELLED
                     && (
@@ -179,6 +181,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .AnyAsync(sa =>
                     sa.StaffId == staffId
+                    && sa.IsActive
                     && sa.ServiceSession.Status == ServiceSessionStatus.IN_PROGRESS,
                     ct);
         }

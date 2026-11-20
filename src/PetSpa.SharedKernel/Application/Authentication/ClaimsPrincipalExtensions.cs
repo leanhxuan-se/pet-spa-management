@@ -39,6 +39,14 @@ public static class ClaimsPrincipalExtensions
     public static bool CanManageCustomers(this ClaimsPrincipal user) =>
         ReadAccount(user) is { Role: AccountRoles.Receptionist or AccountRoles.Manager or AccountRoles.Admin };
 
+    // Kiểm tra quyền điều phối vận hành (Lễ tân, Quản lý, Admin).
+    public static bool CanManageOperations(this ClaimsPrincipal user) =>
+        ReadAccount(user) is { Type: AccountTypes.Staff, Role: AccountRoles.Receptionist or AccountRoles.Manager or AccountRoles.Admin };
+
+    // Kiểm tra tài khoản có đúng vai trò lễ tân (dùng cho nghiệp vụ chỉ cho phép lễ tân).
+    public static bool IsReceptionist(this ClaimsPrincipal user) =>
+        ReadAccount(user) is { Type: AccountTypes.Staff, Role: AccountRoles.Receptionist };
+
     // Kiểm tra quyền truy cập khách hàng.
     public static bool CanAccessCustomer(this ClaimsPrincipal user, long customerId) =>
         customerId > 0 && ReadAccount(user) switch
