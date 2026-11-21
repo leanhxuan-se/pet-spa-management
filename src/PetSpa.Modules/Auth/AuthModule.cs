@@ -1,7 +1,9 @@
-// Đăng ký dịch vụ và endpoint của module Auth.
 using System.Text;
-using FluentValidation;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
@@ -9,60 +11,46 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using PetSpa.Modules.Auth.Application;
 using PetSpa.Modules.Auth.Endpoints;
-using PetSpa.Modules.Auth.Infrastructure.Authorization;
 using PetSpa.Modules.Auth.Infrastructure.Configuration;
-using PetSpa.Modules.Auth.Infrastructure.Identity;
 using PetSpa.Modules.Auth.Infrastructure.Persistence;
 using PetSpa.Modules.Auth.Infrastructure.Tokens;
-using PetSpa.SharedKernel.Application.Abstractions;
 using PetSpa.SharedKernel.Application.Authentication;
 
 namespace PetSpa.Modules.Auth;
 
 public static class AuthModule
 {
-    // Đăng ký cấu hình, dịch vụ xác thực và chính sách phân quyền.
     public static IServiceCollection AddAuthModule(
         this IServiceCollection services, IConfiguration configuration, string connectionString)
     {
         services.AddDbContext<AuthDbContext>(options => options.UseNpgsql(connectionString, postgres =>
-        {
-            postgres.MigrationsAssembly(typeof(AuthDbContext).Assembly.GetName().Name);
-            postgres.MigrationsHistoryTable("__EFMigrationsHistory", AuthDbContext.Schema);
-        }));
-        services.AddIdentityCore<AppUser>(options => options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15))
-            .AddRoles<IdentityRole>()
-            .AddEntityFrameworkStores<AuthDbContext>()
-            .AddDefaultTokenProviders();
+            postgres.MigrationsHistoryTable("__EFMigrationsHistory", AuthDbContext.Schema)));
+        services.AddScoped<IPasswordHasher<Account>, PasswordHasher<Account>>();
+        services.AddScoped<LoginService>();
+        services.AddScoped<AccountService>();
+        services.AddScoped<IStaffAccountGuard>(sp => sp.GetRequiredService<AccountService>());
+        services.AddSingleton<JwtTokenService>();
+        services.AddSingleton<ActivationTokens>();
+        services.AddDataProtection().SetApplicationName("PetSpa");
 
-        // 1. Kiểm tra cấu hình JWT khi ứng dụng khởi động.
-        services.AddOptions<JwtOptions>()
-            .Bind(configuration.GetSection("Jwt"))
-            .Validate(options => !string.IsNullOrWhiteSpace(options.Issuer) &&
-                !string.IsNullOrWhiteSpace(options.Audience), "Jwt:Issuer và Jwt:Audience không được để trống.")
-            .Validate(options => options.AccessTokenMinutes > 0, "Thời hạn token phải lớn hơn 0 phút.")
-            .Validate(options => !string.IsNullOrWhiteSpace(options.SigningKey) &&
-                Encoding.UTF8.GetByteCount(options.SigningKey) >= 32,
-                "Jwt:SigningKey phải có ít nhất 32 byte khi đọc bằng UTF-8.")
+        services.AddOptions<JwtOptions>().Bind(configuration.GetSection("Jwt"))
+            .Validate(o => !string.IsNullOrWhiteSpace(o.Issuer) && !string.IsNullOrWhiteSpace(o.Audience),
+                "Jwt:Issuer and Jwt:Audience are required.")
+            .Validate(o => o.AccessTokenMinutes > 0, "Jwt:AccessTokenMinutes must be positive.")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.SigningKey) && Encoding.UTF8.GetByteCount(o.SigningKey) >= 32,
+                "Jwt:SigningKey must contain at least 32 bytes.")
             .ValidateOnStart();
 
-        // 2. Đăng ký dịch vụ đăng nhập, băm mật khẩu và phát token.
-        services.AddScoped(typeof(IPasswordHasher<>), typeof(PasswordHasher<>));
-        services.AddScoped(typeof(IPasswordService<>), typeof(IdentityPasswordService<>));
-        services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
-        services.AddScoped<LoginService>();
-        services.AddSingleton<JwtTokenService>();
-
-        // 3. Cấu hình xác thực JWT và các chính sách phân quyền.
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-            .Configure<IOptions<JwtOptions>>((bearerOptions, jwtOptions) =>
+            .Configure<IOptions<JwtOptions>>((bearer, configured) =>
             {
-                var jwt = jwtOptions.Value;
-                bearerOptions.MapInboundClaims = false;
-                bearerOptions.TokenValidationParameters = new TokenValidationParameters
+                var jwt = configured.Value;
+                bearer.MapInboundClaims = false;
+                bearer.TokenValidationParameters = new TokenValidationParameters
                 {
                     NameClaimType = AuthClaimTypes.Subject,
                     RoleClaimType = AuthClaimTypes.Role,
@@ -72,15 +60,53 @@ public static class AuthModule
                     ValidAudience = jwt.Audience,
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey)),
+                    ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromSeconds(30)
                 };
+
+                bearer.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var login = context.HttpContext.RequestServices.GetRequiredService<LoginService>();
+                        try
+                        {
+                            if (context.Principal is null ||
+                                !await login.ValidateAsync(context.Principal, context.HttpContext.RequestAborted))
+                                context.Fail("Account or session is invalid.");
+                        }
+                        catch (NpgsqlException)
+                        {
+                            context.HttpContext.Items[typeof(NpgsqlException)] = true;
+                            context.Fail("Account validation is temporarily unavailable.");
+                        }
+                    },
+                    OnChallenge = context =>
+                    {
+                        if (context.HttpContext.Items.ContainsKey(typeof(NpgsqlException)))
+                        {
+                            context.HandleResponse();
+                            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
+
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy("auth-login", context => LimitByIp(context, 30));
+            options.AddPolicy("auth-register", context => LimitByIp(context, 10));
+        });
 
         return services.AddAuthPolicies();
     }
 
-    // Đăng ký các endpoint đăng nhập của module.
-    public static IEndpointRouteBuilder MapAuthModuleEndpoint(this IEndpointRouteBuilder app)
-        => app.MapAuthEndpoints();
+    private static RateLimitPartition<string> LimitByIp(HttpContext context, int limit) =>
+        RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = limit, Window = TimeSpan.FromMinutes(1) });
+
+    public static IEndpointRouteBuilder MapAuthModuleEndpoint(this IEndpointRouteBuilder app) => app.MapAuthEndpoints();
 }

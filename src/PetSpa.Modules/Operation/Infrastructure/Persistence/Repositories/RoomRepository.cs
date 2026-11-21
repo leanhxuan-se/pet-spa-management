@@ -4,6 +4,7 @@ using PetSpa.Modules.Operation.Domain.Entities;
 using PetSpa.Modules.Operation.Domain.Enums;
 using PetSpa.Modules.Operation.Endpoints.Requests;
 using PetSpa.Modules.Operation.Endpoints.Responses;
+using PetSpa.SharedKernel.Application.Abstractions;
 
 namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
 {
@@ -33,17 +34,29 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
             return await GetAsync(ct);
         }
 
-        public async Task<List<RoomResponse>> UpdateAsync(long id, UpdateRoomRequest request, CancellationToken ct)
+        public async Task<Result<List<RoomResponse>>> UpdateAsync(long id, UpdateRoomRequest request, CancellationToken ct)
         {
-            var room = await db.Rooms.Where(x => x.Id == id).FirstOrDefaultAsync(ct)
-                ?? throw new KeyNotFoundException($"Room with ID {id} not found.");
+            await using var transaction = await db.BeginScheduleWriteAsync(ct);
+            var room = await db.Rooms.FirstOrDefaultAsync(x => x.Id == id, ct);
+            if (room is null)
+                return Result<List<RoomResponse>>.NotFound("Không tìm thấy phòng.");
+
+            var now = DateTime.UtcNow;
+            if (request.Status is { } status && status != room.Status &&
+                await db.ServiceSessions.AnyAsync(session => session.RoomId == id
+                    && (session.Status == ServiceSessionStatus.IN_PROGRESS
+                        || (session.Status == ServiceSessionStatus.WAITING
+                            && (session.ExpectedFinishAt == null || session.ExpectedFinishAt > now))), ct))
+                return Result<List<RoomResponse>>.Conflict("Phòng còn phiên đang thực hiện hoặc còn lịch sử dụng.");
 
             room.RoomName = request.RoomName ?? room.RoomName;
             room.RoomType = request.RoomType ?? room.RoomType;
             room.Status = request.Status ?? room.Status;
-            room.UpdatedAt = DateTime.UtcNow;
+            room.UpdatedAt = now;
             await db.SaveChangesAsync(ct);
-            return await GetAsync(ct);
+            var rooms = await GetAsync(ct);
+            await transaction.CommitAsync(ct);
+            return Result<List<RoomResponse>>.Success(rooms);
         }
 
         public Task<List<RoomResponse>> GetAvailableAtAsync(DateTime nowUtc, CancellationToken ct)

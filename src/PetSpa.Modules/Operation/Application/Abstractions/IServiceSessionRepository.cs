@@ -1,12 +1,19 @@
 ﻿// Khai báo hợp đồng truy xuất và cập nhật dữ liệu phiên dịch vụ trong Operation.
 using PetSpa.Modules.Operation.Domain.Entities;
 using PetSpa.Modules.Operation.Endpoints.Responses;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace PetSpa.Modules.Operation.Application.Abstractions
 {
     // Giao diện làm việc với bảng operation.service_session và các ràng buộc liên quan.
     internal interface IServiceSessionRepository
     {
+        Task<IDbContextTransaction> BeginWriteAsync(CancellationToken ct);
+        Task<List<ServiceSession>> GetByBookingIdsAsync(long[] bookingIds, CancellationToken ct);
+        Task<bool> HasSessionsForDetailsAsync(long[] bookingDetailIds, CancellationToken ct);
+        Task<bool> HasRunningRoomSessionAsync(long roomId, CancellationToken ct);
+        void AddRange(IReadOnlyCollection<ServiceSession> sessions);
+
         // Lấy phiên dịch vụ theo Id kèm phòng và danh sách phân công (có tracking để cập nhật).
         Task<ServiceSession?> GetByIdWithDetailsAsync(long id, CancellationToken ct);
 

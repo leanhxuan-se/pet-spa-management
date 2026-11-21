@@ -35,8 +35,11 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
             Builder.Property(x => x.BookingDetailId)
                 .HasColumnName("booking_details_id");
 
+            Builder.Property(x => x.BookingId).HasColumnName("booking_id");
+
             // 4. Cấu hình quan hệ hoặc chỉ mục.
             Builder.HasIndex(x => x.BookingDetailId).IsUnique();
+            Builder.HasIndex(x => x.BookingId);
             Builder.HasIndex(x => x.RoomId);
             Builder.HasIndex(x => x.Status);
 

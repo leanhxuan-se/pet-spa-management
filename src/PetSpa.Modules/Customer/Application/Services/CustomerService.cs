@@ -16,8 +16,7 @@ namespace PetSpa.Modules.Customer.Application.Services;
 
 internal sealed class CustomerService(
     CustomerDbContext db,
-    IServiceProvider serviceProvider,
-    IPasswordService<CustomerTable> passwordService) : ICustomerService
+    IServiceProvider serviceProvider) : ICustomerService
 {
     public async Task<Result<List<CustomerResponse>>> GetAsync(CancellationToken ct)
     {
@@ -59,7 +58,6 @@ internal sealed class CustomerService(
             DateOfBirth = req.DateOfBirth,
             Status = CustomerStatus.ACTIVE
         };
-        customer.PasswordHash = passwordService.HashPassword(customer, req.Password);
         db.Customers.Add(customer);
 
         return await SaveAsync(customer, ct);
@@ -78,7 +76,11 @@ internal sealed class CustomerService(
 
         customer.Gender = req.Gender ?? customer.Gender;
         customer.DateOfBirth = req.DateOfBirth ?? customer.DateOfBirth;
-        customer.Status = req.Status ?? customer.Status;
+        if (req.Status is { } status && status != customer.Status)
+        {
+            customer.Status = status;
+            customer.AccessStamp = Guid.NewGuid();
+        }
         customer.FullName = req.FullName?.Trim() ?? customer.FullName;
         customer.Phone = req.Phone is null ? customer.Phone : CustomerContact.NormalizePhone(req.Phone);
         customer.AvtURL = req.AvtURL?.Trim() ?? customer.AvtURL;
@@ -86,8 +88,6 @@ internal sealed class CustomerService(
             customer.Note = req.Note;
         if (req.HasEmail)
             customer.Email = CustomerContact.NormalizeEmail(req.Email);
-        if (req.Password is not null)
-            customer.PasswordHash = passwordService.HashPassword(customer, req.Password);
         customer.UpdatedAt = DateTime.UtcNow;
 
         return await SaveAsync(customer, ct);

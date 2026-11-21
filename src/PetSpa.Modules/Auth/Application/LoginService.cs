@@ -1,57 +1,121 @@
-// Xác thực mật khẩu và phát token theo hợp đồng đăng nhập hiện tại.
 using System.Globalization;
 using System.Security.Claims;
-using PetSpa.Modules.Auth.Contracts;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using PetSpa.Modules.Auth.Infrastructure.Persistence;
 using PetSpa.Modules.Auth.Infrastructure.Tokens;
-using PetSpa.SharedKernel.Application.Abstractions;
 using PetSpa.SharedKernel.Application.Authentication;
+using PetSpa.SharedKernel.Application.Dtos;
 
 namespace PetSpa.Modules.Auth.Application;
 
-internal sealed class LoginService(IPasswordService<LegacyLoginAccount> passwords, JwtTokenService tokens)
+internal sealed class LoginService(
+    AuthDbContext db,
+    IPasswordHasher<Account> passwords,
+    ICustomerAuthProfiles customers,
+    IStaffAuthProfiles staff,
+    JwtTokenService tokens)
 {
-    // Xác thực tài khoản theo loại và trả token khi đăng nhập thành công.
-    public async Task<LoginResponse?> LoginAsync(
-        string accountType, ILegacyLoginStore store, string phone, string password, CancellationToken ct)
+    internal const string AccountIdClaim = "account_id";
+    internal const string TokenVersionClaim = "token_version";
+    private const string ProfileAccessStampClaim = "profile_access_stamp";
+
+    public async Task<LoginResponse?> LoginAsync(string phone, string password, CancellationToken ct)
     {
-        // 1. Tìm tài khoản đang hoạt động của đúng loại.
-        var account = await store.FindActiveByPhoneAsync(phone.Trim(), ct);
-        if (account is null || string.IsNullOrEmpty(account.PasswordHash) || !HasValidRole(accountType, account.Role))
+        var account = await db.Accounts.AsNoTracking().SingleOrDefaultAsync(x => x.LoginPhone == phone, ct);
+        var passwordResult = passwords.VerifyHashedPassword(
+            account ?? DummyCredential.Account, account?.PasswordHash ?? DummyCredential.Hash, password);
+        if (passwordResult == PasswordVerificationResult.Failed || account is null || !CanLogin(account))
             return null;
 
-        // 2. Kiểm tra mật khẩu và nâng cấp hash cũ nếu cần.
-        var verification = passwords.VerifyHashedPassword(account, account.PasswordHash, password);
-        if (verification == PasswordCheckResult.Failed)
+        var profile = await GetActiveProfileAsync(account, ct);
+        if (profile is null)
             return null;
 
-        var passwordHash = verification == PasswordCheckResult.SuccessRehashNeeded
-            ? passwords.HashPassword(account, password)
-            : account.PasswordHash;
+        if (passwordResult == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            var hash = passwords.HashPassword(account, password);
+            var updated = await db.Accounts
+                .Where(x => x.Id == account.Id && x.TokenVersion == account.TokenVersion && x.PasswordHash == account.PasswordHash)
+                .ExecuteUpdateAsync(set => set.SetProperty(x => x.PasswordHash, hash), ct);
+            if (updated == 0)
+                return null;
+        }
 
-        // 3. Ghi nhận đăng nhập trước khi phát token.
-        if (!await store.RecordLoginAsync(account, passwordHash, DateTime.UtcNow, ct))
-            return null;
-
-        // 4. Tạo claim, phát token và chuyển thông tin tài khoản sang phản hồi.
-        var id = account.Id.ToString(CultureInfo.InvariantCulture);
-        var idClaim = accountType == AccountTypes.Customer ? AuthClaimTypes.CustomerId : AuthClaimTypes.StaffId;
-        var token = tokens.Generate(
-        [
-            new Claim(AuthClaimTypes.Subject, $"{accountType}:{id}"),
-            new Claim(AuthClaimTypes.AccountType, accountType),
-            new Claim(AuthClaimTypes.Role, account.Role),
-            new Claim(idClaim, id)
+        var type = account.CustomerId.HasValue ? AccountTypes.Customer : AccountTypes.Staff;
+        var id = profile.Id.ToString(CultureInfo.InvariantCulture);
+        var (token, expiresAt) = tokens.Generate([
+            new(AuthClaimTypes.Subject, $"{type}:{id}"),
+            new(AuthClaimTypes.Role, profile.Role),
+            new(AuthClaimTypes.AccountType, type),
+            new(account.CustomerId.HasValue ? AuthClaimTypes.CustomerId : AuthClaimTypes.StaffId, id),
+            new(AccountIdClaim, account.Id.ToString(CultureInfo.InvariantCulture)),
+            new(TokenVersionClaim, account.TokenVersion.ToString(CultureInfo.InvariantCulture)),
+            new(ProfileAccessStampClaim, profile.AccessStamp.ToString("D"))
         ]);
-
-        return new LoginResponse(token.AccessToken, "Bearer", token.ExpiresAtUtc, account.Role,
-            new LoginUser(account.Id, account.FullName, account.Phone));
+        return new(token, "Bearer", expiresAt, profile.Role, new(profile.Id, profile.FullName, profile.Phone));
     }
 
-    // Kiểm tra vai trò có thuộc loại tài khoản đang đăng nhập hay không.
-    private static bool HasValidRole(string accountType, string role) => (accountType, role) switch
+    public async Task<bool> ValidateAsync(ClaimsPrincipal principal, CancellationToken ct)
     {
-        (AccountTypes.Customer, AccountRoles.Customer) => true,
-        (AccountTypes.Staff, AccountRoles.Staff or AccountRoles.Receptionist or AccountRoles.Manager or AccountRoles.Admin) => true,
-        _ => false
-    };
+        if (!principal.HasValidAccount() || !ReadSession(principal, out var accountId, out var version))
+            return false;
+
+        var account = await db.Accounts.AsNoTracking().SingleOrDefaultAsync(x => x.Id == accountId, ct);
+        if (account is null || !CanLogin(account) || account.TokenVersion != version ||
+            account.CustomerId != principal.GetCustomerId() || account.StaffId != principal.GetStaffId())
+            return false;
+
+        var profile = await GetActiveProfileAsync(account, ct);
+        return profile is not null && principal.IsInRole(profile.Role) &&
+            principal.FindAll(ProfileAccessStampClaim).Select(x => x.Value).Take(2)
+                .SequenceEqual([profile.AccessStamp.ToString("D")]);
+    }
+
+    public async Task<bool> LogoutAsync(ClaimsPrincipal principal, CancellationToken ct)
+    {
+        if (!ReadSession(principal, out var accountId, out var version))
+            return false;
+
+        return await db.Accounts.Where(x => x.Id == accountId && x.TokenVersion == version)
+            .ExecuteUpdateAsync(set => set.SetProperty(x => x.TokenVersion, x => x.TokenVersion + 1), ct) == 1;
+    }
+
+    private async Task<AccountProfile?> GetActiveProfileAsync(Account account, CancellationToken ct)
+    {
+        if (account.CustomerId is long customerId)
+        {
+            var customer = await customers.GetCustomerForAuthAsync(customerId, ct);
+            return customer is { IsActive: true, Role: AccountRoles.Customer } ? customer : null;
+        }
+        if (account.StaffId is not long staffId)
+            return null;
+
+        var employee = await staff.GetStaffForAuthAsync(staffId, ct);
+        return employee is { IsActive: true, Role: AccountRoles.Staff or AccountRoles.Receptionist or AccountRoles.Manager or AccountRoles.Admin }
+            ? employee : null;
+    }
+
+    private static bool CanLogin(Account account) =>
+        account.IsEnabled && (account.LockedUntilUtc is null || account.LockedUntilUtc <= DateTimeOffset.UtcNow);
+
+    private static bool ReadSession(ClaimsPrincipal principal, out long id, out long version)
+    {
+        static bool Read(ClaimsPrincipal principal, string type, out long value)
+        {
+            var claims = principal.FindAll(type).Take(2).ToArray();
+            value = 0;
+            return claims.Length == 1 && long.TryParse(claims[0].Value, NumberStyles.None, CultureInfo.InvariantCulture, out value);
+        }
+
+        var validId = Read(principal, AccountIdClaim, out id);
+        return Read(principal, TokenVersionClaim, out version) && validId && id > 0;
+    }
+
+    private static class DummyCredential
+    {
+        internal static readonly Account Account = new();
+        internal static readonly string Hash = new PasswordHasher<Account>()
+            .HashPassword(Account, Guid.NewGuid().ToString());
+    }
 }

@@ -1,10 +1,13 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Operation.Application.Services;
+using System.Security.Claims;
 using PetSpa.Modules.Operation.Endpoints.Requests;
+using PetSpa.Modules.Operation.Endpoints.Responses;
+using PetSpa.SharedKernel.Application.Authentication;
+
 
 namespace PetSpa.Modules.Operation.Endpoints
 {
@@ -12,19 +15,21 @@ namespace PetSpa.Modules.Operation.Endpoints
     {
         public static IEndpointRouteBuilder MapStaffEndpoint(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/api/staff").WithTags("Staff");
+            var group = app.MapGroup("/api/staff").WithTags("Staff"); // gom nhóm các endpoint liên quan đến staff lại ở swagger
 
-            group.MapGet("", GetStaffsAsync).WithName("GetStaffs").RequireAuthorization();
-            group.MapGet("/{id:long}", GetStaffByIdAsync).WithName("GetStaffById").RequireAuthorization();
-            group.MapPost("", CreateStaffAsync).WithName("CreateStaff").RequireAuthorization();
-            group.MapPut("/{id:long}", UpdateStaffAsync).WithName("UpdateStaff").RequireAuthorization();
-            group.MapDelete("/{id:long}", DeleteStaffAsync).WithName("DeleteStaff").RequireAuthorization();
-            group.MapGet("/available", GetAvailableStaffsAsync).WithName("GetStaffsAvailable").RequireAuthorization();
-            group.MapGet("/unavailable", GetUnavailableStaffsAsync).WithName("GetStaffsUnavailable").RequireAuthorization();
+            group.MapGet("/available", GetAvailableStaffAsync).WithName("GetAvailableStaffs")
+                .RequireAuthorization().Produces<List<StaffResponse>>();
+            group.MapGet("/unavailable", GetUnAvailableStaffAsync).WithName("GetUnavailableStaffs")
+                .RequireAuthorization().Produces<List<StaffResponse>>();
+            var management = group.MapGroup("").RequireAuthorization(AuthorizationPolicies.ManagerOrAdmin);
+            management.MapGet("", GetStaffsAsync).WithName("GetStaffs");
+            management.MapGet("/{id:long}", GetStaffByIdAsync).WithName("GetStaffById");
+            management.MapPost("", CreateStaffAsync).WithName("CreateStaff");
+            management.MapPut("/{id:long}", UpdateStaffAsync).WithName("UpdateStaff");
+            management.MapDelete("/{id:long}", DeleteStaffAsync).WithName("DeactivateStaff");
 
             return app;
         }
-
         public async static Task<IResult> GetStaffsAsync(
             ClaimsPrincipal currentUser,
             StaffService service,
@@ -60,22 +65,19 @@ namespace PetSpa.Modules.Operation.Endpoints
             CancellationToken ct)
         => (await service.DeleteStaffAsync(id, currentUser, ct)).ToHttpResult();
 
-
-
-        private static async Task<IResult> GetAvailableStaffsAsync(
+        public async static Task<IResult> GetAvailableStaffAsync(
             [FromQuery] DateTime? startTime,
             [FromQuery] DateTime? endTime,
             ClaimsPrincipal currentUser,
             StaffService service,
             CancellationToken ct)
-        => (await service.GetAvailableStaffsByQueryAsync(startTime, endTime, currentUser, ct)).ToHttpResult();
-
-        private static async Task<IResult> GetUnavailableStaffsAsync(
+        => (await service.GetAvailabilityAsync(startTime, endTime, true, currentUser, ct)).ToHttpResult();
+        public async static Task<IResult> GetUnAvailableStaffAsync(
             [FromQuery] DateTime? startTime,
             [FromQuery] DateTime? endTime,
             ClaimsPrincipal currentUser,
             StaffService service,
             CancellationToken ct)
-        => (await service.GetUnavailableStaffsByQueryAsync(startTime, endTime, currentUser, ct)).ToHttpResult();
+        => (await service.GetAvailabilityAsync(startTime, endTime, false, currentUser, ct)).ToHttpResult();
     }
 }

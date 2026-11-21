@@ -81,7 +81,7 @@ sequenceDiagram
     participant Server as Server PetSpa
     participant DuLieu as PostgreSQL
     NguoiDung->>Client: Nhập số điện thoại, mật khẩu và nhấn Đăng nhập
-    Client->>Server: POST /api/auth/customer/login (phone, password)
+    Client->>Server: POST /api/auth/login (phone, password)
     alt Dữ liệu thiếu hoặc sai định dạng
         Server-->>Client: 400 • Thông tin trường cần sửa
         Client-->>NguoiDung: Đánh dấu trường lỗi trên biểu mẫu
@@ -307,7 +307,7 @@ sequenceDiagram
     participant Server as Server PetSpa
     participant DuLieu as PostgreSQL
     NguoiDung->>Client: Chọn đăng nhập nội bộ, nhập điện thoại và mật khẩu
-    Client->>Server: POST /api/auth/staff/login (phone, password)
+    Client->>Server: POST /api/auth/login (phone, password)
     Server->>DuLieu: Tra nhân viên ACTIVE trong Operation
     DuLieu-->>Server: Hồ sơ, role và hash
     alt Xác thực và ghi nhận thành công
@@ -488,7 +488,7 @@ sequenceDiagram
     Client->>Server: GET /api/bookings/{id}
     Server-->>Client: 200 • Giờ hẹn, họ tên, số liên hệ, ghi chú
     NguoiDung->>Client: Sửa thông tin và nhấn Lưu
-    Client->>Server: [Đề xuất] PUT /api/bookings/{id} (body thông tin lịch)
+    Client->>Server: [Đã có] PUT /api/bookings/{id} (body thông tin lịch)
     Server->>Server: Chỉ nhận trường cho phép và kiểm tra quyền
     alt Có status, checkIn, checkOut, dịch vụ hoặc ID đổi chủ
         Server-->>Client: 400 • Trường ngoài hợp đồng
@@ -550,7 +550,7 @@ sequenceDiagram
     participant Server as Server · Booking
     participant DuLieu as Dữ liệu Booking
     NguoiDung->>Client: Nhập tiêu chí và nhấn Tìm
-    Client->>Server: [Đề xuất] GET /api/bookings?date={date}&status={status}
+    Client->>Server: [Đã có] GET /api/bookings?date={date}&status={status}
     Server->>DuLieu: Tìm trong dữ liệu booking và phân trang
     Server-->>Client: 200 • Trang kết quả
     alt Có lịch phù hợp
@@ -583,14 +583,14 @@ sequenceDiagram
     participant Server as Server PetSpa
     participant DuLieu as PostgreSQL
     NguoiDung->>Client: Mở màn hình Tất cả lịch đặt
-    Client->>Server: [Đề xuất] GET /api/bookings
+    Client->>Server: [Đã có] GET /api/bookings
     Server->>DuLieu: Lấy trang đầu các lịch theo quyền
     DuLieu-->>Server: Lịch, khách, thú cưng, giờ hẹn và trạng thái
     Server-->>Client: 200 • items và nextCursor
     Client-->>NguoiDung: Hiển thị danh sách hoặc trạng thái rỗng
     opt Xem trang sau
         NguoiDung->>Client: Chọn Xem thêm
-        Client->>Server: [Đề xuất] GET /api/bookings?cursor={nextCursor}
+        Client->>Server: [Đã có] GET /api/bookings?cursor={nextCursor}
         Server-->>Client: 200 • Trang kế tiếp
         Client-->>NguoiDung: Nối các lịch vào danh sách
     end
@@ -1297,7 +1297,7 @@ sequenceDiagram
     participant Server as Server PetSpa
     participant DuLieu as PostgreSQL
     NguoiDung->>Client: Nhập số điện thoại, mật khẩu và nhấn Đăng nhập
-    Client->>Server: POST /api/auth/staff/login (phone, password)
+    Client->>Server: POST /api/auth/login (phone, password)
     Server->>DuLieu: Tìm hồ sơ nhân viên ACTIVE
     DuLieu-->>Server: Role và hash mật khẩu
     alt Mật khẩu đúng, ghi nhận đăng nhập thành công
@@ -1305,12 +1305,12 @@ sequenceDiagram
         DuLieu-->>Server: Đã cập nhật
         Server-->>Client: 200 • accessToken, expiresAtUtc, role, user
         par Tải công việc bằng Bearer
-            Client->>Server: [Đề xuất] GET /api/me/service-sessions
+            Client->>Server: [Đã có] GET /api/me/service-sessions
             Server-->>Client: 200 • Các phiên được giao
             Client-->>NguoiDung: Hiển thị các phiên được giao
         and Khởi động theo dõi thông báo bằng Bearer
             loop Ngay khi đăng nhập và mỗi 30 giây đến lúc đăng xuất
-                Client->>Server: [Đề xuất] GET /api/me/notifications
+                Client->>Server: [Đã có] GET /api/me/notifications
                 Server-->>Client: 200 • Thông báo của nhân viên
                 Client-->>NguoiDung: Cập nhật thông báo chưa đọc
             end
@@ -1321,7 +1321,7 @@ sequenceDiagram
     end
 ```
 
-Login đã có. Hai API `/api/me/...` đề xuất suy ra người nhận từ `staff_id`. Đây là cùng vòng thăm dò của OPS-07C. Lỗi tải công việc được xử lý ở màn hình công việc, độc lập với kết quả xác thực.
+Login đã có. Hai API `/api/me/...` suy ra người nhận từ `staff_id`. Đây là cùng vòng thăm dò của OPS-07C. Lỗi tải công việc được xử lý ở màn hình công việc, độc lập với kết quả xác thực.
 
 <a id="ops-12"></a>
 

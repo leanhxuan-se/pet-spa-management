@@ -1,6 +1,6 @@
 # Sơ đồ trình tự PetSpa
 
-[Mở bản PDF có mục lục](output/pdf/SO-DO-TRINH-TU-CAP-NHAT-3.pdf) · Đối chiếu ngày 19/11/2026.
+[Sơ đồ PDF gốc](docs/Base/Diagram.pdf) · Hợp đồng API hiện hành trong [OpenAPI](openapi.yaml).
 
 **Cách đọc.** Đọc từ trên xuống. Mũi tên liền là thao tác hoặc lời gọi, mũi tên nét đứt là dữ liệu trả về. Khung alt/else thể hiện các kết quả loại trừ nhau, opt là thao tác tùy chọn, par/and là các lệnh độc lập có thể chạy song song, loop là thao tác lặp.
 
@@ -8,11 +8,11 @@
 
 **Trạng thái API.** “Đã có” đối chiếu với mã nguồn hiện hành. “Đề xuất” là hợp đồng cần triển khai. “Kết hợp” có cả thao tác đã có và thay đổi đề xuất, kể cả thay DTO hoặc siết quyền trên đường dẫn hiện có. E2E-01 tóm tắt thiết kế đích.
 
-**Xác thực.** Hai API login trả accessToken, tokenType, expiresAtUtc, role và user (id, fullName, phone). Auth tra tài khoản ACTIVE qua kho Customer hoặc Operation hiện hữu và phát JWT. Chưa cấp refresh token. WPF gửi Bearer cho API cần quyền, khi token hết hạn và nhận 401 thì quay lại đăng nhập. Với 403, thông báo thiếu quyền.
+**Xác thực.** API `POST /api/auth/login` dùng chung cho khách và nhân viên, trả accessToken, tokenType, expiresAtUtc, role và user (id, fullName, phone). Auth xác thực tài khoản, kiểm tra hồ sơ ACTIVE qua Customer hoặc Operation và phát JWT. Chưa cấp refresh token. WPF gửi Bearer cho API cần quyền, khi token hết hạn và nhận 401 thì quay lại đăng nhập. Với 403, thông báo thiếu quyền.
 
 **Ranh giới.** Server PetSpa là một ứng dụng ASP.NET Core. Cột module biểu diễn contract nội bộ cùng tiến trình. Nhãn PATCH trên lời gọi Billing sang Booking cho biết thao tác API tương ứng. Cột PostgreSQL chỉ thể hiện dữ liệu do module tương ứng quản lý. Những truy vấn nội bộ đơn giản được lược bớt khi hợp đồng HTTP là trọng tâm.
 
-**Quyền hiện hành.** Màn hình theo actor của use case. Backend cho Customer sửa/thêm pet của mình, cho mọi tài khoản nhân sự ghi Resource và truy cập Booking, cho khách thao tác một số booking của chính mình. Các quyền này rộng hơn use case. Admin đăng nhập nội bộ và quản lý được hồ sơ khách, nhưng policy tra cứu rảnh/bận hiện chỉ nhận receptionist hoặc manager.
+**Quyền hiện hành.** Màn hình theo actor của use case. Backend cho Customer sửa/thêm pet của mình, cho manager ghi Resource, cho khách thao tác một số booking của chính mình. Các vai trò receptionist, manager và admin được tra cứu rảnh/bận.
 
 **Quyết định thiết kế.** PENDING là chờ tiếp nhận. CONFIRMED ghi nhận khách đã đến. COMPLETED là booking đã hoàn tất dịch vụ và đủ điều kiện lập hóa đơn. PAID là booking đã được thanh toán xong sau BILL-03. Quầy hủy qua BOOK-04. BOOK-06 chỉ tiếp nhận và chốt dịch vụ. Quầy tải các nhóm phiên dịch vụ mỗi 15 giây, nhân viên thăm dò thông báo mỗi 30 giây. Hai chu kỳ là mặc định đề xuất, có thể cấu hình. Tạm dừng khi rời màn hình tương ứng hoặc đăng xuất, bỏ nhịp nếu lệnh trước chưa xong.
 
@@ -36,7 +36,7 @@
 | [BOOK-05](#book-05) | Tìm lịch đặt và mở chi tiết tại quầy | Bắt buộc | Kết hợp |
 | [BOOK-06](#book-06) | Cập nhật trạng thái booking | Bắt buộc | Đề xuất |
 | [BOOK-07](#book-07) | Xem tổng hợp các lịch đặt | Quy trình con | Kết hợp |
-| [OPS-01](#ops-01) | Quản lý phòng | Mở rộng | Đề xuất |
+| [OPS-01](#ops-01) | Quản lý phòng | Mở rộng | Đã có |
 | [OPS-02](#ops-02) | Xem, thêm, sửa và ngừng sử dụng nhân viên | Mở rộng | Đề xuất |
 | [OPS-03](#ops-03) | Xem toàn bộ ca làm | Mở rộng | Đề xuất |
 | [OPS-04](#ops-04) | Tìm ca làm theo tiêu chí | Quy trình con | Đề xuất |
@@ -44,20 +44,20 @@
 | [OPS-06](#ops-06) | Điều chỉnh ca làm | Quy trình con | Đề xuất |
 | [OPS-07](#ops-07) | Hủy ca làm | Quy trình con | Đề xuất |
 | [OPS-08](#ops-08) | Ghi nhận vào ca và kết thúc ca | Quy trình con | Đề xuất |
-| [OPS-09](#ops-09) | Tra cứu phòng hiện tại hoặc theo khoảng giờ | Bắt buộc | Đề xuất |
-| [OPS-10](#ops-10) | Tra nhân viên rảnh hoặc bận theo thời gian | Bắt buộc | Đề xuất |
-| [OPS-11](#ops-11) | Tạo nhóm phiên dịch vụ trong Operation | Bắt buộc | Đề xuất |
+| [OPS-09](#ops-09) | Tra cứu phòng hiện tại hoặc theo khoảng giờ | Bắt buộc | Đã có |
+| [OPS-10](#ops-10) | Tra nhân viên rảnh hoặc bận theo thời gian | Bắt buộc | Đã có |
+| [OPS-11](#ops-11) | Tạo nhóm phiên dịch vụ trong Operation | Bắt buộc | Đã có |
 | [OPS-12](#ops-12) | Điều chỉnh phiên dịch vụ | Quy trình con | Đề xuất |
-| [OPS-13](#ops-13) | Hủy phiên dịch vụ | Quy trình con | Đề xuất |
+| [OPS-13](#ops-13) | Hủy phiên dịch vụ | Quy trình con | Đã có |
 | [OPS-14](#ops-14) | Phân công và tự gửi thông báo lần đầu | Bắt buộc | Đề xuất |
 | [OPS-15](#ops-15) | Điều chỉnh phân công | Quy trình con | Đề xuất |
 | [OPS-16](#ops-16) | Hủy phân công | Quy trình con | Đề xuất |
 | [OPS-17](#ops-17) | Nhắc việc và nhận thông báo tự động | Quy trình con | Đề xuất |
-| [OPS-18](#ops-18) | Bắt đầu dịch vụ được giao | Bắt buộc | Đề xuất |
+| [OPS-18](#ops-18) | Bắt đầu dịch vụ được giao | Bắt buộc | Đã có |
 | [OPS-19](#ops-19) | Lễ tân cập nhật ghi chú chăm sóc | Mở rộng | Đề xuất |
-| [OPS-20](#ops-20) | Hoàn tất phiên dịch vụ | Bắt buộc | Đề xuất |
+| [OPS-20](#ops-20) | Hoàn tất phiên dịch vụ | Bắt buộc | Đã có |
 | [OPS-21](#ops-21) | Nhân viên đăng nhập và nhận danh sách việc | Bắt buộc | Kết hợp |
-| [OPS-22](#ops-22) | Theo dõi phiên dịch vụ, gom theo booking | Bắt buộc | Đề xuất |
+| [OPS-22](#ops-22) | Theo dõi phiên dịch vụ, gom theo booking | Bắt buộc | Đã có |
 | [BILL-01](#bill-01) | Tạo hóa đơn | Bắt buộc | Đề xuất |
 | [BILL-02](#bill-02) | Áp dụng giảm giá | Mở rộng | Đề xuất |
 | [BILL-03](#bill-03) | Ghi nhận thanh toán | Bắt buộc | Đề xuất |
@@ -80,7 +80,7 @@ sequenceDiagram
     participant Server as Server PetSpa
     participant DuLieu as PostgreSQL
     NguoiDung->>Client: Nhập số điện thoại, mật khẩu và nhấn Đăng nhập
-    Client->>Server: POST /api/auth/customer/login (phone, password)
+    Client->>Server: POST /api/auth/login (phone, password)
     alt Dữ liệu thiếu hoặc sai định dạng
         Server-->>Client: 400 • Thông tin trường cần sửa
         Client-->>NguoiDung: Đánh dấu trường lỗi trên biểu mẫu
@@ -306,7 +306,7 @@ sequenceDiagram
     participant Server as Server PetSpa
     participant DuLieu as PostgreSQL
     NguoiDung->>Client: Chọn đăng nhập nội bộ, nhập điện thoại và mật khẩu
-    Client->>Server: POST /api/auth/staff/login (phone, password)
+    Client->>Server: POST /api/auth/login (phone, password)
     Server->>DuLieu: Tra nhân viên ACTIVE trong Operation
     DuLieu-->>Server: Hồ sơ, role và hash
     alt Xác thực và ghi nhận thành công
@@ -363,7 +363,7 @@ sequenceDiagram
     end
 ```
 
-Trong sơ đồ, `{tập}` là `categories`, `services` hoặc `service-options`. Mỗi tập có GET danh sách/chi tiết, POST, PUT, DELETE. Các GET là công khai. Endpoint ghi hiện dùng `StaffOnly`, rộng hơn quyền Manager trong use case.
+Trong sơ đồ, `{tập}` là `categories`, `services` hoặc `service-options`. Mỗi tập có GET danh sách/chi tiết, POST, PUT, DELETE. Các GET là công khai. Các API ghi yêu cầu vai trò manager.
 
 <a id="res-02"></a>
 
@@ -487,7 +487,7 @@ sequenceDiagram
     Client->>Server: GET /api/bookings/{id}
     Server-->>Client: 200 • Giờ hẹn, họ tên, số liên hệ, ghi chú
     NguoiDung->>Client: Sửa thông tin và nhấn Lưu
-    Client->>Server: [Đề xuất] PUT /api/bookings/{id} (body thông tin lịch)
+    Client->>Server: [Đã có] PUT /api/bookings/{id} (body thông tin lịch)
     Server->>Server: Chỉ nhận trường cho phép và kiểm tra quyền
     alt Có status, checkIn, checkOut, dịch vụ hoặc ID đổi chủ
         Server-->>Client: 400 • Trường ngoài hợp đồng
@@ -552,7 +552,7 @@ sequenceDiagram
     participant Server as Server PetSpa
     participant DuLieu as PostgreSQL
     NguoiDung->>Client: Nhập tiêu chí và nhấn Tìm
-    Client->>Server: [Đề xuất] GET /api/bookings?date={date}&status={status}
+    Client->>Server: [Đã có] GET /api/bookings?date={date}&status={status}
     Server->>DuLieu: Tìm trong dữ liệu booking và phân trang
     Server-->>Client: 200 • Trang kết quả
     alt Có lịch phù hợp
@@ -629,14 +629,14 @@ sequenceDiagram
     participant Server as Server PetSpa
     participant DuLieu as PostgreSQL
     NguoiDung->>Client: Mở màn hình Tất cả lịch đặt
-    Client->>Server: [Đề xuất] GET /api/bookings
+    Client->>Server: [Đã có] GET /api/bookings
     Server->>DuLieu: Lấy trang đầu các lịch theo quyền và thứ tự ưu tiên trạng thái
     DuLieu-->>Server: Lịch, khách, thú cưng, giờ hẹn và trạng thái
     Server-->>Client: 200 • items và nextCursor
     Client-->>NguoiDung: Hiển thị danh sách hoặc trạng thái rỗng
     opt Xem trang sau
         NguoiDung->>Client: Chọn Xem thêm
-        Client->>Server: [Đề xuất] GET /api/bookings?cursor={nextCursor}
+        Client->>Server: [Đã có] GET /api/bookings?cursor={nextCursor}
         Server-->>Client: 200 • Trang kế tiếp
         Client-->>NguoiDung: Nối các lịch vào danh sách
     end
@@ -654,7 +654,7 @@ sequenceDiagram
 
 ## OPS-01 · Quản lý phòng
 
-**Mở rộng · API đề xuất**  
+**Mở rộng · API đã có**\
 **Người tham gia** — Quản lý
 
 Khai báo phòng, sửa tên/loại phòng hoặc đưa phòng vào bảo trì. Các route tra cứu theo khoảng giờ đã có. OPS-09 mô tả hợp đồng mới cho cả hiện tại và khoảng giờ.
@@ -667,12 +667,12 @@ sequenceDiagram
     participant DuLieu as PostgreSQL
     NguoiDung->>Client: Mở danh sách phòng
     Client->>Server: GET /api/room
-    Server-->>Client: 200 • Phòng, loại phòng và trạng thái
+    Server-->>Client: 200 • Mã phòng, tên phòng và loại phòng
     NguoiDung->>Client: Chọn thêm phòng hoặc sửa phòng đã có
     alt Phòng mới
         Client->>Server: POST /api/room
         Server->>DuLieu: Ghi tên, loại và trạng thái phòng
-        Server-->>Client: 201 • Phòng mới
+        Server-->>Client: 200 • Danh sách phòng sau khi tạo
     else Sửa phòng hoặc chuyển MAINTENANCE
         Client->>Server: PUT /api/room/{id}
         Server->>DuLieu: Kiểm tra các phiên bị ảnh hưởng trước khi lưu
@@ -899,7 +899,7 @@ WORKING phản ánh nhân viên thực sự vào ca. Giờ server ghi nhận m�
 
 ## OPS-09 · Tra cứu phòng hiện tại hoặc theo khoảng giờ
 
-**Bắt buộc · API đề xuất**  
+**Bắt buộc · API đã có**\
 **Người tham gia** — Lễ tân, quản lý
 
 Tra ngay dùng đồng hồ server. Khi bố trí cho cả dịch vụ, quầy truyền giờ bắt đầu và kết thúc để kiểm tra phòng suốt khoảng đó.
@@ -926,13 +926,13 @@ sequenceDiagram
     Client-->>NguoiDung: Hiển thị kết quả tại thời điểm hoặc khoảng đã chọn
 ```
 
-Hai route mới dùng available/unavailable. Các route hiện có là /api/room/availability và /api/room/unavailability, đều bắt buộc startTime và endTime. Thiếu một mốc hoặc t1 ≥ t2 trả 400. Hai phòng dùng nối tiếp đúng mốc kết thúc không bị tính trùng.
+Hai route dùng `available` và `unavailable`. Có thể bỏ cả hai mốc để tra hiện tại. Thiếu một mốc hoặc t1 ≥ t2 trả 400. Hai phiên dùng cùng phòng và nối tiếp đúng mốc kết thúc không bị tính trùng.
 
 <a id="ops-10"></a>
 
 ## OPS-10 · Tra nhân viên rảnh hoặc bận theo thời gian
 
-**Bắt buộc · API đề xuất**  
+**Bắt buộc · API đã có**\
 **Người tham gia** — Lễ tân, quản lý
 
 Tra hiện tại xét ca WORKING. Tra theo khoảng xét ca SCHEDULED hoặc WORKING bao phủ cả khoảng và phân công có thời gian giao nhau.
@@ -959,13 +959,13 @@ sequenceDiagram
     Client-->>NguoiDung: Hiển thị nhân viên và điều kiện tra cứu
 ```
 
-Hai route cũ /api/staff/availability và /api/staff/unavailability yêu cầu cả hai mốc và trả 404 khi rỗng. Hợp đồng mới trả 200 với danh sách rỗng. Bận nghĩa là có phân công xung đột, còn ngoài ca là lý do không đủ điều kiện nhận việc. Thiếu một mốc hoặc khoảng sai trả 400.
+Dùng `/api/staff/available` và `/api/staff/unavailable`. Hai API trả 200 với danh sách có thể rỗng. Bận nghĩa là có phân công xung đột, còn ngoài ca là lý do không đủ điều kiện nhận việc. Thiếu một mốc hoặc khoảng sai trả 400.
 
 <a id="ops-11"></a>
 
 ## OPS-11 · Tạo nhóm phiên dịch vụ trong Operation
 
-**Bắt buộc · API đề xuất**  
+**Bắt buộc · API đã có**\
 **Người tham gia** — Lễ tân, quản lý
 
 Khi bàn giao booking đã tiếp nhận, tạo một phiên WAITING cho mỗi dòng dịch vụ còn hiệu lực. Cả nhóm được ghi trong một giao dịch để danh sách tại quầy luôn có đủ phiên cần theo dõi.
@@ -993,7 +993,7 @@ sequenceDiagram
     Client-->>NguoiDung: Hiển thị nhóm phiên hoặc cho bố trí lại
 ```
 
-Body đề xuất có bookingId và items gồm bookingDetailId, roomId, expectedStartAt, expectedFinishAt. Operation lưu booking_id trực tiếp trên mọi phiên. FK trỏ tới booking.booking(id) và FK ghép bảo đảm dòng dịch vụ thuộc đúng booking. Kiểm tra phòng và ghi mốc bàn giao cùng giao dịch với Booking Contract.
+Body có `bookingId` và `items` gồm `bookingDetailId`, `roomId`, `expectedStartAt` và `expectedFinishAt`. Operation lưu hai tham chiếu logic `booking_id` và `booking_details_id`. Booking Contract xác minh tập dòng dưới khóa và ghi mốc bàn giao trong cùng giao dịch với Operation. Gửi lại đúng tập dòng trả nhóm hiện tại. Dùng OPS-12 để đổi bố trí.
 
 <a id="ops-12"></a>
 
@@ -1028,7 +1028,7 @@ Operation kiểm tra lại khả dụng phòng và từng người đã nhận v
 
 ## OPS-13 · Hủy phiên dịch vụ
 
-**Quy trình con · API đề xuất**  
+**Quy trình con · API đã có**\
 **Người tham gia** — Lễ tân, quản lý
 
 Hủy riêng một phiên WAITING khi bỏ dịch vụ. Phòng và người thực hiện được giải phóng. Booking giữ trạng thái hiện tại cho tới khi quầy chốt.
@@ -1199,7 +1199,7 @@ GET chỉ đọc, POST tạo một lần nhắc mới cho mỗi thao tác có ch
 
 ## OPS-18 · Bắt đầu dịch vụ được giao
 
-**Bắt buộc · API đề xuất**  
+**Bắt buộc · API đã có**\
 **Người tham gia** — Nhân viên được phân công
 
 Nhân viên mở công việc và bắt đầu khi phiên đang WAITING, đã có phòng và đúng phân công.
@@ -1267,7 +1267,7 @@ Customer sở hữu specialNote. Middleware và nghiệp vụ phải kiểm tra 
 
 ## OPS-20 · Hoàn tất phiên dịch vụ
 
-**Bắt buộc · API đề xuất**  
+**Bắt buộc · API đã có**\
 **Người tham gia** — Nhân viên được phân công
 
 Nhân viên xác nhận xong phần việc của mình. Lễ tân nhìn thấy thay đổi ở lần làm mới màn hình phiên dịch vụ kế tiếp.
@@ -1311,7 +1311,7 @@ sequenceDiagram
     participant Server as Server PetSpa
     participant DuLieu as PostgreSQL
     NguoiDung->>Client: Nhập số điện thoại, mật khẩu và nhấn Đăng nhập
-    Client->>Server: POST /api/auth/staff/login (phone, password)
+    Client->>Server: POST /api/auth/login (phone, password)
     Server->>DuLieu: Tìm hồ sơ nhân viên ACTIVE
     DuLieu-->>Server: Role và hash mật khẩu
     alt Mật khẩu đúng, ghi nhận đăng nhập thành công
@@ -1319,12 +1319,12 @@ sequenceDiagram
         DuLieu-->>Server: Đã cập nhật
         Server-->>Client: 200 • accessToken, expiresAtUtc, role, user
         par Tải công việc bằng Bearer
-            Client->>Server: [Đề xuất] GET /api/me/service-sessions
+            Client->>Server: [Đã có] GET /api/me/service-sessions
             Server-->>Client: 200 • Các phiên được giao
             Client-->>NguoiDung: Hiển thị các phiên được giao
         and Khởi động theo dõi thông báo bằng Bearer
             loop Ngay khi đăng nhập và mỗi 30 giây đến lúc đăng xuất
-                Client->>Server: [Đề xuất] GET /api/me/notifications
+                Client->>Server: [Đã có] GET /api/me/notifications
                 Server-->>Client: 200 • Thông báo của nhân viên
                 Client-->>NguoiDung: Cập nhật thông báo chưa đọc
             end
@@ -1335,13 +1335,13 @@ sequenceDiagram
     end
 ```
 
-Login đã có. Hai API `/api/me/...` đề xuất suy ra người nhận từ `staff_id`. Đây là cùng vòng thăm dò của OPS-17. Lỗi tải công việc được xử lý ở màn hình công việc, độc lập với kết quả xác thực.
+Login đã có. Hai API `/api/me/...` suy ra người nhận từ `staff_id`. Đây là cùng vòng thăm dò của OPS-17. Lỗi tải công việc được xử lý ở màn hình công việc, độc lập với kết quả xác thực.
 
 <a id="ops-22"></a>
 
 ## OPS-22 · Theo dõi phiên dịch vụ, gom theo booking
 
-**Bắt buộc · API đề xuất**  
+**Bắt buộc · API đã có**\
 **Người tham gia** — Lễ tân, quản lý
 
 Màn hình lấy các phiên hiện tại từ Operation và hiển thị theo bookingId, gồm cả các phiên đã hoàn thành hoặc hủy thuộc cùng nhóm.
@@ -1369,7 +1369,7 @@ sequenceDiagram
     end
 ```
 
-Quầy lấy cả nhóm chuyển ca/ngày và phân trang theo bookingId trước khi tải phiên. Đối chiếu đủ tập dòng đã bàn giao. Booking CONFIRMED đủ điều kiện mở BOOK-06 rồi BILL-01. Booking đã COMPLETED nhưng chưa có hóa đơn chỉ mở BILL-01. Tra hóa đơn hiệu lực qua contract Billing để đưa nhóm đã lập hóa đơn ra khỏi hàng chờ. Nhóm hủy toàn bộ rời hàng chờ sau BOOK-04. Chỉ báo một lần cho mỗi nhóm sẵn sàng.
+Quầy lấy cả nhóm chuyển ca hoặc chuyển ngày. Dùng `pageSize` và truyền `nextAfterBookingId` của trang trước vào `afterBookingId` để tải tiếp. Server đối chiếu đủ tập dòng đã bàn giao. Booking CONFIRMED đủ điều kiện mở BOOK-06 rồi BILL-01. Booking đã COMPLETED nhưng chưa có hóa đơn chỉ mở BILL-01. Tra hóa đơn hiệu lực qua contract Billing để đưa nhóm đã lập hóa đơn ra khỏi hàng chờ. Nhóm hủy toàn bộ rời hàng chờ sau BOOK-04. Client chỉ báo một lần cho mỗi nhóm sẵn sàng.
 
 <a id="bill-01"></a>
 

@@ -1,8 +1,8 @@
 using PetSpa.Modules.Operation.Application.Abstractions;
 using PetSpa.Modules.Operation.Domain.Enums;
-using PetSpa.Modules.Operation.Domain.Repositories;
 using PetSpa.Modules.Operation.Endpoints.Responses;
-using StaffTable = PetSpa.Modules.Operation.Domain.Entities.Staff;
+using PetSpa.Modules.Operation.Endpoints.Requests;
+using PetSpa.SharedKernel.Application.Abstractions;
 
 namespace PetSpa.OperationSmokeTests;
 
@@ -20,35 +20,32 @@ internal sealed class OperationTestStore
 
     public List<StaffResponse> AvailableStaff { get; } =
     [
-        new StaffResponse(11, "Available Staff One", "Groomer", null),
-        new StaffResponse(12, "Available Staff Two", "Receptionist", null)
+        new StaffResponse(11, "Available Staff One", null, null, "", "", "Groomer", StaffRole.STAFF, null, null, null, StaffStatus.ACTIVE),
+        new StaffResponse(12, "Available Staff Two", null, null, "", "", "Receptionist", StaffRole.STAFF, null, null, null, StaffStatus.ACTIVE)
     ];
 
     public List<StaffResponse> UnavailableStaff { get; } =
     [
-        new StaffResponse(13, "Unavailable Staff", "Groomer", null)
+        new StaffResponse(13, "Unavailable Staff", null, null, "", "", "Groomer", StaffRole.STAFF, null, null, null, StaffStatus.ACTIVE)
     ];
 
-    public List<StaffTable> StaffMembers { get; } =
-    [
-        new StaffTable
-        {
-            Id = 1,
-            FullName = "Test Manager",
-            Email = "manager@example.test",
-            Phone = "0900000001",
-            Position = "Manager",
-            Role = StaffRole.MANAGER,
-            Status = StaffStatus.ACTIVE,
-            PasswordHash = string.Empty
-        }
-    ];
-
-    public int StaffSaveCount { get; set; }
 }
 
 internal sealed class FakeRoomRepository(OperationTestStore store) : IRoomRepository
 {
+    public Task<List<RoomResponse>> GetAsync(CancellationToken ct) =>
+        Task.FromResult(store.AvailableRooms.Concat(store.UnavailableRooms).ToList());
+    public Task<List<RoomResponse>> CreateAsync(CreateRoomRequest request, CancellationToken ct) =>
+        throw new NotSupportedException();
+    public Task<Result<List<RoomResponse>>> UpdateAsync(long id, UpdateRoomRequest request, CancellationToken ct) =>
+        throw new NotSupportedException();
+
+    public Task<List<RoomResponse>> GetAvailableAtAsync(DateTime nowUtc, CancellationToken ct) =>
+        Task.FromResult(store.AvailableRooms.ToList());
+
+    public Task<List<RoomResponse>> GetUnAvailableAtAsync(DateTime nowUtc, CancellationToken ct) =>
+        Task.FromResult(store.UnavailableRooms.ToList());
+
     public Task<List<RoomResponse>> GetAvailableAsync(
         DateTime startTime,
         DateTime endTime,
@@ -64,27 +61,17 @@ internal sealed class FakeRoomRepository(OperationTestStore store) : IRoomReposi
 
 internal sealed class FakeStaffRepository(OperationTestStore store) : IStaffRepository
 {
-    public Task<List<StaffResponse>> GetAvailableAsync(
-        DateTime startTime,
-        DateTime endTime,
-        CancellationToken ct)
-        => Task.FromResult(store.AvailableStaff.ToList());
+    public Task<List<StaffResponse>> GetAsync(CancellationToken ct) => Task.FromResult(store.AvailableStaff.ToList());
+    public Task<StaffResponse?> GetByIdAsync(long id, CancellationToken ct) =>
+        Task.FromResult(store.AvailableStaff.SingleOrDefault(x => x.Id == id));
+    public Task<StaffResponse> CreateAsync(CreateStaffRequest request, CancellationToken ct) =>
+        throw new NotSupportedException();
+    public Task<StaffResponse?> UpdateAsync(long id, UpdateStaffRequest request, CancellationToken ct) =>
+        throw new NotSupportedException();
+    public Task<StaffResponse?> DeleteAsync(long id, CancellationToken ct) =>
+        throw new NotSupportedException();
 
-    public Task<List<StaffResponse>> GetUnAvailableAsync(
-        DateTime startTime,
-        DateTime endTime,
-        CancellationToken ct)
-        => Task.FromResult(store.UnavailableStaff.ToList());
-}
-
-internal sealed class FakeStaffAuthRepository(OperationTestStore store) : IStaffAuthRepository
-{
-    public Task<StaffTable?> GetByPhoneAsync(string phone, CancellationToken ct)
-        => Task.FromResult(store.StaffMembers.SingleOrDefault(staff => staff.Phone == phone));
-
-    public Task SaveAsync(CancellationToken ct)
-    {
-        store.StaffSaveCount++;
-        return Task.CompletedTask;
-    }
+    public Task<List<StaffResponse>> GetAvailabilityAsync(
+        DateTime startUtc, DateTime? endUtc, bool available, CancellationToken ct)
+        => Task.FromResult((available ? store.AvailableStaff : store.UnavailableStaff).ToList());
 }

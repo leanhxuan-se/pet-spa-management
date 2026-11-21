@@ -1,14 +1,20 @@
 # Authentication smoke tests
 
-Run from the repository root:
+Set `PETSPA_AUTH_TEST_CONNECTION` to a fresh disposable PostgreSQL database. Run from the repository root.
 
 ```powershell
 dotnet run --project tests/PetSpa.IntegrationTests/PetSpa.AuthenticationSmokeTests.csproj
 ```
 
-This executable starts a local HTTP server with synthetic accounts and fake repositories. It exercises the login handlers, password rehashing, JWT bearer middleware, named and fallback policies, Customer, Pet, Booking and Category endpoints, generated OpenAPI and Operation migration metadata. It runs without a database. A failed assertion exits with an exception. On success it prints the number of checks.
+The executable applies the current initial migrations and inserts synthetic records, including legacy password hashes to verify their upgrade on login. It exercises authentication, staff shifts, availability and service-session handoff, start, completion, cancellation and group tracking over HTTP. It also checks migration of an existing session and rollback across the Operation and Booking modules. Regression checks cover concurrent registration, phone collisions across account types, logout on multiple devices, and rejection of old tokens after restoring a profile or role. It also verifies generated OpenAPI and the Customer, Pet, Booking and Resource authorization checks using test repositories. Use a fresh database for each run.
 
-The executable compiles the internal customer login types from their production source files so the fixtures can replace their dependencies.
+## Operation smoke tests
+
+```powershell
+dotnet run --project tests/PetSpa.OperationSmokeTests/PetSpa.OperationSmokeTests.csproj
+```
+
+Exercises room and staff availability through a loopback HTTP server with synthetic accounts and repositories.
 
 ## Booking provider acceptance tests
 

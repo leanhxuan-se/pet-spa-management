@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Operation.Application.Services;
 using PetSpa.Modules.Operation.Endpoints.Requests;
+using PetSpa.Modules.Operation.Endpoints.Responses;
 
 namespace PetSpa.Modules.Operation.Endpoints
 {
@@ -15,11 +16,20 @@ namespace PetSpa.Modules.Operation.Endpoints
         // Đăng ký các route phiên dịch vụ, phân công (OPS-07 -> OPS-07C) và bắt đầu thực hiện phiên (OPS-08).
         public static IEndpointRouteBuilder MapServiceSessionEndpoint(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/api/service-sessions").WithTags("ServiceSession");
+            var group = app.MapGroup("/api/service-sessions").WithTags("ServiceSession").RequireAuthorization();
 
+            group.MapPost("", CreateGroupAsync).WithName("CreateServiceSessionGroup")
+                .Produces<ServiceSessionGroupResponse>(StatusCodes.Status201Created).Produces<ServiceSessionGroupResponse>();
+            group.MapGet("/current", GetCurrentAsync).WithName("GetCurrentServiceSessionGroups")
+                .Produces<CurrentServiceSessionPage>();
             group.MapGet("/{id:long}", GetServiceSessionByIdAsync).WithName("GetServiceSessionById").RequireAuthorization();
             group.MapPut("/{id:long}", UpdateServiceSessionAsync).WithName("UpdateServiceSession").RequireAuthorization();
-            group.MapPost("/{id:long}/start", StartServiceSessionAsync).WithName("StartServiceSession").RequireAuthorization();
+            group.MapPost("/{id:long}/start", StartServiceSessionAsync).WithName("StartServiceSession")
+                .Produces<ServiceSessionResponse>();
+            group.MapPost("/{id:long}/complete", CompleteServiceSessionAsync).WithName("CompleteServiceSession")
+                .Produces<ServiceSessionResponse>();
+            group.MapDelete("/{id:long}", CancelServiceSessionAsync).WithName("CancelServiceSession")
+                .Produces(StatusCodes.Status204NoContent);
 
             group.MapPost("/{id:long}/assignments", AssignStaffAsync).WithName("AssignStaffToSession").RequireAuthorization();
             group.MapPut("/{id:long}/assignments/{assignmentId:long}", ReassignStaffAsync).WithName("ReassignStaffOnSession").RequireAuthorization();
@@ -29,6 +39,16 @@ namespace PetSpa.Modules.Operation.Endpoints
 
             return app;
         }
+
+        private static async Task<IResult> CreateGroupAsync(
+            [FromBody] CreateServiceSessionGroupRequest request, ServiceSessionGroupService service,
+            ClaimsPrincipal currentUser, CancellationToken ct)
+            => (await service.CreateAsync(request, currentUser, ct)).ToHttpResult();
+
+        private static async Task<IResult> GetCurrentAsync(
+            [FromQuery] long? afterBookingId, [FromQuery] int? pageSize, ServiceSessionGroupService service,
+            ClaimsPrincipal currentUser, CancellationToken ct)
+            => (await service.GetCurrentAsync(afterBookingId, pageSize, currentUser, ct)).ToHttpResult();
 
         // OPS-07C: Xem chi tiết phiên dịch vụ (kiểm tra quyền lễ tân/quản lý hoặc nhân viên còn phân công hiệu lực).
         private static async Task<IResult> GetServiceSessionByIdAsync(
@@ -54,6 +74,14 @@ namespace PetSpa.Modules.Operation.Endpoints
             ClaimsPrincipal currentUser,
             CancellationToken ct)
             => (await service.StartAsync(id, currentUser, ct)).ToHttpResult();
+
+        private static async Task<IResult> CompleteServiceSessionAsync(
+            [FromRoute] long id, ServiceSessionService service, ClaimsPrincipal currentUser, CancellationToken ct)
+            => (await service.CompleteAsync(id, currentUser, ct)).ToHttpResult();
+
+        private static async Task<IResult> CancelServiceSessionAsync(
+            [FromRoute] long id, ServiceSessionService service, ClaimsPrincipal currentUser, CancellationToken ct)
+            => (await service.CancelAsync(id, currentUser, ct)).ToHttpResult();
 
         // OPS-07: Phân công nhân viên và tự động gửi thông báo lần đầu.
         private static async Task<IResult> AssignStaffAsync(

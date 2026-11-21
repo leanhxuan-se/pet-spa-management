@@ -2,7 +2,7 @@ openapi: "3.0.3"
 info:
   title: "Pet Spa API"
   version: "1.0.0"
-  description: "API đăng nhập, quản lý khách hàng, thú cưng, danh mục dịch vụ và lịch hẹn. Thời điểm lịch hẹn dùng UTC với hậu tố Z."
+  description: "API xác thực, khách hàng, thú cưng, danh mục dịch vụ, lịch hẹn và vận hành PetSpa. Gửi các mốc ngày giờ UTC với hậu tố Z. Xem BAO-CAO-DOI-CHIEU-API.md để biết phạm vi các luồng trong sơ đồ."
 servers:
   - url: "http://localhost:5052"
     description: "Profile http"
@@ -13,6 +13,7 @@ security:
 paths:
   /health:
     get:
+      tags: ["Hệ thống"]
       summary: "Kiểm tra API đang hoạt động"
       security: []
       responses:
@@ -25,30 +26,36 @@ paths:
                 required: [status]
                 properties:
                   status: { type: string, enum: [ok] }
-  /api/auth/customer/login:
+  /api/auth/register:
     post:
-      tags: ["Đăng nhập"]
-      summary: "Đăng nhập khách hàng"
-      operationId: CustomerLogin
+      tags: ["Auth"]
+      summary: "Đăng ký cho hồ sơ khách hàng đã được xác minh"
+      operationId: Register
       security: []
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/CustomerLoginRequest" }
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
       responses:
-        "200":
-          description: "Thành công."
+        "201":
+          description: "Đã liên kết tài khoản với hồ sơ khách hàng."
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/LoginResponse" }
+              schema:
+                type: object
+                required: [customerId]
+                properties:
+                  customerId: { type: integer, format: int64 }
         "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-  /api/auth/staff/login:
+        "409": { description: "Hồ sơ hoặc số đăng nhập đã có tài khoản." }
+        "429": { description: "Quá giới hạn số lần đăng ký." }
+        "503": { $ref: "#/components/responses/AuthUnavailable" }
+  /api/auth/login:
     post:
-      tags: ["Đăng nhập"]
-      summary: "Đăng nhập nhân viên"
-      operationId: StaffLogin
+      tags: ["Auth"]
+      summary: "Đăng nhập chung cho khách hàng và nhân viên"
+      operationId: Login
       security: []
       requestBody:
         required: true
@@ -57,12 +64,112 @@ paths:
             schema: { $ref: "#/components/schemas/LoginRequest" }
       responses:
         "200":
-          description: "Thành công."
+          description: "Đã đăng nhập."
+          headers:
+            Cache-Control:
+              schema: { type: string, enum: [no-store] }
           content:
             application/json:
               schema: { $ref: "#/components/schemas/LoginResponse" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { description: "Quá giới hạn số lần đăng nhập." }
+        "503": { $ref: "#/components/responses/AuthUnavailable" }
+  /api/auth/logout:
+    post:
+      tags: ["Auth"]
+      summary: "Đăng xuất trên mọi thiết bị"
+      operationId: Logout
+      responses:
+        "204": { description: "Đã thu hồi các JWT trước đó của tài khoản." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503": { $ref: "#/components/responses/AuthUnavailable" }
+  /api/auth/customers/{customerId}/activation:
+    post:
+      tags: ["Auth"]
+      summary: "Cấp mã kích hoạt cho khách hàng đã xác minh tại quầy"
+      operationId: IssueCustomerActivation
+      description: "Dành cho receptionist và manager. Dùng mã cùng số điện thoại và mật khẩu để đăng ký qua POST /api/auth/register."
+      parameters:
+        - { name: customerId, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200":
+          description: "Mã kích hoạt có thời hạn 15 phút."
+          headers:
+            Cache-Control:
+              schema: { type: string, enum: [no-store] }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [activationToken]
+                properties:
+                  activationToken: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/AuthUnavailable" }
+  /api/auth/staff-accounts:
+    post:
+      tags: ["Auth"]
+      summary: "Cấp tài khoản cho hồ sơ nhân viên"
+      operationId: CreateStaffAccount
+      description: "Dành cho manager và admin theo quyền quản lý vai trò của hồ sơ."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [staffId, password]
+              properties:
+                staffId: { type: integer, format: int64, minimum: 1 }
+                password: { type: string, format: password, minLength: 12, maxLength: 128 }
+      responses:
+        "201":
+          description: "Đã cấp tài khoản."
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [staffId]
+                properties:
+                  staffId: { type: integer, format: int64 }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "Hồ sơ ngừng hoạt động, đã có tài khoản hoặc trùng số đăng nhập." }
+        "503": { $ref: "#/components/responses/AuthUnavailable" }
+  /api/auth/staff-accounts/{staffId}:
+    patch:
+      tags: ["Auth"]
+      summary: "Đổi mật khẩu, khóa hoặc mở tài khoản nhân viên"
+      operationId: UpdateStaffAccount
+      description: "Dành cho manager và admin theo quyền quản lý vai trò của hồ sơ. Cần ít nhất một giá trị khác null."
+      parameters:
+        - { name: staffId, in: path, required: true, schema: { type: integer, format: int64 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              properties:
+                password: { type: string, format: password, minLength: 12, maxLength: 128, nullable: true }
+                isEnabled: { type: boolean, nullable: true }
+      responses:
+        "204": { description: "Đã cập nhật và thu hồi JWT cũ của tài khoản." }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "Trạng thái hiện tại không cho phép thao tác." }
+        "503": { $ref: "#/components/responses/AuthUnavailable" }
+
   /api/customers/{id}:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -84,7 +191,7 @@ paths:
       tags: ["Khách hàng"]
       summary: "Cập nhật hồ sơ khách hàng"
       operationId: UpdateCustomer
-      description: "Dành cho chủ hồ sơ, receptionist hoặc manager. Chỉ receptionist và manager được gửi status. Bỏ qua password hoặc gửi null để giữ mật khẩu hiện tại."
+      description: "Dành cho chủ hồ sơ, receptionist hoặc manager. Chỉ receptionist và manager được gửi status."
       requestBody:
         required: true
         content:
@@ -105,8 +212,8 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "422": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/CustomerConflict" }
+        "422": { $ref: "#/components/responses/CustomerValidationFailed" }
   /api/customers:
     get:
       tags: ["Khách hàng"]
@@ -121,11 +228,12 @@ paths:
               schema: { type: array, items: { $ref: "#/components/schemas/Customer" } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
     post:
       tags: ["Khách hàng"]
       summary: "Tạo hồ sơ khách hàng"
       operationId: CreateCustomer
-      description: "Dành cho receptionist và manager. Hồ sơ tạo mới ở trạng thái ACTIVE. Điện thoại được chuẩn hóa và mật khẩu được băm trước khi lưu."
+      description: "Dành cho receptionist và manager. Hồ sơ tạo mới ở trạng thái ACTIVE và điện thoại được chuẩn hóa. Dùng API Auth để cấp mã kích hoạt và đăng ký tài khoản."
       requestBody:
         required: true
         content:
@@ -145,8 +253,8 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "422": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/CustomerConflict" }
+        "422": { $ref: "#/components/responses/CustomerValidationFailed" }
   /api/customers/{customerId}/pets:
     parameters:
       - $ref: "#/components/parameters/CustomerId"
@@ -191,7 +299,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "422": { $ref: "#/components/responses/BadRequest" }
+        "422": { $ref: "#/components/responses/CustomerValidationFailed" }
   /api/pets/{id}:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -261,7 +369,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "422": { $ref: "#/components/responses/BadRequest" }
+        "422": { $ref: "#/components/responses/CustomerValidationFailed" }
   /api/categories:
     get:
       tags: ["Danh mục dịch vụ"]
@@ -534,26 +642,6 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-  /api/categories/{categoryId}/services:
-    parameters:
-      - $ref: "#/components/parameters/CategoryId"
-    get:
-      tags: ["Danh mục dịch vụ"]
-      summary: "Liệt kê dịch vụ theo danh mục"
-      operationId: GetServicesByCategory
-      security: []
-      parameters:
-        - $ref: "#/components/parameters/Keyword"
-        - $ref: "#/components/parameters/ActiveOnly"
-      responses:
-        "200":
-          description: "Thành công."
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: "#/components/schemas/Service" }
-        "404": { $ref: "#/components/responses/NotFound" }
   /api/services/{serviceId}/options:
     parameters:
       - $ref: "#/components/parameters/ServiceId"
@@ -723,10 +811,566 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
+  /api/room:
+    get:
+      tags: ["Phòng"]
+      summary: "Xem danh sách phòng"
+      operationId: GetRooms
+      description: "Dành cho receptionist, manager và admin."
+      responses:
+        "200": { $ref: "#/components/responses/RoomList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+    post:
+      tags: ["Phòng"]
+      summary: "Tạo phòng"
+      operationId: CreateRoom
+      description: "Dành cho receptionist, manager và admin. Phòng mới có trạng thái AVAILABLE. Phản hồi trả danh sách phòng sau khi tạo."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateRoomRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/RoomList" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+  /api/room/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: ["Phòng"]
+      summary: "Cập nhật phòng"
+      operationId: UpdateRoom
+      description: "Dành cho receptionist, manager và admin. Trường bỏ qua hoặc null giữ giá trị hiện tại. Phản hồi trả danh sách phòng sau khi cập nhật. Đổi trạng thái trả 409 nếu phòng còn phiên đang làm hoặc còn lịch sử dụng."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateRoomRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/RoomList" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/room/available:
+    get:
+      tags: ["Phòng"]
+      summary: "Tra phòng khả dụng"
+      operationId: GetRoomsAvailable
+      description: "Dành cho receptionist, manager và admin. Bỏ cả hai mốc để tra theo giờ máy chủ. Truyền đủ cả hai mốc để tra khoảng [startTime, endTime)."
+      parameters:
+        - $ref: "#/components/parameters/RoomStartTime"
+        - $ref: "#/components/parameters/RoomEndTime"
+      responses:
+        "200": { $ref: "#/components/responses/RoomList" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+  /api/room/unavailable:
+    get:
+      tags: ["Phòng"]
+      summary: "Tra phòng không khả dụng"
+      operationId: GetRoomsUnavailable
+      description: "Dành cho receptionist, manager và admin. Gồm phòng bận hoặc có trạng thái khác AVAILABLE. Bỏ cả hai mốc để tra hiện tại hoặc truyền đủ cả hai mốc để tra theo khoảng."
+      parameters:
+        - $ref: "#/components/parameters/RoomStartTime"
+        - $ref: "#/components/parameters/RoomEndTime"
+      responses:
+        "200": { $ref: "#/components/responses/RoomList" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+  /api/staff:
+    get:
+      tags: ["Nhân viên"]
+      summary: "Xem danh sách nhân viên"
+      operationId: GetStaffs
+      description: "Dành cho manager và admin."
+      responses:
+        "200": { $ref: "#/components/responses/StaffList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+    post:
+      tags: ["Nhân viên"]
+      summary: "Tạo hồ sơ nhân viên"
+      operationId: CreateStaff
+      description: "Manager quản lý vai trò STAFF và RECEPTIONIST. Admin quản lý mọi vai trò nhân viên. Cấp tài khoản đăng nhập qua POST /api/auth/staff-accounts."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateStaffRequest" }
+      responses:
+        "201":
+          description: "Hồ sơ nhân viên đã tạo."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Staff" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+  /api/staff/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: ["Nhân viên"]
+      summary: "Xem hồ sơ nhân viên"
+      operationId: GetStaffById
+      description: "Dành cho manager và admin."
+      responses:
+        "200": { $ref: "#/components/responses/StaffDetails" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+    put:
+      tags: ["Nhân viên"]
+      summary: "Cập nhật hồ sơ nhân viên"
+      operationId: UpdateStaff
+      description: "Manager quản lý vai trò STAFF và RECEPTIONIST. Admin quản lý mọi vai trò nhân viên. Thay đổi vai trò hoặc trạng thái phải giữ ít nhất một admin có thể đăng nhập."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateStaffRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffDetails" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+    delete:
+      tags: ["Nhân viên"]
+      summary: "Vô hiệu hóa nhân viên"
+      operationId: DeactivateStaff
+      description: "Chuyển hồ sơ sang INACTIVE và giữ lịch sử. Áp dụng quyền quản lý vai trò và điều kiện giữ ít nhất một admin có thể đăng nhập."
+      responses:
+        "200": { $ref: "#/components/responses/StaffDetails" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/staff/available:
+    get:
+      tags: ["Nhân viên"]
+      summary: "Tra nhân viên rảnh"
+      operationId: GetAvailableStaffs
+      description: "Dành cho receptionist, manager và admin. Xét nhân viên ACTIVE có ca WORKING khi tra hiện tại, hoặc ca SCHEDULED/WORKING bao phủ toàn bộ khoảng yêu cầu, và không giao phân công còn hiệu lực. Bỏ cả hai mốc để tra hiện tại. Danh sách có thể rỗng."
+      parameters:
+        - $ref: "#/components/parameters/RoomStartTime"
+        - $ref: "#/components/parameters/RoomEndTime"
+      responses:
+        "200": { $ref: "#/components/responses/StaffList" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+  /api/staff/unavailable:
+    get:
+      tags: ["Nhân viên"]
+      summary: "Tra nhân viên bận"
+      operationId: GetUnavailableStaffs
+      description: "Dành cho receptionist, manager và admin. Chỉ xét phân công còn hiệu lực của nhân viên ACTIVE trên phiên đang chờ hoặc đang thực hiện. Bỏ cả hai mốc để tra hiện tại. Danh sách có thể rỗng."
+      parameters:
+        - $ref: "#/components/parameters/RoomStartTime"
+        - $ref: "#/components/parameters/RoomEndTime"
+      responses:
+        "200": { $ref: "#/components/responses/StaffList" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+  /api/staff-shifts:
+    get:
+      tags: ["Ca làm"]
+      summary: "Tìm và phân trang ca làm"
+      operationId: GetStaffShifts
+      description: "Dành cho manager và admin. Gửi nextCursor của lần trả trước làm cursor để lấy trang tiếp theo."
+      parameters:
+        - name: date
+          in: query
+          schema: { type: string, format: date }
+        - name: staffId
+          in: query
+          schema: { type: integer, format: int64, minimum: 1 }
+        - name: status
+          in: query
+          description: "Không phân biệt chữ hoa và chữ thường."
+          schema: { $ref: "#/components/schemas/StaffShiftStatus" }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: pageSize
+          in: query
+          schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        "200":
+          description: "Trang ca làm."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffShiftPage" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+    post:
+      tags: ["Ca làm"]
+      summary: "Tạo ca làm"
+      operationId: CreateStaffShift
+      description: "Dành cho manager và admin. Ca mới là SCHEDULED, nhân viên phải ACTIVE và khung giờ trong ngày phải hợp lệ, không trùng ca."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateStaffShiftRequest" }
+      responses:
+        "201":
+          description: "Ca làm đã tạo."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffShift" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/staff-shifts/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: ["Ca làm"]
+      summary: "Điều chỉnh ca làm"
+      operationId: UpdateStaffShift
+      description: "Dành cho manager và admin. Chỉ sửa ca SCHEDULED. Khoảng giờ mới phải bao phủ các phiên còn hiệu lực được giao dựa vào ca."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateStaffShiftRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffShiftDetails" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+    delete:
+      tags: ["Ca làm"]
+      summary: "Hủy ca làm"
+      operationId: CancelStaffShift
+      description: "Dành cho manager và admin. Hủy ca SCHEDULED đủ điều kiện. Gọi lại khi ca đã CANCELLED trả 204."
+      responses:
+        "204": { description: "Ca làm đã hủy." }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/staff-shifts/{id}/start:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: ["Ca làm"]
+      summary: "Ghi nhận vào ca"
+      operationId: StartStaffShift
+      description: "Dành cho nhân viên của ca, manager và admin. Chuyển từ SCHEDULED sang WORKING. Gọi lại khi đang WORKING giữ mốc bắt đầu."
+      responses:
+        "200": { $ref: "#/components/responses/StaffShiftDetails" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/staff-shifts/{id}/finish:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: ["Ca làm"]
+      summary: "Ghi nhận kết thúc ca"
+      operationId: FinishStaffShift
+      description: "Dành cho nhân viên của ca, manager và admin. Chuyển ca WORKING sang COMPLETED khi các phiên đang thực hiện đã kết thúc. Gọi lại khi đã COMPLETED giữ mốc kết thúc."
+      responses:
+        "200": { $ref: "#/components/responses/StaffShiftDetails" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/service-sessions:
+    post:
+      tags: ["Phiên dịch vụ"]
+      summary: "Bàn giao lịch và tạo nhóm phiên"
+      operationId: CreateServiceSessionGroup
+      description: "Dành cho receptionist, manager và admin. Cần lịch CONFIRMED và bố trí đủ các dòng còn hiệu lực. Gọi lại với cùng lịch và đúng tập dòng đã bàn giao trả nhóm hiện tại. Dùng PUT phiên để thay đổi bố trí."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateServiceSessionGroupRequest" }
+      responses:
+        "200":
+          description: "Nhóm đã bàn giao."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceSessionGroup" }
+        "201":
+          description: "Đã tạo nhóm phiên WAITING và ghi mốc bàn giao."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceSessionGroup" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/service-sessions/current:
+    get:
+      tags: ["Phiên dịch vụ"]
+      summary: "Theo dõi các nhóm phiên theo lịch"
+      operationId: GetCurrentServiceSessionGroups
+      description: "Dành cho receptionist, manager và admin. Tải mọi phiên của các lịch đã bàn giao đang CONFIRMED hoặc COMPLETED chưa có hóa đơn hiệu lực. Gửi nextAfterBookingId vào afterBookingId để đọc trang tiếp theo."
+      parameters:
+        - { name: afterBookingId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          description: "Trang nhóm phiên tính theo bookingId tăng dần."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentServiceSessionPage" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+  /api/service-sessions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: ["Phiên dịch vụ"]
+      summary: "Xem chi tiết phiên dịch vụ"
+      operationId: GetServiceSessionById
+      description: "Dành cho receptionist, manager, admin hoặc nhân viên có phân công còn hiệu lực trên phiên."
+      responses:
+        "200": { $ref: "#/components/responses/ServiceSessionDetails" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+    put:
+      tags: ["Phiên dịch vụ"]
+      summary: "Đổi phòng và khung giờ dự kiến"
+      operationId: UpdateServiceSession
+      description: "Dành cho receptionist, manager và admin. Chỉ sửa phiên WAITING. Phòng và các nhân viên đang được phân công phải phù hợp với khung giờ mới."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateServiceSessionRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/ServiceSessionDetails" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+    delete:
+      tags: ["Phiên dịch vụ"]
+      summary: "Hủy phiên dịch vụ"
+      operationId: CancelServiceSession
+      description: "Dành cho receptionist, manager và admin. Hủy phiên WAITING, thu hồi phân công và đặt dòng dịch vụ thành CANCELLED trong cùng giao dịch. Gọi lại cho phiên đã hủy trả 204."
+      responses:
+        "204": { description: "Phiên đã hủy." }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/service-sessions/{id}/start:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: ["Phiên dịch vụ"]
+      summary: "Bắt đầu phiên dịch vụ"
+      operationId: StartServiceSession
+      description: "Dành cho nhân viên có phân công còn hiệu lực. Chuyển phiên WAITING có phòng khả dụng sang IN_PROGRESS, ghi mốc bắt đầu và đồng bộ dòng dịch vụ sang WORKING trong cùng giao dịch. Gọi lại khi đang IN_PROGRESS trả phiên hiện tại."
+      responses:
+        "200": { $ref: "#/components/responses/ServiceSessionDetails" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/service-sessions/{id}/complete:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: ["Phiên dịch vụ"]
+      summary: "Hoàn tất phiên dịch vụ"
+      operationId: CompleteServiceSession
+      description: "Dành cho nhân viên có phân công còn hiệu lực. Hoàn tất phiên IN_PROGRESS và dòng dịch vụ trong cùng giao dịch. Gọi lại giữ nguyên finishedAt."
+      responses:
+        "200": { $ref: "#/components/responses/ServiceSessionDetails" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/service-sessions/{id}/assignments:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: ["Phân công"]
+      summary: "Phân công nhân viên"
+      operationId: AssignStaffToSession
+      description: "Dành cho receptionist, manager và admin. Tạo phân công cho phiên WAITING và gửi thông báo ASSIGNED. Nếu nhân viên đã có phân công còn hiệu lực trên phiên, trả phân công hiện tại."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssignStaffRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffAssignmentDetails" }
+        "201":
+          description: "Phân công và thông báo đã tạo."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffAssignment" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/service-sessions/{id}/assignments/{assignmentId}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+      - $ref: "#/components/parameters/AssignmentId"
+    put:
+      tags: ["Phân công"]
+      summary: "Đổi nhân viên phụ trách"
+      operationId: ReassignStaffOnSession
+      description: "Dành cho receptionist, manager và admin. Trên phiên WAITING, lưu lịch sử phân công cũ và gửi thông báo REASSIGNED cho nhân viên mới. Gửi lại cùng nhân viên trên phân công còn hiệu lực trả phân công hiện tại."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssignStaffRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffAssignmentDetails" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+    delete:
+      tags: ["Phân công"]
+      summary: "Thu hồi phân công"
+      operationId: RevokeStaffAssignment
+      description: "Dành cho receptionist, manager và admin. Thu hồi phân công còn hiệu lực trên phiên WAITING. Gọi lại với phân công đã thu hồi trả 204."
+      responses:
+        "204": { description: "Phân công đã thu hồi." }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/service-sessions/{id}/notifications:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: ["Thông báo"]
+      summary: "Gửi thông báo nhắc việc"
+      operationId: SendAssignmentReminder
+      description: "Dành cho receptionist, manager, admin hoặc nhân viên có phân công còn hiệu lực trên phiên WAITING. Chọn phân công còn hiệu lực để gửi nhắc việc."
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          description: "Khóa tùy chọn cho một lần nhắc. Khi thử lại với cùng khóa và cùng phân công còn hiệu lực, API trả thông báo đã tạo."
+          schema: { type: string, maxLength: 100 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RemindAssignmentRequest" }
+      responses:
+        "200":
+          description: "Thông báo đã tạo trước đó với cùng khóa và phân công."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffNotification" }
+        "201":
+          description: "Thông báo nhắc việc đã tạo."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffNotification" }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
+        "409": { $ref: "#/components/responses/OperationConflict" }
+  /api/me/service-sessions:
+    get:
+      tags: ["Công việc cá nhân"]
+      summary: "Xem phiên dịch vụ được giao"
+      operationId: GetMyServiceSessions
+      description: "Lấy các phiên có phân công còn hiệu lực theo staff_id của tài khoản đang đăng nhập."
+      responses:
+        "200":
+          description: "Danh sách phiên được giao."
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MyServiceSession" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+  /api/me/notifications:
+    get:
+      tags: ["Thông báo"]
+      summary: "Xem thông báo của tôi"
+      operationId: GetMyNotifications
+      description: "Lấy thông báo và số chưa đọc theo staff_id của tài khoản đang đăng nhập."
+      responses:
+        "200":
+          description: "Thông báo của tài khoản đang đăng nhập."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyNotificationList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+  /api/me/notifications/{id}/read:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: ["Thông báo"]
+      summary: "Đánh dấu thông báo đã đọc"
+      operationId: MarkMyNotificationAsRead
+      description: "Chỉ người nhận được đánh dấu thông báo của mình. Gọi lại khi thông báo đã đọc giữ mốc đọc đã lưu."
+      responses:
+        "204": { description: "Thông báo đã đọc." }
+        "400": { $ref: "#/components/responses/OperationBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/OperationForbidden" }
+        "404": { $ref: "#/components/responses/OperationNotFound" }
 components:
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
   parameters:
+    AssignmentId:
+      name: assignmentId
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    RoomStartTime:
+      name: startTime
+      in: query
+      description: "Mốc bắt đầu. Gửi cùng endTime hoặc bỏ cả hai mốc."
+      schema: { type: string, format: date-time }
+    RoomEndTime:
+      name: endTime
+      in: query
+      description: "Mốc kết thúc, phải sau startTime."
+      schema: { type: string, format: date-time }
     ActiveOnly:
       name: activeOnly
       in: query
@@ -757,13 +1401,6 @@ components:
         format: int64
     PetId:
       name: petId
-      in: path
-      required: true
-      schema:
-        type: integer
-        format: int64
-    CategoryId:
-      name: categoryId
       in: path
       required: true
       schema:
@@ -805,6 +1442,18 @@ components:
             additionalProperties: true
     Unauthorized:
       description: "Thiếu token hợp lệ hoặc thông tin đăng nhập không được chấp nhận."
+    AuthUnavailable:
+      description: "Dịch vụ xác thực tạm thời không truy cập được cơ sở dữ liệu."
+    CustomerValidationFailed:
+      description: "Dữ liệu không hợp lệ theo trường."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/FieldErrors" }
+    CustomerConflict:
+      description: "Trùng số điện thoại hoặc email."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/FieldErrors" }
     Forbidden:
       description: "Token hợp lệ về xác thực nhưng claim tài khoản không đạt yêu cầu hoặc tài khoản thiếu quyền."
     NotFound:
@@ -819,19 +1468,78 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Message" }
+    OperationBadRequest:
+      description: "Yêu cầu không hợp lệ. Lỗi đọc tham số hoặc JSON có thể trả body rỗng."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ValidationProblem" }
+        application/json:
+          schema: { $ref: "#/components/schemas/FieldErrors" }
+    OperationForbidden:
+      description: "Tài khoản không đủ quyền. Từ chối ở tầng phân quyền có thể trả body rỗng."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/FieldErrors" }
+    OperationNotFound:
+      description: "Không tìm thấy dữ liệu phù hợp."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/FieldErrors" }
+    OperationConflict:
+      description: "Dữ liệu xung đột hoặc trạng thái hiện tại không cho phép thao tác."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/FieldErrors" }
+    RoomList:
+      description: "Danh sách phòng. Có thể rỗng."
+      content:
+        application/json:
+          schema:
+            type: array
+            items: { $ref: "#/components/schemas/Room" }
+    StaffList:
+      description: "Danh sách nhân viên."
+      content:
+        application/json:
+          schema:
+            type: array
+            items: { $ref: "#/components/schemas/Staff" }
+    StaffDetails:
+      description: "Hồ sơ nhân viên."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Staff" }
+    StaffShiftDetails:
+      description: "Thông tin ca làm."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/StaffShift" }
+    ServiceSessionDetails:
+      description: "Chi tiết phiên dịch vụ."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ServiceSession" }
+    StaffAssignmentDetails:
+      description: "Thông tin phân công."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/StaffAssignment" }
   schemas:
     LoginRequest:
       type: object
       required: [phone, password]
       properties:
-        phone: { type: string, minLength: 1, maxLength: 20, example: "0900000001" }
-        password: { type: string, format: password, minLength: 1, example: example-password }
-    CustomerLoginRequest:
+        phone: { type: string, minLength: 1, maxLength: 30, example: "0900000001" }
+        password: { type: string, format: password, minLength: 1, maxLength: 4096, example: example-password }
+    RegisterRequest:
       type: object
-      required: [phone, password]
+      additionalProperties: false
+      required: [phone, password, activationToken]
       properties:
-        phone: { type: string, minLength: 1, maxLength: 30, example: "+84900000001" }
-        password: { type: string, format: password, minLength: 1, example: example-password }
+        phone: { type: string, maxLength: 30, example: "+84900000001" }
+        password: { type: string, format: password, minLength: 12, maxLength: 128 }
+        activationToken: { type: string, minLength: 1, maxLength: 1024, writeOnly: true }
+
     LoginResponse:
       type: object
       required: [accessToken, tokenType, expiresAtUtc, role, user]
@@ -850,14 +1558,13 @@ components:
         phone: { type: string }
     CreateCustomerRequest:
       type: object
-      required: [fullName, phone, password]
+      required: [fullName, phone]
       properties:
         fullName: { type: string, minLength: 1, maxLength: 150 }
         gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
         dateOfBirth: { type: string, format: date, nullable: true }
         email: { type: string, format: email, maxLength: 255, nullable: true }
         phone: { type: string, pattern: '^(0|\+84)[35789][0-9]{8}$', example: "0900000001" }
-        password: { type: string, format: password, minLength: 1, writeOnly: true }
         status: { type: string, enum: [ACTIVE], default: ACTIVE }
     UpdateCustomerRequest:
       type: object
@@ -868,7 +1575,6 @@ components:
         dateOfBirth: { type: string, format: date, nullable: true }
         email: { type: string, format: email, maxLength: 255, description: "Gửi null hoặc chuỗi rỗng để xóa email.", nullable: true }
         phone: { type: string, pattern: '^(0|\+84)[35789][0-9]{8}$', example: "0900000001", nullable: true }
-        password: { type: string, format: password, minLength: 1, writeOnly: true, nullable: true }
         avtURL: { type: string, maxLength: 2048, nullable: true }
         note: { type: string, maxLength: 1024, nullable: true }
         status: { type: string, enum: [ACTIVE, INACTIVE, null], nullable: true }
@@ -1048,6 +1754,246 @@ components:
         serviceOptionId: { type: integer, format: int64 }
         unitPrice: { type: number }
         status: { type: string, enum: [ASSIGNED, WORKING, COMPLETED, CANCELLED] }
+    CreateRoomRequest:
+      type: object
+      required: [roomName, roomType]
+      properties:
+        roomName: { type: string, maxLength: 100 }
+        roomType: { type: string, maxLength: 50 }
+    UpdateRoomRequest:
+      type: object
+      properties:
+        roomName: { type: string, maxLength: 100, nullable: true }
+        roomType: { type: string, maxLength: 50, nullable: true }
+        status: { type: string, enum: [AVAILABLE, UNAVAILABLE, MAINTENANCE, null], nullable: true }
+    Room:
+      type: object
+      required: [id, roomName, roomType]
+      properties:
+        id: { type: integer, format: int64 }
+        roomName: { type: string }
+        roomType: { type: string }
+    StaffRole: { type: string, enum: [STAFF, RECEPTIONIST, MANAGER, ADMIN] }
+    StaffStatus: { type: string, enum: [ACTIVE, INACTIVE] }
+    CreateStaffRequest:
+      type: object
+      required: [fullName, email, phone, position]
+      properties:
+        fullName: { type: string, minLength: 1 }
+        gender: { type: string, enum: [MALE, FEMALE, OTHER], default: MALE }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        email: { type: string, minLength: 1 }
+        phone: { type: string, minLength: 1, maxLength: 30 }
+        position: { type: string, minLength: 1 }
+        role:
+          allOf:
+            - $ref: "#/components/schemas/StaffRole"
+          default: STAFF
+        hiredDate: { type: string, format: date, nullable: true }
+        avatarUrl: { type: string, nullable: true }
+        note: { type: string, nullable: true }
+        status:
+          allOf:
+            - $ref: "#/components/schemas/StaffStatus"
+          default: ACTIVE
+    UpdateStaffRequest:
+      type: object
+      properties:
+        fullName: { type: string, nullable: true }
+        gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        email: { type: string, nullable: true }
+        phone: { type: string, minLength: 1, maxLength: 30, nullable: true }
+        position: { type: string, nullable: true }
+        role: { type: string, enum: [STAFF, RECEPTIONIST, MANAGER, ADMIN, null], nullable: true }
+        hiredDate: { type: string, format: date, nullable: true }
+        avatarUrl: { type: string, nullable: true }
+        note: { type: string, nullable: true }
+        status: { type: string, enum: [ACTIVE, INACTIVE, null], nullable: true }
+    Staff:
+      type: object
+      required: [id, fullName, gender, dateOfBirth, email, phone, position, role, hiredDate, avatarUrl, note, status]
+      properties:
+        id: { type: integer, format: int64 }
+        fullName: { type: string }
+        gender: { type: string, enum: [MALE, FEMALE, OTHER, null], nullable: true }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        email: { type: string }
+        phone: { type: string }
+        position: { type: string }
+        role: { $ref: "#/components/schemas/StaffRole" }
+        hiredDate: { type: string, format: date, nullable: true }
+        avatarUrl: { type: string, nullable: true }
+        note: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/StaffStatus" }
+    StaffShiftStatus: { type: string, enum: [SCHEDULED, WORKING, COMPLETED, CANCELLED] }
+    CreateStaffShiftRequest:
+      type: object
+      required: [staffId, shiftDate, startTime, endTime]
+      properties:
+        staffId: { type: integer, format: int64, minimum: 1 }
+        shiftDate: { type: string, format: date }
+        startTime: { type: string, example: "09:00:00" }
+        endTime: { type: string, example: "17:00:00" }
+    UpdateStaffShiftRequest:
+      type: object
+      required: [shiftDate, startTime, endTime]
+      properties:
+        shiftDate: { type: string, format: date }
+        startTime: { type: string, example: "09:00:00" }
+        endTime: { type: string, example: "17:00:00" }
+    StaffShift:
+      type: object
+      required: [id, staffId, staffName, shiftDate, startTime, endTime, startedAt, finishedAt, status, createdAt, updatedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        staffId: { type: integer, format: int64 }
+        staffName: { type: string }
+        shiftDate: { type: string, format: date }
+        startTime: { type: string, example: "09:00:00" }
+        endTime: { type: string, example: "17:00:00" }
+        startedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time, nullable: true }
+        status: { $ref: "#/components/schemas/StaffShiftStatus" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    StaffShiftPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/StaffShift" } }
+        nextCursor: { type: string, nullable: true }
+    ServiceSessionStatus: { type: string, enum: [WAITING, IN_PROGRESS, COMPLETED, CANCELLED] }
+    UpdateServiceSessionRequest:
+      type: object
+      required: [roomId, expectedStartAt, expectedFinishAt]
+      properties:
+        roomId: { type: integer, format: int64, minimum: 1 }
+        expectedStartAt: { type: string, format: date-time }
+        expectedFinishAt: { type: string, format: date-time, description: "Phải sau expectedStartAt." }
+    ServiceSession:
+      type: object
+      required: [id, bookingDetailId, roomId, roomName, status, expectedStartAt, expectedFinishAt, startedAt, finishedAt, createdAt, updatedAt, assignedStaffIds]
+      properties:
+        id: { type: integer, format: int64 }
+        bookingDetailId: { type: integer, format: int64 }
+        roomId: { type: integer, format: int64 }
+        roomName: { type: string }
+        status: { $ref: "#/components/schemas/ServiceSessionStatus" }
+        expectedStartAt: { type: string, format: date-time, nullable: true }
+        expectedFinishAt: { type: string, format: date-time, nullable: true }
+        startedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        assignedStaffIds: { type: array, items: { type: integer, format: int64 } }
+    CreateServiceSessionGroupRequest:
+      type: object
+      required: [bookingId, items]
+      properties:
+        bookingId: { type: integer, format: int64, minimum: 1 }
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [bookingDetailId, roomId, expectedStartAt, expectedFinishAt]
+            properties:
+              bookingDetailId: { type: integer, format: int64, minimum: 1 }
+              roomId: { type: integer, format: int64, minimum: 1 }
+              expectedStartAt: { type: string, format: date-time }
+              expectedFinishAt: { type: string, format: date-time }
+    ServiceSessionGroup:
+      type: object
+      required: [bookingId, sessionsCreatedAt, sessions]
+      properties:
+        bookingId: { type: integer, format: int64 }
+        sessionsCreatedAt: { type: string, format: date-time }
+        sessions: { type: array, items: { $ref: "#/components/schemas/ServiceSession" } }
+    CurrentServiceSessionPage:
+      type: object
+      required: [items, nextAfterBookingId]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/CurrentServiceSessionGroup" } }
+        nextAfterBookingId: { type: integer, format: int64, nullable: true }
+    CurrentServiceSessionGroup:
+      type: object
+      required: [bookingId, bookingStatus, sessionsCreatedAt, waiting, inProgress, completed, cancelled, canCompleteBooking, canCancelBooking, canCreateInvoice, sessions]
+      properties:
+        bookingId: { type: integer, format: int64 }
+        bookingStatus: { $ref: "#/components/schemas/BookingStatus" }
+        sessionsCreatedAt: { type: string, format: date-time, nullable: true }
+        waiting: { type: integer, minimum: 0 }
+        inProgress: { type: integer, minimum: 0 }
+        completed: { type: integer, minimum: 0 }
+        cancelled: { type: integer, minimum: 0 }
+        canCompleteBooking: { type: boolean }
+        canCancelBooking: { type: boolean }
+        canCreateInvoice: { type: boolean }
+        sessions: { type: array, items: { $ref: "#/components/schemas/ServiceSession" } }
+    MyServiceSession:
+      type: object
+      required: [assignmentId, assignedAt, serviceSessionId, bookingDetailId, roomId, roomName, status, expectedStartAt, expectedFinishAt, startedAt, finishedAt]
+      properties:
+        assignmentId: { type: integer, format: int64 }
+        assignedAt: { type: string, format: date-time }
+        serviceSessionId: { type: integer, format: int64 }
+        bookingDetailId: { type: integer, format: int64 }
+        roomId: { type: integer, format: int64 }
+        roomName: { type: string }
+        status: { $ref: "#/components/schemas/ServiceSessionStatus" }
+        expectedStartAt: { type: string, format: date-time, nullable: true }
+        expectedFinishAt: { type: string, format: date-time, nullable: true }
+        startedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time, nullable: true }
+    AssignStaffRequest:
+      type: object
+      required: [staffId]
+      properties:
+        staffId: { type: integer, format: int64, minimum: 1 }
+    StaffAssignment:
+      type: object
+      required: [id, serviceSessionId, staffId, staffName, isActive, assignedAt, revokedAt, replacedByAssignmentId, notificationId]
+      properties:
+        id: { type: integer, format: int64 }
+        serviceSessionId: { type: integer, format: int64 }
+        staffId: { type: integer, format: int64 }
+        staffName: { type: string }
+        isActive: { type: boolean }
+        assignedAt: { type: string, format: date-time }
+        revokedAt: { type: string, format: date-time, nullable: true }
+        replacedByAssignmentId: { type: integer, format: int64, nullable: true }
+        notificationId: { type: integer, format: int64, nullable: true }
+    RemindAssignmentRequest:
+      type: object
+      required: [assignmentId]
+      properties:
+        assignmentId: { type: integer, format: int64, minimum: 1 }
+    StaffNotification:
+      type: object
+      required: [id, staffId, serviceSessionId, staffAssignmentId, type, title, message, isRead, readAt, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        staffId: { type: integer, format: int64 }
+        serviceSessionId: { type: integer, format: int64 }
+        staffAssignmentId: { type: integer, format: int64 }
+        type: { type: string, enum: [ASSIGNED, REASSIGNED, REMINDER] }
+        title: { type: string }
+        message: { type: string }
+        isRead: { type: boolean }
+        readAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+    MyNotificationList:
+      type: object
+      required: [unreadCount, items]
+      properties:
+        unreadCount: { type: integer, format: int32, minimum: 0 }
+        items: { type: array, items: { $ref: "#/components/schemas/StaffNotification" } }
+    FieldErrors:
+      type: object
+      additionalProperties:
+        type: array
+        items: { type: string }
     Message:
       type: object
       properties:

@@ -84,7 +84,7 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
         // Mở database transaction bảo đảm ghi phân công và thông báo nội bộ thành công/rollback nguyên tử.
         public async Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct)
         {
-            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await using var transaction = await db.BeginScheduleWriteAsync(ct);
             var result = await action(ct);
             await transaction.CommitAsync(ct);
             return result;

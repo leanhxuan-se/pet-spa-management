@@ -1,5 +1,6 @@
 ﻿// Cài đặt truy xuất dữ liệu EF Core cho phiên dịch vụ trong Operation.
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using PetSpa.Modules.Operation.Application.Abstractions;
 using PetSpa.Modules.Operation.Domain.Entities;
 using PetSpa.Modules.Operation.Domain.Enums;
@@ -10,6 +11,25 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
     // Repository quản lý truy vấn và cập nhật bảng operation.service_session.
     internal class ServiceSessionRepository(OperationDbContext db) : IServiceSessionRepository
     {
+        public Task<IDbContextTransaction> BeginWriteAsync(CancellationToken ct) => db.BeginScheduleWriteAsync(ct);
+
+        public Task<List<ServiceSession>> GetByBookingIdsAsync(long[] bookingIds, CancellationToken ct)
+            => db.ServiceSessions.AsNoTracking()
+                .Where(session => session.BookingId.HasValue && bookingIds.Contains(session.BookingId.Value))
+                .Include(session => session.Room)
+                .Include(session => session.StaffAssignments)
+                .OrderBy(session => session.BookingDetailId)
+                .ToListAsync(ct);
+
+        public Task<bool> HasSessionsForDetailsAsync(long[] bookingDetailIds, CancellationToken ct)
+            => db.ServiceSessions.AnyAsync(session => bookingDetailIds.Contains(session.BookingDetailId), ct);
+
+        public Task<bool> HasRunningRoomSessionAsync(long roomId, CancellationToken ct)
+            => db.ServiceSessions.AnyAsync(session => session.RoomId == roomId
+                && session.Status == ServiceSessionStatus.IN_PROGRESS, ct);
+
+        public void AddRange(IReadOnlyCollection<ServiceSession> sessions) => db.ServiceSessions.AddRange(sessions);
+
         // Đọc phiên kèm phòng và toàn bộ phân công (kèm thông tin nhân viên) có tracking để cập nhật hoặc bắt đầu phiên.
         public async Task<ServiceSession?> GetByIdWithDetailsAsync(long id, CancellationToken ct)
         {

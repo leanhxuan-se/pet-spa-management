@@ -11,13 +11,12 @@ namespace PetSpa.Modules.Customer.Domain.Entities
         public DateOnly? DateOfBirth { get; set; }
         public string? Email { get; set; }
         public string Phone { get; set; } = null!;
-        public string? PasswordHash { get; set; }
         public string? AvtURL { get; set; }
         public string? Note { get; set; }
         public CustomerStatus Status { get; set; }
+        public Guid AccessStamp { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? LastLoginAt { get; set; }
 
         // reference to get pets from a Customer, obligated for a 1 (Customer) : N (pet) relationship, will not create Pets column in database
         public ICollection<Pet> Pets { get; set; } = [];

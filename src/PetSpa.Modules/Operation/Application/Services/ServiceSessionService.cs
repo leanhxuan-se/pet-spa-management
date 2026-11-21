@@ -1,5 +1,8 @@
 ﻿// Dịch vụ nghiệp vụ xử lý phiên dịch vụ (OPS-06A, OPS-07C chi tiết phiên, OPS-08, OPS-11).
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore.Storage;
+using PetSpa.Modules.Booking.Contracts;
+using PetSpa.Modules.Booking.Domain.Enums;
 using PetSpa.Modules.Operation.Application.Abstractions;
 using PetSpa.Modules.Operation.Domain.Entities;
 using PetSpa.Modules.Operation.Domain.Enums;
@@ -11,7 +14,7 @@ using PetSpa.SharedKernel.Application.Authentication;
 namespace PetSpa.Modules.Operation.Application.Services
 {
     // Xử lý xem chi tiết phiên, điều chỉnh phòng/giờ dự kiến, bắt đầu thực hiện phiên và danh sách việc cá nhân.
-    internal class ServiceSessionService(IServiceSessionRepository serviceSessionRepository)
+    internal class ServiceSessionService(IServiceSessionRepository serviceSessionRepository, IBookingModule booking)
     {
         // OPS-07C: Xem chi tiết phiên dịch vụ (kiểm tra lại quyền phân công còn hiệu lực đối với nhân viên).
         public async Task<Result<ServiceSessionResponse>> GetByIdAsync(
@@ -63,7 +66,7 @@ namespace PetSpa.Modules.Operation.Application.Services
             if (request is null)
                 return Result<ServiceSessionResponse>.BadRequest("message", "Dữ liệu cập nhật phiên dịch vụ không được để trống.");
 
-            // 2. Tìm phiên dịch vụ.
+            await using var transaction = await serviceSessionRepository.BeginWriteAsync(ct);
             var session = await serviceSessionRepository.GetByIdWithDetailsAsync(id, ct);
             if (session is null)
                 return Result<ServiceSessionResponse>.NotFound("Không tìm thấy phiên dịch vụ.");
@@ -164,56 +167,89 @@ namespace PetSpa.Modules.Operation.Application.Services
             session.UpdatedAt = DateTime.UtcNow;
 
             await serviceSessionRepository.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
 
             return Result<ServiceSessionResponse>.Success(ToResponse(session, room.RoomName, assignedStaffIds));
         }
 
-        // OPS-08: Nhân viên được phân công bắt đầu thực hiện phiên dịch vụ (WAITING -> IN_PROGRESS).
-        public async Task<Result<ServiceSessionResponse>> StartAsync(
-            long id,
-            ClaimsPrincipal currentUser,
-            CancellationToken ct)
+        public Task<Result<ServiceSessionResponse>> StartAsync(long id, ClaimsPrincipal currentUser, CancellationToken ct)
+            => ChangeStatusAsync(id, currentUser, ServiceSessionStatus.IN_PROGRESS, ct);
+
+        public Task<Result<ServiceSessionResponse>> CompleteAsync(long id, ClaimsPrincipal currentUser, CancellationToken ct)
+            => ChangeStatusAsync(id, currentUser, ServiceSessionStatus.COMPLETED, ct);
+
+        public Task<Result<ServiceSessionResponse>> CancelAsync(long id, ClaimsPrincipal currentUser, CancellationToken ct)
+            => ChangeStatusAsync(id, currentUser, ServiceSessionStatus.CANCELLED, ct);
+
+        private async Task<Result<ServiceSessionResponse>> ChangeStatusAsync(long id, ClaimsPrincipal currentUser,
+            ServiceSessionStatus target, CancellationToken ct)
         {
-            // 1. Lấy staffId từ JWT và đảm bảo tài khoản là nhân viên hợp lệ.
-            if (!currentUser.HasStaffRole() || currentUser.GetStaffId() is not { } staffId)
-                return Result<ServiceSessionResponse>.Forbidden("Bạn không được phân công thực hiện phiên này.");
+            var isCancellation = target == ServiceSessionStatus.CANCELLED;
+            var staffId = currentUser.GetStaffId();
+            if (isCancellation ? !currentUser.CanManageOperations() : !currentUser.HasStaffRole() || staffId is null)
+                return Result<ServiceSessionResponse>.Forbidden("Bạn không có quyền thực hiện thao tác này.");
 
             if (id <= 0)
                 return Result<ServiceSessionResponse>.BadRequest("id", "Mã phiên dịch vụ phải lớn hơn 0.");
 
-            // 2. Đọc phiên kèm thông tin phòng và danh sách phân công.
+            await using var transaction = await serviceSessionRepository.BeginWriteAsync(ct);
             var session = await serviceSessionRepository.GetByIdWithDetailsAsync(id, ct);
             if (session is null)
                 return Result<ServiceSessionResponse>.NotFound("Không tìm thấy phiên dịch vụ.");
 
-            // 3. Kiểm tra người gọi phải nằm trong phân công đang còn hiệu lực của phiên.
-            var isAssignedStaff = session.StaffAssignments.Any(sa => sa.IsActive && sa.StaffId == staffId);
-            if (!isAssignedStaff)
+            if (!isCancellation && !session.StaffAssignments.Any(sa => sa.IsActive && sa.StaffId == staffId))
                 return Result<ServiceSessionResponse>.Forbidden("Bạn không được phân công thực hiện phiên này.");
 
-            var activeStaffIds = GetActiveStaffIds(session);
-            var roomName = session.Room?.RoomName ?? string.Empty;
+            var requiredStatus = target == ServiceSessionStatus.COMPLETED
+                ? ServiceSessionStatus.IN_PROGRESS : ServiceSessionStatus.WAITING;
+            if (session.Status != target && session.Status != requiredStatus)
+                return Result<ServiceSessionResponse>.Conflict($"Phiên ở trạng thái {session.Status}, cần {requiredStatus}.");
 
-            // 4. Idempotent: Phiên đã ở trạng thái IN_PROGRESS -> giữ nguyên StartedAt cũ và trả 200 OK.
-            if (session.Status == ServiceSessionStatus.IN_PROGRESS)
-                return Result<ServiceSessionResponse>.Success(ToResponse(session, roomName, activeStaffIds));
+            if (session.BookingId is not { } bookingId)
+                return Result<ServiceSessionResponse>.Conflict("Phiên dịch vụ chưa liên kết được với lịch đặt.");
 
-            // 5. Kiểm tra trạng thái phiên phải là WAITING và đã có phòng hợp lệ.
-            if (session.Status != ServiceSessionStatus.WAITING)
-                return Result<ServiceSessionResponse>.Conflict($"Chỉ có thể bắt đầu phiên đang ở trạng thái WAITING (trạng thái hiện tại: {session.Status}).");
+            if (session.Status != target)
+            {
+                if (target == ServiceSessionStatus.IN_PROGRESS &&
+                    (session.Room?.Status != RoomStatus.AVAILABLE
+                        || await serviceSessionRepository.HasRunningRoomSessionAsync(session.RoomId, ct)))
+                    return Result<ServiceSessionResponse>.Conflict("Phòng chưa khả dụng để bắt đầu phiên.");
 
-            if (session.RoomId <= 0 || session.Room is null)
-                return Result<ServiceSessionResponse>.Conflict("Phiên dịch vụ chưa được bố trí phòng hợp lệ.");
+                var utcNow = DateTime.UtcNow;
+                var now = utcNow.AddTicks(-(utcNow.Ticks % 10));
+                session.Status = target;
+                session.UpdatedAt = now;
+                if (target == ServiceSessionStatus.IN_PROGRESS)
+                    session.StartedAt ??= now;
+                else if (target == ServiceSessionStatus.COMPLETED)
+                    session.FinishedAt ??= now;
+                else
+                {
+                    foreach (var assignment in session.StaffAssignments.Where(assignment => assignment.IsActive))
+                    {
+                        assignment.IsActive = false;
+                        assignment.RevokedAt = now;
+                    }
+                }
 
-            // 6. Ghi nhận bắt đầu phiên bằng giờ server một lần duy nhất.
-            var now = DateTime.UtcNow;
-            session.Status = ServiceSessionStatus.IN_PROGRESS;
-            session.StartedAt ??= now;
-            session.UpdatedAt = now;
+                await serviceSessionRepository.SaveChangesAsync(ct);
+            }
 
-            await serviceSessionRepository.SaveChangesAsync(ct);
+            var detailStatus = target switch
+            {
+                ServiceSessionStatus.IN_PROGRESS => BookingDetailStatus.WORKING,
+                ServiceSessionStatus.COMPLETED => BookingDetailStatus.COMPLETED,
+                _ => BookingDetailStatus.CANCELLED
+            };
+            var sync = await booking.SyncDetailStatusAsync(bookingId, session.BookingDetailId,
+                detailStatus, transaction.GetDbTransaction(), ct);
+            if (sync.Status != BookingContractStatus.Success)
+                return Result<ServiceSessionResponse>.Conflict(sync.Message ?? "Không thể đồng bộ dòng dịch vụ.");
 
-            return Result<ServiceSessionResponse>.Success(ToResponse(session, roomName, activeStaffIds));
+            await transaction.CommitAsync(ct);
+            return isCancellation
+                ? Result<ServiceSessionResponse>.NoContent()
+                : Result<ServiceSessionResponse>.Success(ToResponse(session));
         }
 
         // OPS-11: Lấy danh sách các phiên dịch vụ có phân công còn hiệu lực của nhân viên đang đăng nhập.
@@ -236,7 +272,10 @@ namespace PetSpa.Modules.Operation.Application.Services
                 .OrderBy(id => id)
                 .ToArray();
 
-        private static ServiceSessionResponse ToResponse(
+        internal static ServiceSessionResponse ToResponse(ServiceSession session)
+            => ToResponse(session, session.Room?.RoomName ?? string.Empty, GetActiveStaffIds(session));
+
+        internal static ServiceSessionResponse ToResponse(
             ServiceSession session,
             string roomName,
             IReadOnlyList<long> assignedStaffIds) =>

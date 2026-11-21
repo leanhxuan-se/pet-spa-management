@@ -11,8 +11,23 @@ using BookingEntity = PetSpa.Modules.Booking.Domain.Entities.Booking;
 
 namespace PetSpa.Modules.Booking.Infrastructure.Services;
 
-internal sealed class BookingModuleContract(IBookingRepository reader) : IBookingModule
+internal sealed class BookingModuleContract(IBookingRepository reader, BookingDbContext readDb) : IBookingModule
 {
+    public async Task<IReadOnlyList<BookingSessionGroup>> GetCurrentSessionGroupsAsync(
+        long afterBookingId, int limit, CancellationToken ct)
+    {
+        var bookings = await readDb.Set<BookingEntity>().AsNoTracking()
+            .Where(booking => booking.Id > afterBookingId && booking.SessionsCreatedAt != null
+                && (booking.Status == BookingStatus.CONFIRMED || booking.Status == BookingStatus.COMPLETED))
+            .OrderBy(booking => booking.Id)
+            .Take(limit)
+            .Include(booking => booking.BookingDetails)
+            .ToListAsync(ct);
+
+        return bookings.Select(booking => new BookingSessionGroup(booking.Id, booking.Status, booking.SessionsCreatedAt,
+            booking.HasCompleteHandoff() ? booking.HandedOffDetailIds! : [])).ToArray();
+    }
+
     public Task<BookingContractResult<BookingHandoffCandidate>> GetHandoffCandidateAsync(
         long bookingId, DbTransaction transaction, CancellationToken ct = default)
         => WithLockedBookingAsync(bookingId, transaction, (booking, _, _) =>

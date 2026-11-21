@@ -12,7 +12,9 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
         // Tìm bản ghi thông báo theo Id (có tracking phục vụ đánh dấu đã đọc).
         public async Task<StaffNotification?> GetByIdAsync(long id, CancellationToken ct)
         {
-            return await db.StaffNotifications.FirstOrDefaultAsync(n => n.Id == id, ct);
+            return await db.StaffNotifications
+                .Include(n => n.StaffAssignment)
+                .FirstOrDefaultAsync(n => n.Id == id, ct);
         }
 
         // Tra cứu thông báo theo IdempotencyKey để tránh tạo trùng khi client gửi lại.
@@ -28,13 +30,13 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
         {
             return await db.StaffNotifications
                 .AsNoTracking()
-                .Where(n => n.StaffId == staffId)
+                .Where(n => n.StaffAssignment.StaffId == staffId)
                 .OrderByDescending(n => n.CreatedAt)
                 .ThenByDescending(n => n.Id)
                 .Select(n => new StaffNotificationResponse(
                     n.Id,
-                    n.StaffId,
-                    n.ServiceSessionId,
+                    n.StaffAssignment.StaffId,
+                    n.StaffAssignment.ServiceSessionId,
                     n.StaffAssignmentId,
                     n.Type,
                     n.Title,

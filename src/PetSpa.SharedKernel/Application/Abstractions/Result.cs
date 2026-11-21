@@ -1,8 +1,4 @@
 ﻿// Định nghĩa hợp đồng hoặc kết quả dùng chung: Result.
-
-
-
-
 namespace PetSpa.SharedKernel.Application.Abstractions
 {
 

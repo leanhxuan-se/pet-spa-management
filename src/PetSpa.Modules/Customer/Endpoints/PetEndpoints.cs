@@ -114,7 +114,6 @@ public static class PetEndpoints
             return Results.Forbid();
 
         var pet = await petServices.UpdateAsync(id, req, ct);
-        }
         return pet.Status == ResultStatus.ValidationFailed
             ? Results.ValidationProblem(pet.Errors!)
             : pet.ToHttpResult("GetPet", value => new { id = value.Id });

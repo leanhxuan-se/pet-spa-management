@@ -18,7 +18,6 @@ namespace PetSpa.Modules.Operation.Application.Services
 
         // Nghiệp vụ nội bộ tạo đúng 1 thông báo chưa đọc gắn khóa chống trùng; tham gia cùng transaction hiện tại nếu có.
         public async Task<StaffNotification> CreateAssignmentNotificationAsync(
-            long staffId,
             long serviceSessionId,
             long staffAssignmentId,
             string roomName,
@@ -31,8 +30,6 @@ namespace PetSpa.Modules.Operation.Application.Services
 
             var notification = new StaffNotification
             {
-                StaffId = staffId,
-                ServiceSessionId = serviceSessionId,
                 StaffAssignmentId = staffAssignmentId,
                 Type = type,
                 Title = title,
@@ -104,12 +101,11 @@ namespace PetSpa.Modules.Operation.Application.Services
                 scopedKey = $"remind:{serviceSessionId}:{assignment.Id}:{trimmedKey}";
                 var existing = await notificationRepository.GetByIdempotencyKeyAsync(scopedKey, ct);
                 if (existing is not null)
-                    return Result<StaffNotificationResponse>.Success(ToResponse(existing));
+                    return Result<StaffNotificationResponse>.Success(ToResponse(existing, assignment.StaffId, session.Id));
             }
 
             // 8. Dùng lại nghiệp vụ tạo thông báo nội bộ để ghi một thông báo nhắc mới (chưa đọc).
             var created = await CreateAssignmentNotificationAsync(
-                assignment.StaffId,
                 session.Id,
                 assignment.Id,
                 session.Room.RoomName,
@@ -118,7 +114,7 @@ namespace PetSpa.Modules.Operation.Application.Services
                 scopedKey,
                 ct);
 
-            return Result<StaffNotificationResponse>.Created(ToResponse(created));
+            return Result<StaffNotificationResponse>.Created(ToResponse(created, assignment.StaffId, session.Id));
         }
 
         // OPS-07C & OPS-11: Lấy danh sách thông báo và số lượng chưa đọc của nhân viên đang đăng nhập.
@@ -154,7 +150,7 @@ namespace PetSpa.Modules.Operation.Application.Services
             if (notification is null)
                 return Result<bool>.NotFound("Không tìm thấy thông báo.");
 
-            if (notification.StaffId != staffId)
+            if (notification.StaffAssignment.StaffId != staffId)
                 return Result<bool>.Forbidden("Bạn không có quyền thao tác trên thông báo của nhân viên khác.");
 
             // 3. Idempotent: nếu đã đọc trước đó thì giữ nguyên ReadAt và trả 204 ngay.
@@ -193,11 +189,11 @@ namespace PetSpa.Modules.Operation.Application.Services
             };
         }
 
-        private static StaffNotificationResponse ToResponse(StaffNotification notification) =>
+        private static StaffNotificationResponse ToResponse(StaffNotification notification, long staffId, long serviceSessionId) =>
             new(
                 notification.Id,
-                notification.StaffId,
-                notification.ServiceSessionId,
+                staffId,
+                serviceSessionId,
                 notification.StaffAssignmentId,
                 notification.Type,
                 notification.Title,

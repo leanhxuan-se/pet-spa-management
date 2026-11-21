@@ -10,7 +10,6 @@ namespace PetSpa.Modules.Operation.Endpoints.Requests
          string FullName,
          Gender Gender,
          DateOnly? DateOfBirth,
-         string Password,
          string Email,
          string Phone,
          string Position,

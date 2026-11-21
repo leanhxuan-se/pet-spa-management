@@ -6,13 +6,10 @@ using PetSpa.Modules.Operation.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Routing;
 using PetSpa.Modules.Operation.Endpoints;
 using PetSpa.Modules.Operation.Application.Abstractions;
-using FluentValidation;
 
 using PetSpa.Modules.Operation.Application.Services;
-using PetSpa.Modules.Operation.Domain.Repositories;
 using PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories;
-using PetSpa.Modules.Operation.Endpoints.Requests;
-using PetSpa.SharedKernel.Application.Validators;
+using PetSpa.SharedKernel.Application.Authentication;
 
 namespace PetSpa.Modules.Operation;
 
@@ -35,16 +32,15 @@ public static class OperationModule
         services.AddScoped<IStaffRepository, StaffRepository>();
         services.AddScoped<IStaffShiftRepository, StaffShiftRepository>();
         services.AddScoped<IRoomRepository, RoomRepository>();
+        services.AddScoped<IStaffAuthProfiles, StaffAuthProfiles>();
         services.AddScoped<IServiceSessionRepository, ServiceSessionRepository>();
         services.AddScoped<IStaffAssignmentRepository, StaffAssignmentRepository>();
         services.AddScoped<IStaffNotificationRepository, StaffNotificationRepository>();
-        services.AddScoped<IStaffAuthRepository, StaffAuthRepository>();
-        services.AddScoped<IValidator<StaffLoginRequest>, LoginRequestValidator<StaffLoginRequest>>();
-        services.AddScoped<StaffLoginService>();
         services.AddScoped<RoomService>();
         services.AddScoped<StaffService>();
         services.AddScoped<StaffShiftService>();
         services.AddScoped<ServiceSessionService>();
+        services.AddScoped<ServiceSessionGroupService>();
         services.AddScoped<StaffNotificationService>();
         services.AddScoped<StaffAssignmentService>();
         return services;
@@ -54,7 +50,6 @@ public static class OperationModule
     {
         //...
 
-        app.MapOperationAuthEndpoints();
         app.MapRoomEndpoint();
         app.MapStaffEndpoint();
         app.MapStaffShiftEndpoint();

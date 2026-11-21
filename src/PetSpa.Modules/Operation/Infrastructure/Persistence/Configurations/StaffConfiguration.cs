@@ -70,11 +70,6 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                 .HasColumnName("hired_date")
                 .HasColumnType("date");
 
-            Builder.Property(x => x.PasswordHash)
-                .HasColumnName("password_hash")
-                .HasMaxLength(255)
-                .IsRequired();
-
             Builder.Property(x => x.AvatarUrl)
                 .HasColumnName("avatar_url")
                 .HasColumnType("text");
@@ -95,14 +90,13 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                 .HasColumnType("timestamp with time zone")
                 .HasDefaultValueSql("NOW()");
 
+            Builder.Property(x => x.AccessStamp).HasColumnName("access_stamp").HasDefaultValue(Guid.Empty);
+
             Builder.Property(x => x.UpdatedAt)
                 .HasColumnName("updated_at")
                 .HasColumnType("timestamp with time zone")
                 .HasDefaultValueSql("NOW()");
 
-            Builder.Property(x => x.LastLoginAt)
-                .HasColumnName("last_login_at")
-                .HasColumnType("timestamp with time zone");
         }
     }
 }

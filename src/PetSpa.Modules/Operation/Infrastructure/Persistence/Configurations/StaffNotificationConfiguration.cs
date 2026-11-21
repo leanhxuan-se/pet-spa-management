@@ -31,12 +31,6 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                 .HasColumnType("bigint")
                 .UseIdentityByDefaultColumn();
 
-            Builder.Property(x => x.StaffId)
-                .HasColumnName("staff_id");
-
-            Builder.Property(x => x.ServiceSessionId)
-                .HasColumnName("service_session_id");
-
             Builder.Property(x => x.StaffAssignmentId)
                 .HasColumnName("staff_assignment_id");
 
@@ -75,27 +69,13 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Configurations
                 .HasDefaultValueSql("NOW()");
 
             // 4. Cấu hình quan hệ khóa ngoại và chỉ mục truy vấn.
-            Builder.HasOne(x => x.Staff)
-                .WithMany()
-                .HasForeignKey(x => x.StaffId)
-                .HasConstraintName("fk_staff_notification_staff")
-                .OnDelete(DeleteBehavior.Restrict);
-
-            Builder.HasOne(x => x.ServiceSession)
-                .WithMany()
-                .HasForeignKey(x => x.ServiceSessionId)
-                .HasConstraintName("fk_staff_notification_service_session")
-                .OnDelete(DeleteBehavior.Restrict);
-
             Builder.HasOne(x => x.StaffAssignment)
                 .WithMany()
                 .HasForeignKey(x => x.StaffAssignmentId)
                 .HasConstraintName("fk_staff_notification_staff_assignment")
                 .OnDelete(DeleteBehavior.Restrict);
 
-            Builder.HasIndex(x => new { x.StaffId, x.IsRead, x.CreatedAt });
-            Builder.HasIndex(x => x.ServiceSessionId);
-            Builder.HasIndex(x => x.StaffAssignmentId);
+            Builder.HasIndex(x => new { x.StaffAssignmentId, x.IsRead, x.CreatedAt });
             Builder.HasIndex(x => x.IdempotencyKey)
                 .IsUnique()
                 .HasFilter("idempotency_key IS NOT NULL");

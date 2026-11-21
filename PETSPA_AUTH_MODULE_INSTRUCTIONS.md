@@ -1,5 +1,7 @@
 # Instruction: Tách xác thực thành module Auth trong Pet Spa
 
+> Tài liệu lịch sử. Xem [hướng dẫn Auth hiện hành](HUONG-DAN-AUTH.md) để triển khai đăng ký gắn hồ sơ, đăng nhập chung và đăng xuất.
+
 > Dành cho AI coding agent triển khai trong repository `pet-spa-management`.
 > Khảo sát mã nguồn ngày 15/11/2026. Đây là **hướng dẫn triển khai kiến trúc đích**, không phải xác nhận hệ thống đã được chuyển đổi.
 > Phạm vi: server .NET. Không sửa WPF, không triển khai OTP, OAuth/OIDC hay microservice.

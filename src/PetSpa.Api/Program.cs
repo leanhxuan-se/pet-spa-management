@@ -1,5 +1,6 @@
 // Khởi tạo ứng dụng, dịch vụ và các endpoint API.
 using PetSpa.Api.Composition;
+using PetSpa.Modules.Auth;
 using PetSpa.Modules.Billing;
 using PetSpa.Modules.Booking;
 using PetSpa.Modules.Customer;
@@ -8,10 +9,11 @@ using PetSpa.Modules.Resource;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddLocalEnvironmentFile(builder.Environment.ContentRootPath);
 
-
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Oh my god, no database to connect, sorry 😭");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("Set ConnectionStrings__DefaultConnection in .env.local or in the process environment.");
 
 // Register Modules DbContexts
 builder.Services.AddBillingModule(connectionString);
@@ -21,8 +23,7 @@ builder.Services.AddOperationModule(connectionString);
 builder.Services.AddResourceModule(connectionString);
 
 // Register Authentication Service 
-builder.Services.AddAuthenticationServices(builder.Configuration);
-builder.Services.AddAuthorizationServices();
+builder.Services.AddAuthModule(builder.Configuration, connectionString);
 
 //Register CORS (cross-origin system) to allow fetching api
 builder.Services.AddCors(options =>
@@ -65,8 +66,10 @@ app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapHealthEndpoint();
+app.MapAuthModuleEndpoint();
 
 //Register EndpointMap
 app.MapCustomerModuleEndpoint();

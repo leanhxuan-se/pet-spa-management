@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using PetSpa.Modules.Operation.Application.Abstractions;
+using PetSpa.Modules.Operation.Domain.Enums;
 using PetSpa.Modules.Operation.Endpoints.Requests;
 using PetSpa.Modules.Operation.Endpoints.Responses;
 using PetSpa.SharedKernel.Application.Abstractions;
@@ -32,11 +33,16 @@ namespace PetSpa.Modules.Operation.Application.Services
             if (!currentUser.CanManageOperations())
                 return Result<List<RoomResponse>>.Forbidden("Chỉ lễ tân và quản lý mới có quyền cập nhật thông tin phòng.");
 
-            var response = await roomRepository.UpdateAsync(id, request, ct);
-            return Result<List<RoomResponse>>.Success(response);
+            if (id <= 0)
+                return Result<List<RoomResponse>>.BadRequest("id", "Mã phòng phải lớn hơn 0.");
+
+            if (request.Status is { } status && !Enum.IsDefined(status))
+                return Result<List<RoomResponse>>.BadRequest("status", "Trạng thái phòng không hợp lệ.");
+
+            return await roomRepository.UpdateAsync(id, request, ct);
         }
 
-        
+
         // OPS-04: Tra phòng trống tại thời điểm hiện tại hoặc theo khoảng thời gian.
         public Task<Result<List<RoomResponse>>> GetAvailableRoomsAsync(
             DateTime? startTime,

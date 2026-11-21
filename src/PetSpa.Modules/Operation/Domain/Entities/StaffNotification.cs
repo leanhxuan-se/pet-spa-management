@@ -7,10 +7,6 @@ namespace PetSpa.Modules.Operation.Domain.Entities
     internal class StaffNotification
     {
         public long Id { get; set; }
-        public long StaffId { get; set; }
-        public Staff Staff { get; set; } = null!;
-        public long ServiceSessionId { get; set; }
-        public ServiceSession ServiceSession { get; set; } = null!;
         public long StaffAssignmentId { get; set; }
         public StaffAssignment StaffAssignment { get; set; } = null!;
         public StaffNotificationType Type { get; set; }

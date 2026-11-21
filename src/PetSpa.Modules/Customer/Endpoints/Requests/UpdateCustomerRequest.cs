@@ -15,7 +15,6 @@ namespace PetSpa.Modules.Customer.Endpoints.Requests
         public string? Phone { get; init; }
         public string? AvtURL { get; init; }
         public string? Note { get; init; }
-        public string? Password { get; init; }
 
         [JsonIgnore]
         internal bool HasEmail { get; private init; }

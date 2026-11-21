@@ -1,3 +1,8 @@
+using PetSpa.Modules.Customer.Domain.Enums;
+using Npgsql;
+using PetSpa.Modules.Auth;
+using PetSpa.Modules.Customer;
+using PetSpa.Modules.Operation;
 // Kiểm thử các chức năng và quyền truy cập của API.
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
@@ -7,63 +12,62 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FluentValidation;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.IdentityModel.Tokens;
 using PetSpa.Api.Composition;
+using PetSpa.Modules.Billing;
+using PetSpa.Modules.Booking;
 using PetSpa.Modules.Booking.Application.Abstractions;
 using PetSpa.Modules.Booking.Application.Dtos;
 using PetSpa.Modules.Booking.Application.Services;
 using PetSpa.Modules.Booking.Domain.Entities;
 using PetSpa.Modules.Booking.Endpoints;
 using PetSpa.Modules.Customer.Application.Abstractions;
-using PetSpa.Modules.Customer.Application.Services;
-using PetSpa.Modules.Customer.Application.Validators;
 using PetSpa.Modules.Customer.Contracts;
 using PetSpa.Modules.Customer.Contracts.Dtos;
-using PetSpa.Modules.Customer.Domain.Entities;
-using PetSpa.Modules.Customer.Domain.Repositories;
 using PetSpa.Modules.Customer.Endpoints;
 using PetSpa.Modules.Customer.Endpoints.Requests;
 using PetSpa.Modules.Customer.Endpoints.Responses;
-using PetSpa.Modules.Operation.Application.Services;
 using PetSpa.Modules.Operation.Domain.Entities;
 using PetSpa.Modules.Operation.Domain.Enums;
-using PetSpa.Modules.Operation.Domain.Repositories;
 using PetSpa.Modules.Operation.Endpoints;
-using PetSpa.Modules.Operation.Endpoints.Requests;
 using PetSpa.Modules.Operation.Infrastructure.Persistence;
 using PetSpa.Modules.Resource.Application.Abstractions;
 using PetSpa.Modules.Resource.Application.Services;
+using PetSpa.Modules.Resource;
 using PetSpa.Modules.Resource.Contracts;
 using PetSpa.Modules.Resource.Domain.Entities;
 using PetSpa.Modules.Resource.Endpoints;
 using PetSpa.SharedKernel.Application.Abstractions;
 using PetSpa.SharedKernel.Application.Authentication;
-using PetSpa.SharedKernel.Application.Validators;
-using CustomerStatus = PetSpa.Modules.Customer.Domain.Enums.CustomerStatus;
 using PetStatus = PetSpa.Modules.Customer.Domain.Enums.PetStatus;
 using Species = PetSpa.Modules.Customer.Domain.Enums.Species;
 
 const string key = "smoke-tests-only-synthetic-signing-key-0123456789";
 const string password = "Smoke-tests-only-passphrase!123";
-var customer = new Customer { Id = 1, FullName = "Customer", Phone = "0900000001", Status = CustomerStatus.ACTIVE };
-var staff = new Staff { Id = 1, FullName = "Staff", Phone = "0900000002", Status = StaffStatus.ACTIVE };
-var customerHash = customer.PasswordHash = new PasswordHasher<Customer>(Microsoft.Extensions.Options.Options.Create(
-    new PasswordHasherOptions { CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV2 }))
-    .HashPassword(customer, password);
-var staffHash = staff.PasswordHash = new PasswordHasher<Staff>(Microsoft.Extensions.Options.Options.Create(
-    new PasswordHasherOptions { CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV2 }))
-    .HashPassword(staff, password);
+var connection = Environment.GetEnvironmentVariable("PETSPA_AUTH_TEST_CONNECTION");
+if (string.IsNullOrWhiteSpace(connection))
+{
+    Console.Error.WriteLine("Set PETSPA_AUTH_TEST_CONNECTION to a fresh disposable PostgreSQL database.");
+    return 2;
+}
+
+const string customerPhone = "0900000001";
+const string staffPhone = "0900000002";
+const string unregisteredPhone = "0900000003";
+const string adminPhone = "0900000004";
+var legacyHasher = new PasswordHasher<object>(Microsoft.Extensions.Options.Options.Create(
+    new PasswordHasherOptions { CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV2 }));
+var legacyHash = legacyHasher.HashPassword(new object(), password);
 var pets = new FakePets();
-var customerRepository = new FakeCustomers(customer);
-var staffRepository = new FakeStaffs(staff);
+
 var bookings = new FakeBookings();
 var categoryRepository = new FakeCategories();
 var customerService = new FakeCustomerService();
@@ -75,12 +79,16 @@ builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
 });
 builder.Logging.ClearProviders();
 builder.WebHost.UseUrls("http://127.0.0.1:0");
-builder.Services.AddAuthenticationServices(builder.Configuration);
-builder.Services.AddAuthorizationServices();
+builder.Services.AddAuthModule(builder.Configuration, connection);
+builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
+builder.Services.AddCustomerModule(connection);
+builder.Services.AddResourceModule(connection);
+builder.Services.AddBookingModule(connection);
+builder.Services.AddBillingModule(connection);
+builder.Services.AddOperationModule(connection);
+var customerServiceType = builder.Services.Last(service => service.ServiceType == typeof(ICustomerService)).ImplementationType!;
 builder.Services.AddPetSpaOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddSingleton<ICustomerRepository>(customerRepository);
-builder.Services.AddSingleton<IStaffAuthRepository>(staffRepository);
 builder.Services.AddSingleton<IPetServices>(pets);
 builder.Services.AddSingleton<ICustomerService>(customerService);
 builder.Services.AddSingleton<IBookingRepository>(bookings);
@@ -89,20 +97,17 @@ builder.Services.AddSingleton<ICustomerModule, FakeCustomerModule>();
 builder.Services.AddSingleton<IResourceModule, FakeResourceModule>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<CategoryService>();
-builder.Services.AddScoped<CustomerLoginService>();
-builder.Services.AddScoped<StaffLoginService>();
-builder.Services.AddScoped<IValidator<CustomerLoginRequest>, CustomerLoginRequestValidator>();
-builder.Services.AddScoped<IValidator<StaffLoginRequest>, LoginRequestValidator<StaffLoginRequest>>();
 await using var app = builder.Build();
 app.UseSwaggerUI();
 app.UseAuthentication();
 app.UseAuthorization();
-CustomerAuthEndpoints.MapCustomerAuthEndpoints(app);
-app.MapOperationAuthEndpoints();
+app.UseRateLimiter();
+app.MapAuthModuleEndpoint();
 app.MapCustomerEndpoint();
 app.MapPetEndpoint();
 app.MapBookingEndpoints();
 app.MapCategoryEndpoints();
+app.MapServiceEndpoints();
 app.MapHealthEndpoint();
 app.MapOpenApi().AllowAnonymous();
 app.MapOpenApi("/swagger/{documentName}/swagger.json").AllowAnonymous();
@@ -111,10 +116,76 @@ app.MapGet("/test/manager", () => Results.Ok()).RequireAuthorization(Authorizati
 app.MapGet("/test/fallback", () => Results.Ok());
 app.MapGet("/test/booking-actor", (ClaimsPrincipal user) => Results.Ok(new { isStaff = user.HasStaffRole(), customerId = user.GetCustomerId() }))
     .RequireAuthorization();
+app.MapOperationModuleEndpoint();
+
+await using var sql = new NpgsqlConnection(connection);
+await sql.OpenAsync();
+
+async Task<object?> ExecuteAsync(string query, params object[] values)
+{
+    await using var command = new NpgsqlCommand(System.Text.RegularExpressions.Regex.Replace(query, @"\$(\d+)", "@p$1"), sql);
+    for (var index = 0; index < values.Length; index++)
+        command.Parameters.AddWithValue($"p{index + 1}", values[index]);
+    return await command.ExecuteScalarAsync();
+}
+
+var checks = 0;
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    DbContext Context(Type marker, string name) => (DbContext)scope.ServiceProvider.GetRequiredService(
+        marker.Assembly.GetTypes().Single(type => type.Name == name));
+
+    var customerDb = Context(typeof(CustomerModule), "CustomerDbContext");
+    var operationDb = Context(typeof(OperationModule), "OperationDbContext");
+    var authDb = Context(typeof(AuthModule), "AuthDbContext");
+    var resourceDb = Context(typeof(ResourceModule), "ResourceDbContext");
+    var bookingDb = Context(typeof(BookingModule), "BookingDbContext");
+    var billingDb = Context(typeof(BillingModule), "BillingDbContext");
+    await customerDb.Database.MigrateAsync();
+    await resourceDb.Database.MigrateAsync();
+    await bookingDb.Database.MigrateAsync();
+    await billingDb.Database.MigrateAsync();
+    var operationMigrator = operationDb.GetService<IMigrator>();
+    var beforeSessionLink = operationDb.Database.GetMigrations().Single(
+        migration => migration.EndsWith("_NormalizeStaffNotificationAssignment", StringComparison.Ordinal));
+    await operationMigrator.MigrateAsync(beforeSessionLink);
+    var legacyBookingId = (long)(await ExecuteAsync("""
+        INSERT INTO booking.booking (customer_id, pet_id)
+        VALUES (1, 1) RETURNING id
+        """))!;
+    var legacySessionId = (long)(await ExecuteAsync("""
+        WITH detail AS (
+            INSERT INTO booking.booking_details (booking_id, service_options_id, unit_price)
+            VALUES ($1, 1, 100000) RETURNING id
+        ), room AS (
+            INSERT INTO operation.room (room_name, room_type)
+            VALUES ('Legacy migration room', 'BATH') RETURNING id
+        )
+        INSERT INTO operation.service_session (booking_details_id, room_id)
+        SELECT detail.id, room.id FROM detail CROSS JOIN room RETURNING id
+        """, legacyBookingId))!;
+    await operationDb.Database.MigrateAsync();
+    Check((long?)await ExecuteAsync("SELECT booking_id FROM operation.service_session WHERE id = $1", legacySessionId)
+        == legacyBookingId, "migration recovers the booking ID of an existing session");
+    await authDb.Database.MigrateAsync();
+    await ExecuteAsync("""
+        INSERT INTO customer.customer (fullname, phone, status)
+        VALUES ('Customer', $1, 'ACTIVE'), ('Register Me', $3, 'ACTIVE'),
+               ('Inactive', '0900000005', 'INACTIVE');
+        INSERT INTO operation.staff (fullname, gender, email, phone, position, role, status)
+        VALUES ('Staff', 'OTHER', 'staff@example.test', $4, 'Staff', 'STAFF', 'ACTIVE'),
+               ('Admin', 'OTHER', 'admin@example.test', $5, 'Admin', 'ADMIN', 'ACTIVE');
+        INSERT INTO petspa_auth.accounts (login_phone, password_hash, customer_id, staff_id, token_version)
+        VALUES ($1, $2, 1, NULL, 0), ($4, $2, NULL, 1, 0), ($5, $2, NULL, 2, 5);
+        """, customerPhone, legacyHash, unregisteredPhone, staffPhone, adminPhone);
+    if (authDb.GetService<IMigrator>().HasPendingModelChanges() || customerDb.GetService<IMigrator>().HasPendingModelChanges() ||
+        operationDb.GetService<IMigrator>().HasPendingModelChanges())
+        throw new InvalidOperationException("Authentication, Customer and Operation models must match their migration snapshots.");
+}
+
 await app.StartAsync();
 var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
 using var client = new HttpClient { BaseAddress = new Uri(address) };
-var checks = 0;
 // Kiểm tra điều kiện và báo lỗi nếu không đạt.
 void Check(bool condition, string description)
 {
@@ -133,7 +204,7 @@ async Task<HttpResponseMessage> Send(HttpMethod method, string path, string? tok
 // Đăng nhập và kiểm tra thông tin token trả về.
 async Task<string> Login(string kind, string phone, string role, long id)
 {
-    using var response = await Send(HttpMethod.Post, $"/api/auth/{kind}/login", body: new { phone, password });
+    using var response = await Send(HttpMethod.Post, "/api/auth/login", body: new { phone, password });
     Check(response.StatusCode == HttpStatusCode.OK, role + " login succeeds");
     var json = await response.Content.ReadFromJsonAsync<JsonElement>();
     Check(json.EnumerateObject().Select(p => p.Name).Order().SequenceEqual(
@@ -188,16 +259,12 @@ try
         Check(openApi.StatusCode == HttpStatusCode.OK, "generated OpenAPI is public");
         var document = await openApi.Content.ReadFromJsonAsync<JsonElement>();
         var paths = document.GetProperty("paths");
-        // Lấy tham chiếu schema đăng nhập trong OpenAPI.
-        string LoginSchemaRef(string kind)
-        {
-            var login = paths.GetProperty($"/api/auth/{kind}/login").GetProperty("post");
-            Check(!login.TryGetProperty("security", out var security) || security.GetArrayLength() == 0,
-                kind + " login documented as public");
-            return login.GetProperty("responses").GetProperty("200").GetProperty("content")
-                .GetProperty("application/json").GetProperty("schema").GetProperty("$ref").GetString()!;
-        }
-        Check(LoginSchemaRef("customer") == LoginSchemaRef("staff"), "generated OpenAPI references one login schema");
+        var login = paths.GetProperty("/api/auth/login").GetProperty("post");
+        Check(!login.TryGetProperty("security", out var security) || security.GetArrayLength() == 0,
+            "unified login is documented as public");
+        Check(paths.TryGetProperty("/api/auth/register", out _) && paths.TryGetProperty("/api/auth/logout", out _) &&
+            !paths.TryGetProperty("/api/auth/customer/login", out _) && !paths.TryGetProperty("/api/auth/staff/login", out _),
+            "generated OpenAPI exposes register, login and logout and removes old login paths");
         var roles = document.GetProperty("components").GetProperty("schemas").GetProperty("LoginResponse")
             .GetProperty("properties").GetProperty("role").GetProperty("enum").EnumerateArray().Select(x => x.GetString());
         Check(roles.SequenceEqual(new[] { "customer", "staff", "receptionist", "manager", "admin" }),
@@ -215,6 +282,17 @@ try
         var categoryRead = categories.GetProperty("get");
         Check(!categoryRead.TryGetProperty("security", out var readSecurity) || readSecurity.GetArrayLength() == 0,
             "generated OpenAPI treats category reads as public");
+        Check(paths.GetProperty("/api/services").TryGetProperty("get", out _)
+            && !paths.TryGetProperty("/api/categories/{categoryId}/services", out _)
+            && paths.GetProperty("/api/staff/available").TryGetProperty("get", out _)
+            && paths.GetProperty("/api/staff/unavailable").TryGetProperty("get", out _)
+            && !paths.TryGetProperty("/api/staff/availability", out _)
+            && !paths.TryGetProperty("/api/staff/unavailability", out _)
+            && paths.GetProperty("/api/service-sessions").TryGetProperty("post", out _)
+            && paths.GetProperty("/api/service-sessions/{id}").TryGetProperty("delete", out _)
+            && paths.GetProperty("/api/service-sessions/{id}/complete").TryGetProperty("post", out _)
+            && paths.GetProperty("/api/service-sessions/current").TryGetProperty("get", out _),
+            "generated OpenAPI exposes the converted Resource and Operation contract");
         var writeSecurity = categories.GetProperty("post").GetProperty("security")[0];
         Check(writeSecurity.TryGetProperty("bearerAuth", out _)
             && document.GetProperty("components").GetProperty("securitySchemes").GetProperty("bearerAuth")
@@ -224,9 +302,8 @@ try
     using (var write = await Send(HttpMethod.Post, "/api/categories", body: categoryBody))
         Check(write.StatusCode == HttpStatusCode.Unauthorized && categoryRepository.AddCalls == 0,
             "anonymous category write -> 401");
-    var customerToken = await Login("customer", " +84" + customer.Phone[1..] + " ", AccountRoles.Customer, 1);
-    Check(customer.LastLoginAt.HasValue && customer.PasswordHash != customerHash && customerRepository.SaveCalls == 1,
-        "customer login rehashes and records LastLoginAt");
+    var customerToken = await Login("customer", " +84" + customerPhone[1..] + " ", AccountRoles.Customer, 1);
+    Check((string?)await ExecuteAsync("SELECT password_hash FROM petspa_auth.accounts WHERE customer_id = 1") != legacyHash, "customer login upgrades legacy hash");
     using (var write = await Send(HttpMethod.Post, "/api/categories", customerToken, categoryBody))
         Check(write.StatusCode == HttpStatusCode.Forbidden && categoryRepository.AddCalls == 0,
             "customer category write -> 403");
@@ -243,7 +320,7 @@ try
     using (var other = await Send(HttpMethod.Put, "/api/customers/999", customerToken, new { fullName = "Updated" }))
         Check(other.StatusCode == HttpStatusCode.Forbidden && customerService.LastUpdatedId == 1,
             "customer cannot update another profile");
-    var profileBody = new { fullName = "Created", phone = "0900000999", password };
+    var profileBody = new { fullName = "Created", phone = "0900000999" };
     using (var create = await Send(HttpMethod.Post, "/api/customers", customerToken, profileBody))
         Check(create.StatusCode == HttpStatusCode.Forbidden && customerService.CreateCalls == 0,
             "customer cannot create a customer");
@@ -258,13 +335,12 @@ try
     string? receptionistToken = null;
     foreach (var role in Enum.GetValues<StaffRole>())
     {
-        staff.Role = role;
-        var token = await Login("staff", staff.Phone, role.ToString().ToLowerInvariant(), 1);
+        await ExecuteAsync("UPDATE operation.staff SET role = $1 WHERE id = 1", role.ToString());
+        var token = await Login("staff", staffPhone, role.ToString().ToLowerInvariant(), 1);
         var frontDesk = role is StaffRole.RECEPTIONIST or StaffRole.MANAGER;
         if (role == StaffRole.RECEPTIONIST) receptionistToken = token;
         if (role == StaffRole.STAFF)
-            Check(staff.LastLoginAt.HasValue && staff.PasswordHash != staffHash && staffRepository.SaveCalls == 1,
-                "staff login rehashes and records LastLoginAt");
+            Check((string?)await ExecuteAsync("SELECT password_hash FROM petspa_auth.accounts WHERE staff_id = 1") != legacyHash, "staff login upgrades legacy hash");
         using (var allowed = await Send(HttpMethod.Get, "/test/staff", token))
             Check(allowed.StatusCode == HttpStatusCode.OK, role + " accepted by the shared staff policy");
         using (var manager = await Send(HttpMethod.Get, "/test/manager", token))
@@ -328,6 +404,7 @@ try
     using (var create = await Send(HttpMethod.Post, "/api/bookings", customerToken,
         new { customerId = 1L, petId = 10L, bookingTime = DateTime.UtcNow.AddDays(1), serviceOptionIds = new[] { 1L } }))
         Check(create.StatusCode == HttpStatusCode.Forbidden && bookings.SaveCalls == 0, "customer cannot book for their own pet");
+    await ExecuteAsync("UPDATE operation.staff SET role = 'RECEPTIONIST' WHERE id = 1");
     using (var create = await Send(HttpMethod.Post, "/api/bookings", receptionistToken,
         new { customerId = 1L, petId = 20L, bookingTime = DateTime.UtcNow.AddDays(1), serviceOptionIds = new[] { 1L } }))
         Check(create.StatusCode == HttpStatusCode.BadRequest && bookings.SaveCalls == 0, "booking rejects a pet of another customer");
@@ -357,33 +434,209 @@ try
         Check(create.StatusCode == HttpStatusCode.BadRequest && pets.CreateCalls == 0, "pet creation rejects mismatched body owner");
     foreach (var kind in new[] { "customer", "staff" })
     {
-        var phone = kind == "customer" ? customer.Phone : staff.Phone;
-        using var wrong = await Send(HttpMethod.Post, $"/api/auth/{kind}/login", body: new { phone, password = "wrong" });
+        var phone = kind == "customer" ? customerPhone : staffPhone;
+        using var wrong = await Send(HttpMethod.Post, "/api/auth/login", body: new { phone, password = "wrong" });
         Check(wrong.StatusCode == HttpStatusCode.Unauthorized, kind + " wrong password -> 401");
-        using var invalid = await Send(HttpMethod.Post, $"/api/auth/{kind}/login", body: new { phone = "", password });
+        using var invalid = await Send(HttpMethod.Post, "/api/auth/login", body: new { phone = "", password });
         Check(invalid.StatusCode == HttpStatusCode.BadRequest, kind + " invalid input -> 400");
-        using var missing = await Send(HttpMethod.Post, $"/api/auth/{kind}/login", body: new { phone = "0900000099", password });
+        using var missing = await Send(HttpMethod.Post, "/api/auth/login", body: new { phone = "0900000099", password });
         Check(missing.StatusCode == HttpStatusCode.Unauthorized, kind + " unknown account -> 401");
     }
-    customer.Status = CustomerStatus.INACTIVE;
-    staff.Status = StaffStatus.INACTIVE;
-    using (var inactive = await Send(HttpMethod.Post, "/api/auth/customer/login", body: new { customer.Phone, password }))
-        Check(inactive.StatusCode == HttpStatusCode.Unauthorized, "inactive customer -> 401");
-    using (var inactive = await Send(HttpMethod.Post, "/api/auth/staff/login", body: new { staff.Phone, password }))
-        Check(inactive.StatusCode == HttpStatusCode.Unauthorized, "inactive staff -> 401");
-    staff.Status = StaffStatus.ACTIVE;
-    staff.Role = (StaffRole)999;
-    var lastLogin = staff.LastLoginAt;
-    var saveCalls = staffRepository.SaveCalls;
-    using (var invalidRole = await Send(HttpMethod.Post, "/api/auth/staff/login", body: new { phone = staff.Phone, password }))
-        Check(invalidRole.StatusCode == HttpStatusCode.Unauthorized && staff.LastLoginAt == lastLogin
-            && staffRepository.SaveCalls == saveCalls, "unknown staff role cannot receive a token or record a login");
+    async Task SetCustomerStatusAsync(CustomerStatus status)
+    {
+        await using var scope = app.Services.CreateAsyncScope();
+        var service = (ICustomerService)ActivatorUtilities.CreateInstance(scope.ServiceProvider, customerServiceType);
+        var result = await service.UpdateAsync(1, new UpdateCustomerRequest { Status = status }, CancellationToken.None);
+        Check(result.Status == ResultStatus.Success, $"customer profile status changes to {status}");
+    }
+
+    await SetCustomerStatusAsync(CustomerStatus.INACTIVE);
+    await ExecuteAsync("UPDATE operation.staff SET status = 'INACTIVE' WHERE id = 1;");
+    foreach (var inactivePhone in new[] { customerPhone, staffPhone })
+    {
+        using var inactive = await Send(HttpMethod.Post, "/api/auth/login", body: new { phone = inactivePhone, password });
+        Check(inactive.StatusCode == HttpStatusCode.Unauthorized, "inactive profile cannot log in");
+    }
+    using (var inactiveToken = await Send(HttpMethod.Get, "/test/fallback", customerToken))
+        Check(inactiveToken.StatusCode == HttpStatusCode.Unauthorized, "existing token is rejected after profile deactivation");
+    await SetCustomerStatusAsync(CustomerStatus.ACTIVE);
+    using (var restored = await Send(HttpMethod.Get, "/test/fallback", customerToken))
+        Check(restored.StatusCode == HttpStatusCode.Unauthorized, "reactivating a customer does not reactivate an old token");
+    customerToken = await Login("customer", customerPhone, AccountRoles.Customer, 1);
+    await ExecuteAsync("UPDATE operation.staff SET status = 'ACTIVE', role = 'MANAGER' WHERE id = 1;");
+    var managerToken = await Login("staff", staffPhone, AccountRoles.Manager, 1);
+    var adminToken = await Login("staff", adminPhone, AccountRoles.Admin, 2);
+    using (var activationDenied = await Send(HttpMethod.Post, "/api/auth/customers/2/activation", customerToken))
+        Check(activationDenied.StatusCode == HttpStatusCode.Forbidden, "customer cannot issue activation");
+    using (var inactiveActivation = await Send(HttpMethod.Post, "/api/auth/customers/3/activation", managerToken))
+        Check(inactiveActivation.StatusCode == HttpStatusCode.NotFound, "inactive customer cannot get activation");
+    using var issue = await Send(HttpMethod.Post, "/api/auth/customers/2/activation", managerToken);
+    Check(issue.StatusCode == HttpStatusCode.OK, "front desk issues activation for an existing customer");
+    var activation = (await issue.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("activationToken").GetString();
+    using (var wrongPhone = await Send(HttpMethod.Post, "/api/auth/register",
+        body: new { phone = customerPhone, password, activationToken = activation }))
+        Check(wrongPhone.StatusCode == HttpStatusCode.BadRequest, "activation is bound to its customer and phone");
+    using (var wrongCode = await Send(HttpMethod.Post, "/api/auth/register",
+        body: new { phone = unregisteredPhone, password, activationToken = "invalid" }))
+        Check(wrongCode.StatusCode == HttpStatusCode.BadRequest, "invalid activation rejected");
+    var registrationBody = new { phone = "+84" + unregisteredPhone[1..], password, activationToken = activation };
+    var registrations = await Task.WhenAll(
+        Send(HttpMethod.Post, "/api/auth/register", body: registrationBody),
+        Send(HttpMethod.Post, "/api/auth/register", body: registrationBody));
+    using (registrations[0])
+    using (registrations[1])
+    {
+        Check(registrations.Count(x => x.StatusCode == HttpStatusCode.Created) == 1 &&
+            registrations.Count(x => x.StatusCode == HttpStatusCode.Conflict) == 1, "only one concurrent registration succeeds");
+        var registered = await registrations.Single(x => x.StatusCode == HttpStatusCode.Created).Content.ReadFromJsonAsync<JsonElement>();
+        Check(registered.GetProperty("customerId").GetInt64() == 2 &&
+            (long)(await ExecuteAsync("SELECT count(*) FROM customer.customer"))! == 3,
+            "registration links the existing customer profile");
+    }
+
+    var deviceOne = await Login("customer", unregisteredPhone, AccountRoles.Customer, 2);
+    var deviceTwo = await Login("customer", unregisteredPhone, AccountRoles.Customer, 2);
+    using (var logout = await Send(HttpMethod.Post, "/api/auth/logout", deviceOne))
+        Check(logout.StatusCode == HttpStatusCode.NoContent, "server-side logout succeeds");
+    foreach (var revoked in new[] { deviceOne, deviceTwo })
+    {
+        using var use = await Send(HttpMethod.Get, "/test/fallback", revoked);
+        Check(use.StatusCode == HttpStatusCode.Unauthorized, "logout revokes previous tokens on every device");
+    }
+    var newSession = await Login("customer", unregisteredPhone, AccountRoles.Customer, 2);
+    using (var use = await Send(HttpMethod.Get, "/test/fallback", newSession))
+        Check(use.StatusCode == HttpStatusCode.OK, "login again after logout creates a valid session");
+
+    using (var denied = await Send(HttpMethod.Patch, "/api/auth/staff-accounts/2", managerToken, new { password }))
+        Check(denied.StatusCode == HttpStatusCode.Forbidden, "manager cannot change an admin account");
+    using (var denied = await Send(HttpMethod.Put, "/api/staff/2", managerToken, new { role = "STAFF" }))
+        Check(denied.StatusCode == HttpStatusCode.Forbidden, "manager cannot demote an admin through Operation");
+    using (var lastAdminAccount = await Send(HttpMethod.Patch, "/api/auth/staff-accounts/2", adminToken, new { isEnabled = false }))
+        Check(lastAdminAccount.StatusCode == HttpStatusCode.Conflict, "last admin account cannot be disabled");
+    using (var lastAdminProfile = await Send(HttpMethod.Delete, "/api/staff/2", adminToken))
+        Check(lastAdminProfile.StatusCode == HttpStatusCode.Conflict, "last admin profile cannot be deactivated");
+    using (var missing = await Send(HttpMethod.Post, "/api/auth/staff-accounts", managerToken,
+        new { staffId = long.MaxValue, password }))
+        Check(missing.StatusCode == HttpStatusCode.NotFound, "staff account requires an existing profile");
+
+    using var createRoom = await Send(HttpMethod.Post, "/api/room", managerToken,
+        new { roomName = "QA room", roomType = "BATH" });
+    Check(createRoom.StatusCode == HttpStatusCode.OK, "manager creates a room");
+    var rooms = await createRoom.Content.ReadFromJsonAsync<JsonElement>();
+    var roomId = rooms.EnumerateArray().Single(x => x.GetProperty("roomName").GetString() == "QA room")
+        .GetProperty("id").GetInt64();
+    using (var change = await Send(HttpMethod.Put, $"/api/room/{roomId}", managerToken, new { status = "MAINTENANCE" }))
+        Check(change.StatusCode == HttpStatusCode.OK, "manager changes room status");
+    using (var list = await Send(HttpMethod.Get, "/api/room", managerToken))
+        Check(list.StatusCode == HttpStatusCode.OK, "manager lists rooms");
+
+    const string newStaffPhone = "0900000006";
+    using var createProfile = await Send(HttpMethod.Post, "/api/staff", managerToken, new
+    {
+        fullName = "New Receptionist", gender = "OTHER", email = "new-staff@example.test", phone = customerPhone,
+        position = "Front desk", role = "RECEPTIONIST", status = "ACTIVE"
+    });
+    Check(createProfile.StatusCode == HttpStatusCode.Created, "manager creates the Operation staff profile");
+    var newStaffId = (await createProfile.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt64();
+    using (var collision = await Send(HttpMethod.Post, "/api/auth/staff-accounts", managerToken, new { staffId = newStaffId, password }))
+        Check(collision.StatusCode == HttpStatusCode.Conflict, "customer and staff accounts cannot share a login phone");
+    using (var modify = await Send(HttpMethod.Put, $"/api/staff/{newStaffId}", managerToken, new { phone = newStaffPhone }))
+        Check(modify.StatusCode == HttpStatusCode.OK, "manager sets a distinct phone before provisioning");
+    using (var create = await Send(HttpMethod.Post, "/api/auth/staff-accounts", managerToken, new { staffId = newStaffId, password }))
+        Check(create.StatusCode == HttpStatusCode.Created, "manager provisions an account for the staff profile");
+    using (var duplicate = await Send(HttpMethod.Post, "/api/auth/staff-accounts", managerToken, new { staffId = newStaffId, password }))
+        Check(duplicate.StatusCode == HttpStatusCode.Conflict, "staff account cannot be provisioned twice");
+    var newStaffToken = await Login("staff", newStaffPhone, AccountRoles.Receptionist, newStaffId);
+    using (var modify = await Send(HttpMethod.Put, $"/api/staff/{newStaffId}", managerToken, new { role = "STAFF" }))
+        Check(modify.StatusCode == HttpStatusCode.OK, "manager changes a permitted role in Operation");
+    using (var oldRole = await Send(HttpMethod.Get, "/test/staff", newStaffToken))
+        Check(oldRole.StatusCode == HttpStatusCode.Unauthorized, "old role token rejected after Operation update");
+    using (var restoreRole = await Send(HttpMethod.Put, $"/api/staff/{newStaffId}", managerToken, new { role = "RECEPTIONIST" }))
+        Check(restoreRole.StatusCode == HttpStatusCode.OK, "manager can restore the permitted role");
+    using (var oldRole = await Send(HttpMethod.Get, "/test/staff", newStaffToken))
+        Check(oldRole.StatusCode == HttpStatusCode.Unauthorized, "restoring a role does not reactivate an old token");
+    using (var modify = await Send(HttpMethod.Put, $"/api/staff/{newStaffId}", managerToken, new { role = "STAFF" }))
+        Check(modify.StatusCode == HttpStatusCode.OK, "manager returns employee to the staff role");
+    newStaffToken = await Login("staff", newStaffPhone, AccountRoles.Staff, newStaffId);
+    var notificationSessionId = (long)(await ExecuteAsync("""
+        INSERT INTO operation.service_session (booking_details_id, room_id)
+        VALUES (9223372036854775800, $1) RETURNING id
+        """, roomId))!;
+    var notificationAssignmentId = (long)(await ExecuteAsync("""
+        INSERT INTO operation.staff_assignment (service_session_id, staff_id)
+        VALUES ($1, $2) RETURNING id
+        """, notificationSessionId, newStaffId))!;
+    var notificationId = (long)(await ExecuteAsync("""
+        INSERT INTO operation.staff_notification (staff_assignment_id, type, title, message)
+        VALUES ($1, 'ASSIGNED', 'Test assignment', 'Test notification') RETURNING id
+        """, notificationAssignmentId))!;
+    using (var me = await Send(HttpMethod.Get, "/api/me/service-sessions", newStaffToken))
+        Check(me.StatusCode == HttpStatusCode.OK, "staff can load assigned sessions from the migrated schema");
+    using (var me = await Send(HttpMethod.Get, "/api/me/notifications", newStaffToken))
+    {
+        Check(me.StatusCode == HttpStatusCode.OK, "staff can load notifications from the migrated schema");
+        var notifications = await me.Content.ReadFromJsonAsync<JsonElement>();
+        var notification = notifications.GetProperty("items").EnumerateArray()
+            .Single(item => item.GetProperty("id").GetInt64() == notificationId);
+        Check(notification.GetProperty("staffId").GetInt64() == newStaffId &&
+              notification.GetProperty("serviceSessionId").GetInt64() == notificationSessionId &&
+              notification.GetProperty("staffAssignmentId").GetInt64() == notificationAssignmentId,
+            "notification recipient and session come from the assignment");
+    }
+    using (var otherStaff = await Send(HttpMethod.Put, $"/api/me/notifications/{notificationId}/read", adminToken))
+        Check(otherStaff.StatusCode == HttpStatusCode.Forbidden, "another staff member cannot mark the notification read");
+    using (var owner = await Send(HttpMethod.Put, $"/api/me/notifications/{notificationId}/read", newStaffToken))
+        Check(owner.StatusCode == HttpStatusCode.NoContent, "notification owner can mark it read");
+    using (var me = await Send(HttpMethod.Get, "/api/me/notifications", newSession))
+        Check(me.StatusCode == HttpStatusCode.Forbidden, "customer cannot read staff notifications");
+    var shiftDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
+    var shiftBody = new { staffId = newStaffId, shiftDate, startTime = "09:00:00", endTime = "12:00:00" };
+    using (var denied = await Send(HttpMethod.Post, "/api/staff-shifts", newStaffToken, shiftBody))
+        Check(denied.StatusCode == HttpStatusCode.Forbidden, "staff cannot create a shift");
+    using var createShift = await Send(HttpMethod.Post, "/api/staff-shifts", managerToken, shiftBody);
+    Check(createShift.StatusCode == HttpStatusCode.Created, "manager creates a scheduled shift");
+    var shiftId = (await createShift.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt64();
+    var shiftPath = $"/api/staff-shifts/{shiftId}";
+    using (var change = await Send(HttpMethod.Put, shiftPath, managerToken,
+        new { shiftDate, startTime = "09:30:00", endTime = "12:00:00" }))
+        Check(change.StatusCode == HttpStatusCode.OK, "manager adjusts a scheduled shift");
+    using (var list = await Send(HttpMethod.Get, $"/api/staff-shifts?staffId={newStaffId}", managerToken))
+        Check(list.StatusCode == HttpStatusCode.OK, "manager lists shifts");
+    using (var start = await Send(HttpMethod.Post, shiftPath + "/start", newStaffToken))
+        Check(start.StatusCode == HttpStatusCode.OK, "staff starts their shift");
+    using (var finish = await Send(HttpMethod.Post, shiftPath + "/finish", newStaffToken))
+        Check(finish.StatusCode == HttpStatusCode.OK, "staff completes their shift");
+    using (var cancel = await Send(HttpMethod.Delete, shiftPath, managerToken))
+        Check(cancel.StatusCode == HttpStatusCode.Conflict, "a completed shift cannot be cancelled");
+    using var secondShift = await Send(HttpMethod.Post, "/api/staff-shifts", managerToken,
+        new { staffId = newStaffId, shiftDate, startTime = "13:00:00", endTime = "16:00:00" });
+    Check(secondShift.StatusCode == HttpStatusCode.Created, "manager creates a second shift");
+    var secondShiftId = (await secondShift.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt64();
+    using (var cancel = await Send(HttpMethod.Delete, $"/api/staff-shifts/{secondShiftId}", managerToken))
+        Check(cancel.StatusCode == HttpStatusCode.NoContent, "manager cancels an eligible scheduled shift");
+
+    await CheckServiceSessionLifecycleAsync(managerToken, adminToken, newStaffToken, newStaffId, shiftDate.AddDays(1));
+
+    const string changedPassword = "New-test-passphrase-234";
+    using (var patch = await Send(HttpMethod.Patch, $"/api/auth/staff-accounts/{newStaffId}", managerToken,
+        new { password = changedPassword, isEnabled = false }))
+        Check(patch.StatusCode == HttpStatusCode.NoContent, "manager resets password and disables account");
+    using (var old = await Send(HttpMethod.Get, "/test/staff", newStaffToken))
+        Check(old.StatusCode == HttpStatusCode.Unauthorized, "staff account change revokes old token");
+    using (var disabled = await Send(HttpMethod.Post, "/api/auth/login", body: new { phone = newStaffPhone, password = changedPassword }))
+        Check(disabled.StatusCode == HttpStatusCode.Unauthorized, "disabled account cannot log in");
+    using (var patch = await Send(HttpMethod.Patch, $"/api/auth/staff-accounts/{newStaffId}", managerToken, new { isEnabled = true }))
+        Check(patch.StatusCode == HttpStatusCode.NoContent, "manager enables the staff account");
+    using (var updated = await Send(HttpMethod.Post, "/api/auth/login", body: new { phone = newStaffPhone, password = changedPassword }))
+        Check(updated.StatusCode == HttpStatusCode.OK, "updated password works after the account is enabled");
+
+
     var legacyClaims = new Claim[]
     {
         new("sub", "staff:1"), new("account_type", "staff"), new("staff_id", "1"), new("account_role", "MANAGER")
     };
     using (var legacy = await Send(HttpMethod.Get, "/test/staff", IssueTestToken(legacyClaims)))
-        Check(legacy.StatusCode == HttpStatusCode.Forbidden, "legacy claims cannot bypass the role policy");
+        Check(legacy.StatusCode == HttpStatusCode.Unauthorized, "legacy claims cannot bypass the role policy");
     // Tạo bộ claim nhân viên để kiểm thử.
     Claim[] StaffClaims(string role = "staff", string accountType = "staff", string id = "1", string sub = "staff:1") =>
         [new("role", role), new("account_type", accountType), new("staff_id", id), new("sub", sub)];
@@ -408,8 +661,8 @@ try
         using var booking = await Send(HttpMethod.Get, "/api/bookings/1", token);
         using var fallback = await Send(HttpMethod.Get, "/test/fallback", token);
         using var write = await Send(HttpMethod.Post, "/api/categories", token, categoryBody);
-        Check(booking.StatusCode == HttpStatusCode.Forbidden && fallback.StatusCode == HttpStatusCode.Forbidden
-            && write.StatusCode == HttpStatusCode.Forbidden, description + " -> 403 on account, fallback and staff policies");
+        Check(booking.StatusCode == HttpStatusCode.Unauthorized && fallback.StatusCode == HttpStatusCode.Unauthorized
+            && write.StatusCode == HttpStatusCode.Unauthorized, description + " -> 401 on account, fallback and staff policies");
     }
     foreach (var (description, token) in new[]
     {
@@ -431,28 +684,132 @@ try
     Check(db.GetService<IDesignTimeModel>().Model.FindEntityType(typeof(Staff))!.GetCheckConstraints()
         .Single(c => c.Name == "ck_staff_role").Sql.Contains("'ADMIN'"),
         "staff model permits ADMIN");
-    Check(db.Database.GetMigrations().Any(m => m.EndsWith("_AddAdminStaffRole")), "admin role migration is discoverable");
+    Check(db.Database.GetMigrations().Any(m => m.EndsWith("_InitialOperation")), "operation initial migration is discoverable");
     Check(!db.GetService<IMigrator>().HasPendingModelChanges(), "operation model matches migration snapshot");
     Console.WriteLine($"RESULT: {checks} checks passed.");
 }
 finally { await app.StopAsync(); }
+return 0;
 
-sealed class FakeCustomers(Customer account) : ICustomerRepository
+async Task CheckServiceSessionLifecycleAsync(string manager, string unassigned, string assigned, long staffId, DateOnly date)
 {
-    public int SaveCalls { get; private set; }
-    // Tìm tài khoản theo số điện thoại.
-    public Task<Customer?> GetByPhoneAsync(string phone, CancellationToken ct) => Task.FromResult(phone == account.Phone ? account : null);
-    // Ghi nhận số lần lưu trong dữ liệu giả.
-    public Task SaveAsync(CancellationToken ct) { SaveCalls++; return Task.CompletedTask; }
+    const string sessions = "/api/service-sessions";
+    async Task<JsonElement> ExpectAsync(HttpMethod method, string path, string token,
+        HttpStatusCode expected, object? body = null)
+    {
+        using var response = await Send(method, path, token, body);
+        Check(response.StatusCode == expected, $"{method} {path} returned {response.StatusCode}, expected {expected}");
+        return expected == HttpStatusCode.OK || expected == HttpStatusCode.Created
+            ? await response.Content.ReadFromJsonAsync<JsonElement>() : default;
+    }
+
+    async Task<long> AddBookingAsync() => (long)(await ExecuteAsync("""
+        INSERT INTO booking.booking (customer_id, pet_id, status, check_in)
+        VALUES (1, 1, 'CONFIRMED', now()) RETURNING id
+        """))!;
+    async Task<long> AddDetailAsync(long bookingId, long optionId) => (long)(await ExecuteAsync("""
+        INSERT INTO booking.booking_details (booking_id, service_options_id, unit_price)
+        VALUES ($1, $2, 100000) RETURNING id
+        """, bookingId, optionId))!;
+
+    var rooms = await ExpectAsync(HttpMethod.Post, "/api/room", manager, HttpStatusCode.OK,
+        new { roomName = "Handoff room", roomType = "BATH" });
+    var roomId = rooms.EnumerateArray().Single(room => room.GetProperty("roomName").GetString() == "Handoff room")
+        .GetProperty("id").GetInt64();
+    var bookingId = await AddBookingAsync();
+    var firstDetail = await AddDetailAsync(bookingId, 1);
+    var secondDetail = await AddDetailAsync(bookingId, 2);
+    var start = date.ToDateTime(new TimeOnly(9, 0), DateTimeKind.Utc);
+    await ExecuteAsync("""
+        INSERT INTO operation.staff_shift (staff_id, shift_date, start_time, end_time, status)
+        VALUES ($1, $2, '09:00', '12:00', 'SCHEDULED')
+        """, staffId, date);
+    var firstPlan = new { bookingDetailId = firstDetail, roomId, expectedStartAt = start, expectedFinishAt = start.AddHours(1) };
+    var secondPlan = new { bookingDetailId = secondDetail, roomId, expectedStartAt = start.AddHours(1), expectedFinishAt = start.AddHours(2) };
+    var handoff = new { bookingId, items = new[] { firstPlan, secondPlan } };
+    await ExpectAsync(HttpMethod.Post, sessions, assigned, HttpStatusCode.Forbidden, handoff);
+    await ExpectAsync(HttpMethod.Post, sessions, manager, HttpStatusCode.Conflict, new { bookingId, items = new[] { firstPlan } });
+    await ExpectAsync(HttpMethod.Post, sessions, manager, HttpStatusCode.Conflict,
+        new { bookingId, items = new[] { firstPlan, secondPlan with { expectedStartAt = start.AddMinutes(30) } } });
+    Check((long)(await ExecuteAsync("SELECT count(*) FROM operation.service_session WHERE booking_id = $1", bookingId))! == 0
+        && await ExecuteAsync("SELECT sessions_created_at IS NULL FROM booking.booking WHERE id = $1", bookingId) is true,
+        "failed handoffs leave no sessions or booking marker");
+
+    var responses = await Task.WhenAll(Send(HttpMethod.Post, sessions, manager, handoff), Send(HttpMethod.Post, sessions, manager, handoff));
+    var returned = new List<JsonElement>();
+    foreach (var response in responses)
+    {
+        using (response)
+            returned.Add(await response.Content.ReadFromJsonAsync<JsonElement>());
+    }
+    Check(responses.Select(response => response.StatusCode).Order().SequenceEqual([HttpStatusCode.OK, HttpStatusCode.Created])
+        && returned[0].GetProperty("sessions").GetRawText() == returned[1].GetProperty("sessions").GetRawText(),
+        "concurrent handoff creates one group and replay returns the same sessions");
+    var firstSession = sessions + "/" + returned[0].GetProperty("sessions")[0].GetProperty("id").GetInt64();
+    var secondSession = sessions + "/" + returned[0].GetProperty("sessions")[1].GetProperty("id").GetInt64();
+    var roomPath = $"/api/room/{roomId}";
+    await ExpectAsync(HttpMethod.Put, roomPath, manager, HttpStatusCode.Conflict, new { status = "MAINTENANCE" });
+    await ExpectAsync(HttpMethod.Post, firstSession + "/assignments", manager, HttpStatusCode.Created, new { staffId });
+    var revoked = await ExpectAsync(HttpMethod.Post, secondSession + "/assignments", manager, HttpStatusCode.Created, new { staffId });
+    await ExpectAsync(HttpMethod.Delete, secondSession + "/assignments/" + revoked.GetProperty("id").GetInt64(),
+        manager, HttpStatusCode.NoContent);
+
+    string Range(DateTime from, DateTime to) => $"?startTime={from:O}&endTime={to:O}";
+    bool ContainsStaff(JsonElement list) => list.EnumerateArray().Any(person => person.GetProperty("id").GetInt64() == staffId);
+    var busy = await ExpectAsync(HttpMethod.Get, "/api/staff/unavailable" + Range(start, start.AddHours(1)), manager, HttpStatusCode.OK);
+    var free = await ExpectAsync(HttpMethod.Get, "/api/staff/available" + Range(start.AddHours(1), start.AddHours(3)), manager, HttpStatusCode.OK);
+    var noBusy = await ExpectAsync(HttpMethod.Get, "/api/staff/unavailable" + Range(start.AddHours(1), start.AddHours(3)), manager, HttpStatusCode.OK);
+    Check(ContainsStaff(busy) && ContainsStaff(free) && !ContainsStaff(noBusy),
+        "staff availability respects inclusive shift bounds, adjacent sessions and revoked assignments");
+    await ExpectAsync(HttpMethod.Post, secondSession + "/assignments", manager, HttpStatusCode.Created, new { staffId });
+
+    await ExpectAsync(HttpMethod.Post, firstSession + "/start", unassigned, HttpStatusCode.Forbidden);
+    await ExpectAsync(HttpMethod.Post, firstSession + "/complete", assigned, HttpStatusCode.Conflict);
+    await ExecuteAsync("UPDATE booking.booking SET status = 'PENDING' WHERE id = $1", bookingId);
+    await ExpectAsync(HttpMethod.Post, firstSession + "/start", assigned, HttpStatusCode.Conflict);
+    var rolledBack = await ExpectAsync(HttpMethod.Get, firstSession, manager, HttpStatusCode.OK);
+    Check(rolledBack.GetProperty("status").GetString() == "WAITING" && rolledBack.GetProperty("startedAt").ValueKind == JsonValueKind.Null,
+        "Booking rejection rolls back the Operation state and timestamp");
+    await ExecuteAsync("UPDATE booking.booking SET status = 'CONFIRMED' WHERE id = $1", bookingId);
+    var started = await ExpectAsync(HttpMethod.Post, firstSession + "/start", assigned, HttpStatusCode.OK);
+    var startedAgain = await ExpectAsync(HttpMethod.Post, firstSession + "/start", assigned, HttpStatusCode.OK);
+    Check(started.GetProperty("startedAt").GetString() == startedAgain.GetProperty("startedAt").GetString()
+        && (string?)await ExecuteAsync("SELECT status FROM booking.booking_details WHERE id = $1", firstDetail) == "WORKING",
+        "start is idempotent and sets the Booking detail WORKING");
+    await ExpectAsync(HttpMethod.Delete, firstSession, manager, HttpStatusCode.Conflict);
+    await ExpectAsync(HttpMethod.Post, secondSession + "/start", assigned, HttpStatusCode.Conflict);
+    await ExpectAsync(HttpMethod.Post, firstSession + "/complete", unassigned, HttpStatusCode.Forbidden);
+    var finished = await ExpectAsync(HttpMethod.Post, firstSession + "/complete", assigned, HttpStatusCode.OK);
+    var finishedAgain = await ExpectAsync(HttpMethod.Post, firstSession + "/complete", assigned, HttpStatusCode.OK);
+    Check(finished.GetProperty("finishedAt").GetString() == finishedAgain.GetProperty("finishedAt").GetString()
+        && (string?)await ExecuteAsync("SELECT status FROM booking.booking_details WHERE id = $1", firstDetail) == "COMPLETED",
+        "complete is idempotent and sets the Booking detail COMPLETED");
+    await ExpectAsync(HttpMethod.Delete, secondSession, manager, HttpStatusCode.NoContent);
+    await ExpectAsync(HttpMethod.Delete, secondSession, manager, HttpStatusCode.NoContent);
+    Check((string?)await ExecuteAsync("SELECT status FROM booking.booking_details WHERE id = $1", secondDetail) == "CANCELLED"
+        && (long)(await ExecuteAsync("""
+            SELECT count(*) FROM operation.staff_assignment a
+            JOIN operation.service_session s ON s.id = a.service_session_id
+            WHERE s.booking_details_id = $1 AND a.is_active
+            """, secondDetail))! == 0, "cancel synchronizes Booking and revokes all active assignments");
+    await ExpectAsync(HttpMethod.Put, roomPath, manager, HttpStatusCode.OK, new { status = "MAINTENANCE" });
+
+    var current = await ExpectAsync(HttpMethod.Get, sessions + "/current?pageSize=1", manager, HttpStatusCode.OK);
+    var firstGroup = current.GetProperty("items")[0];
+    Check(firstGroup.GetProperty("bookingId").GetInt64() == bookingId && firstGroup.GetProperty("completed").GetInt32() == 1
+        && firstGroup.GetProperty("cancelled").GetInt32() == 1 && firstGroup.GetProperty("canCompleteBooking").GetBoolean()
+        && !firstGroup.GetProperty("canCreateInvoice").GetBoolean(), "current work includes terminal sessions and marks the group ready to close");
+    await ExecuteAsync("UPDATE booking.booking SET status = 'COMPLETED' WHERE id = $1", bookingId);
+    current = await ExpectAsync(HttpMethod.Get, sessions + "/current", manager, HttpStatusCode.OK);
+    Check(current.GetProperty("items")[0].GetProperty("canCreateInvoice").GetBoolean(), "closed booking is ready for invoicing");
+    await ExecuteAsync("""
+        INSERT INTO billing.invoice (booking_id, subtotal, discount_amount, total_amount, status, created_at, updated_at)
+        VALUES ($1, 100000, 0, 100000, 'UNPAID', now(), now())
+        """, bookingId);
+    current = await ExpectAsync(HttpMethod.Get, sessions + "/current", manager, HttpStatusCode.OK);
+    Check(current.GetProperty("items").GetArrayLength() == 0, "an active invoice removes its booking from current work");
 }
-sealed class FakeStaffs(Staff account) : IStaffAuthRepository
-{
-    public int SaveCalls { get; private set; }
-    // Tìm tài khoản theo số điện thoại.
-    public Task<Staff?> GetByPhoneAsync(string phone, CancellationToken ct) => Task.FromResult(phone == account.Phone ? account : null);
-    // Ghi nhận số lần lưu trong dữ liệu giả.
-    public Task SaveAsync(CancellationToken ct) { SaveCalls++; return Task.CompletedTask; }
-}
+
 sealed class FakePets : IPetServices
 {
     public long? ListOwner { get; private set; }
