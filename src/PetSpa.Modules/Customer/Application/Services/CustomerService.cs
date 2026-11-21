@@ -76,7 +76,11 @@ internal sealed class CustomerService(
 
         customer.Gender = req.Gender ?? customer.Gender;
         customer.DateOfBirth = req.DateOfBirth ?? customer.DateOfBirth;
-        customer.Status = req.Status ?? customer.Status;
+        if (req.Status is { } status && status != customer.Status)
+        {
+            customer.Status = status;
+            customer.AccessStamp = Guid.NewGuid();
+        }
         customer.FullName = req.FullName?.Trim() ?? customer.FullName;
         customer.Phone = req.Phone is null ? customer.Phone : CustomerContact.NormalizePhone(req.Phone);
         customer.AvtURL = req.AvtURL?.Trim() ?? customer.AvtURL;

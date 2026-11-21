@@ -2,6 +2,8 @@
 
 Auth dùng **số điện thoại và mật khẩu** cho cả khách hàng lẫn nhân viên. Client gọi một API đăng nhập. Auth tìm tài khoản theo số điện thoại, đọc ID hồ sơ đã liên kết rồi hỏi đúng module để lấy trạng thái và quyền hiện tại. Khách tự đăng ký cho hồ sơ Customer đã có. Manager hoặc admin cấp tài khoản cho hồ sơ nhân viên do Operation quản lý.
 
+Backend đã có các contract tra hồ sơ và migration gộp tài khoản. WPF có màn hình đăng ký, đăng nhập chung, đăng xuất, cấp mã tại quầy và quản trị tài khoản nhân viên. Khi áp dụng lên một bản cũ, dùng mục 1–5 để đối chiếu mã nguồn. Dùng mục 6–7 để chuyển dữ liệu theo từng môi trường và nghiệm thu. [Endpoint Auth](src/PetSpa.Modules/Auth/Endpoints/AuthEndpoints.cs) · [Đặc tả HTTP](openapi.yaml)
+
 ## 1. Ba API xác thực
 
 | API | Đầu vào | Kết quả |
@@ -16,23 +18,24 @@ Ví dụ, một lễ tân gửi `{ "phone": "0900000001", "password": "…" }` �
 
 Các contract xác thực nội bộ được đăng ký qua DI trong Customer và Operation. Mỗi module triển khai truy vấn bằng DbContext của mình.
 
-| Module cung cấp | Phương thức cần có | Dữ liệu Auth cần |
+| Contract và module cung cấp | Phương thức đang dùng | Ý nghĩa kết quả |
 | --- | --- | --- |
-| Customer | `FindForRegistrationByPhoneAsync(normalizedPhone, ct)` | Trả đúng một hồ sơ gồm `CustomerId, FullName, Phone, Status`, hoặc kết quả không tìm thấy. Số khớp nhiều hồ sơ là lỗi dữ liệu cần đối soát. |
-| Customer | `GetCustomerForAuthAsync(customerId, ct)` | Đọc lại hồ sơ theo ID đã liên kết để xét trạng thái khi đăng nhập hoặc xác thực JWT. |
-| Operation | `GetStaffForAuthAsync(staffId, ct)` | Trả `StaffId, FullName, Phone, Status, Role` cho luồng quản trị và đăng nhập. Operation là nguồn xác định role nhân viên. |
+| `ICustomerAuthProfiles` · Customer | `FindForRegistrationByPhoneAsync(normalizedPhone, ct)` | Trả `AccountProfile(Id, FullName, Phone, IsActive, Role, AccessStamp)` khi số khớp đúng một hồ sơ. Nếu khớp 0 hoặc nhiều hồ sơ, trả `null`. Trường hợp nhiều hồ sơ cần đối soát tại Customer. |
+| `ICustomerAuthProfiles` · Customer | `GetCustomerForAuthAsync(customerId, ct)` | Tra theo ID khi cấp mã tại quầy, đăng nhập và xác thực JWT. Customer tính `IsActive` từ trạng thái hồ sơ và trả role `customer`. |
+| `IStaffAuthProfiles` · Operation | `GetStaffForAuthAsync(staffId, ct)` | Trả cùng DTO cho luồng cấp, sửa và đăng nhập. Operation tính `IsActive` và ánh xạ vai trò nhân viên từ hồ sơ. |
+| `IStaffAuthProfiles` · Operation | `GetActiveAdminIdsAsync(ct)` | Auth đối chiếu các ID admin đang hoạt động với account còn đăng nhập được trước khi cho khóa hoặc hạ quyền admin. |
 
-Dùng một hàm chuẩn hóa số cho tra cứu, ghi hồ sơ và ghi account. Tách quy tắc hiện có trong `CustomerContact.NormalizePhone` thành hàm dùng chung. Ví dụ, `+84900000001` và `0900000001` có cùng khóa đăng nhập là `0900000001`. Các contract trên chỉ trao đổi dữ liệu hồ sơ. Auth sở hữu toàn bộ thao tác với mật khẩu và token.
+Dùng `AccountPhone.Normalize` cho tra cứu và ghi số. Ví dụ, `+84900000001` và `0900000001` có cùng khóa đăng nhập là `0900000001`. Customer tra cả hai dạng để đọc được hồ sơ cũ. Guard theo chiều ngược lại là `IStaffAccountGuard` do Auth triển khai để Operation kiểm tra người thao tác và bảo vệ tài khoản admin cuối cùng. Các interface nằm trong SharedKernel, các truy vấn hồ sơ chạy ở module sở hữu qua DI. [Khai báo contract](src/PetSpa.SharedKernel/Application/Authentication/AccountProfiles.cs) · [Provider Customer](src/PetSpa.Modules/Customer/Infrastructure/Services/CustomerAuthProfiles.cs) · [Provider Operation](src/PetSpa.Modules/Operation/Infrastructure/Persistence/Repositories/StaffAuthProfiles.cs)
 
 ## 3. Đăng ký và cấp tài khoản
 
 **Khách hàng tự đăng ký.**
 
-1. Quầy tạo hoặc tìm hồ sơ khách trong Customer. Để bảo vệ hồ sơ khi người khác biết số điện thoại, quầy xác minh khách và gọi `POST /api/auth/customers/{customerId}/activation` để cấp mã. Policy `CustomerManagement` giới hạn thao tác cho lễ tân và quản lý. Auth phát mã có chữ ký, ràng buộc với mục đích đăng ký, `customerId`, số đã chuẩn hóa và thời hạn ngắn. Cách này dùng được với cả hồ sơ có sẵn và hồ sơ mới tạo tại quầy.
-2. Khi nhận `register`, Auth chuẩn hóa số, kiểm tra mật khẩu mới và xác minh mã. Auth gọi `FindForRegistrationByPhoneAsync`. Chỉ tiếp tục khi có đúng một khách `ACTIVE` và ID cùng số điện thoại khớp với mã. Hồ sơ thiếu, ngừng hoạt động, mã sai hoặc hết hạn đều nhận cùng lỗi đăng ký. Việc tạo hồ sơ mới thuộc luồng tại quầy.
+1. Quầy tìm hoặc tạo hồ sơ trong Customer rồi xác minh người đến đăng ký là chủ hồ sơ. Lễ tân hoặc manager gọi `POST /api/auth/customers/{customerId}/activation` theo policy `CustomerManagement`. Auth dùng ASP.NET Core Data Protection để cấp mã gắn với ID và số chuẩn hóa, hiệu lực 15 phút. Quầy trao mã cho khách. Đây là bước chứng minh quyền sử dụng hồ sơ khi đăng ký và dùng được với DB Auth một bảng.
+2. Khi nhận `register`, Auth chuẩn hóa số di động Việt Nam và kiểm tra mật khẩu mới (12–128 ký tự, có ký tự khác khoảng trắng). Auth gọi `FindForRegistrationByPhoneAsync`, yêu cầu đúng một khách `ACTIVE`, rồi đối chiếu mã với ID và số. Hồ sơ thiếu, ngừng hoạt động, số khớp nhiều hồ sơ, mã sai hoặc hết hạn đều nhận cùng lỗi đăng ký. Việc tạo hồ sơ mới thuộc luồng tại quầy.
 3. Auth băm mật khẩu và chèn account với `customer_id` lấy từ contract. Số đăng nhập và hồ sơ đều phải còn trống. Nếu hai lần đăng ký đến cùng lúc, ràng buộc unique cho đúng một lần thành công. Lần còn lại trả `409` sau khi xác minh mã. Một lần đăng ký lại cũng không được ghi đè mật khẩu đang dùng.
 
-**Manager hoặc admin quản lý tài khoản nhân viên.** Hai thao tác sau thuộc chức năng quản trị, áp dụng policy `ManagerOrAdmin`. Nhân viên dùng cùng API login và logout ở mục 1.
+**Manager hoặc admin quản lý tài khoản nhân viên.** Người quản trị chọn nhân viên từ danh sách của Operation (`GET /api/staff`), hoặc tạo hồ sơ nhân viên qua `POST /api/staff` để nhận `staffId`. Sau đó dùng hai thao tác quản trị sau, áp dụng policy `ManagerOrAdmin`. Nhân viên dùng cùng API login và logout ở mục 1.
 
 | Thao tác | Trình tự xử lý tại Auth |
 | --- | --- |
@@ -43,33 +46,52 @@ Manager quản lý tài khoản `STAFF` và `RECEPTIONIST`. Admin quản lý th�
 
 ## 4. Một bảng nghiệp vụ trong schema Auth
 
-Dùng `petspa_auth.accounts` và giữ bảng lịch sử migration của EF. Chuyển `AuthDbContext` sang `DbContext` thông thường. Có thể tiếp tục dùng `PasswordHasher<T>` của ASP.NET Core mà vẫn dùng được schema sau.
+Dùng `petspa_auth.accounts` làm bảng nghiệp vụ duy nhất của Auth. `AuthDbContext` kế thừa `DbContext` thông thường và dùng `PasswordHasher<Account>` của ASP.NET Core. EF theo dõi migration trong `petspa_auth."__EFMigrationsHistory"`.
 
 | Cột | Kiểu và ràng buộc |
 | --- | --- |
 | `id` | `bigint`, khóa chính của account. |
 | `login_phone` | Chuỗi số đã chuẩn hóa, `NOT NULL UNIQUE` trên toàn bảng để một lần tra cứu luôn xác định được một account. |
 | `password_hash` | `text NOT NULL`. Lưu kết quả của hasher. |
-| `customer_id`, `staff_id` | Hai cột `bigint` nullable. Đặt `CHECK ((customer_id IS NOT NULL) <> (staff_id IS NOT NULL))` và unique index riêng cho từng ID khác null. |
+| `customer_id`, `staff_id` | Hai cột `bigint` nullable. Ràng buộc `ck_accounts_profile` yêu cầu đúng một ID dương và cột kia NULL. Unique index riêng trên mỗi cột bảo đảm mỗi hồ sơ gắn với tối đa một account. |
 | `is_enabled` | `boolean NOT NULL DEFAULT true`. Cho phép khóa tài khoản độc lập với trạng thái hồ sơ. |
 | `token_version` | `bigint NOT NULL DEFAULT 0`. Auth dùng phiên bản này để thu hồi JWT. |
 | `locked_until_utc` | Mốc khóa tạm thời từ các tài khoản Identity đã được chuyển. |
 
-Loại tài khoản suy ra từ cột ID có giá trị. Họ tên, số liên hệ, trạng thái hồ sơ và role nhân viên lấy từ module sở hữu. Số đăng nhập là định danh do Auth quản lý. Thay đổi số liên hệ trên hồ sơ chỉ thay đổi thông tin liên lạc. Khi cần đổi cả số đăng nhập, phải xác minh lại chủ tài khoản, kiểm tra unique và thu hồi token cũ trong cùng lần cập nhật.
+Loại tài khoản suy ra từ cột ID có giá trị. Họ tên, số liên hệ, trạng thái hồ sơ và role nhân viên lấy từ module sở hữu. Số đăng nhập là định danh do Auth quản lý. Sửa số liên hệ ở Customer hoặc Operation chỉ cập nhật thông tin hồ sơ. Nếu một khách và một nhân viên cùng dùng một số, ràng buộc unique chặn account thứ hai. Quầy cần đối soát chủ sở hữu và thống nhất số đăng nhập riêng trước khi cấp tài khoản tiếp theo.
 
 ## 5. Đăng nhập, xác thực request và đăng xuất
 
 1. **Đăng nhập.** Auth tra một account theo `login_phone`, kiểm tra hash, `is_enabled` và hồ sơ `ACTIVE` theo ID đã lưu. Với khách, gán role cố định `customer`. Với nhân viên, ánh xạ role Operation sang `staff`, `receptionist`, `manager` hoặc `admin`. Thông tin sai, account bị khóa hay liên kết không còn hợp lệ cùng trả `401`. Khi contract gặp lỗi hạ tầng, dừng cấp token và trả `503`.
 2. **Phát JWT.** Giữ `sub=customer:<id>` hoặc `sub=staff:<id>`, `role`, `account_type` và đúng một trong `customer_id`, `staff_id` để tương thích với `ClaimsPrincipalExtensions`. Bổ sung `account_id` và `token_version`. Access token mặc định có thời hạn 15 phút, dùng HTTPS, lưu khóa ký ở cấu hình bí mật và giới hạn tần suất đăng nhập, đăng ký. Dùng chính sách mật khẩu mới khi tạo hoặc đổi mật khẩu, hỗ trợ kiểm tra và nâng cấp hash cũ khi đăng nhập thành công.
-3. **Xác thực Bearer.** Cấu hình bước xác thực một lần trong Auth. Kiểm chữ ký, issuer, audience và thời hạn, sau đó đối chiếu account, phiên bản, liên kết hồ sơ, trạng thái và role hiện tại. Token cũ sau khi khóa tài khoản hoặc hạ quyền phải nhận `401`. Token hợp lệ nhưng thiếu quyền nghiệp vụ nhận `403`. Các module nghiệp vụ dùng policy và claim đã xác thực để kiểm quyền truy cập tài nguyên.
+3. **Xác thực Bearer.** Auth kiểm chữ ký, issuer, audience và thời hạn, sau đó đối chiếu account, phiên bản, liên kết hồ sơ, trạng thái và role hiện tại. JWT mang thêm `profile_access_stamp`. Customer đổi dấu này khi đổi trạng thái khách, Operation đổi khi đổi vai trò hoặc trạng thái nhân viên. JWT cũ vẫn nhận `401` sau khi khôi phục vai trò hoặc kích hoạt lại hồ sơ. Token hợp lệ thiếu quyền nghiệp vụ nhận `403`. Các module nghiệp vụ dùng principal đã xác thực để kiểm quyền truy cập tài nguyên.
 4. **Đăng xuất.** Lấy account từ JWT đã xác thực rồi tăng phiên bản bằng cập nhật nguyên tử có điều kiện theo phiên bản trong JWT. Trả `204` sau khi cập nhật đã commit. Nếu phiên bản đã đổi do một yêu cầu khác, trả `401`. JWT mang phiên bản trước đó bị từ chối từ request kế tiếp. Với cách thu hồi này, **đăng xuất áp dụng cho mọi thiết bị**. Người dùng đăng nhập lại để nhận token mới.
 
-## 6. Triển khai và chuyển dữ liệu
+## 6. Triển khai theo từng phần của dự án
 
-Host đăng ký Auth một lần trong `Program.cs`. Hai route đăng nhập cũ được thay bằng `POST /api/auth/login`. Client gửi cùng payload và dùng role do server trả về. Người dùng cần đăng nhập lại sau khi chuyển dữ liệu. [Điểm đăng ký API](src/PetSpa.Api/Program.cs) · [Ví dụ HTTP](src/PetSpa.Api/PetSpa.Api.http)
+### Backend và các module nghiệp vụ
 
-Migration Auth nhập tài khoản Identity đã liên kết cùng hash còn dùng ở Customer và Staff. Số trùng sau chuẩn hóa hoặc dữ liệu Identity cần đối soát sẽ làm migration dừng. Sau khi Auth đã nhập dữ liệu, migration của Customer và Operation kiểm tra liên kết rồi bỏ các cột thông tin xác thực cũ. Dùng cơ sở dữ liệu thử để diễn tập và sao lưu trước khi chuyển môi trường phục vụ. [Các lệnh migration](HUONG-DAN-CHAY.md#chuyển-dữ-liệu-sang-auth-dùng-chung) · [Mô hình Auth](src/PetSpa.Modules/Auth/Infrastructure/Persistence/AuthDbContext.cs)
+| Nơi làm việc | Việc cần đối chiếu khi chuyển từ bản cũ |
+| --- | --- |
+| Auth | Gom route vào `AuthEndpoints`. `AccountService` sở hữu đăng ký và quản trị account. `LoginService` sở hữu kiểm tra mật khẩu, chọn contract theo ID, xác thực phiên và thu hồi. `AuthModule` đăng ký JWT Bearer, rate limit và policy. Hai route cũ `/api/auth/customer/login`, `/api/auth/staff/login` phải biến mất khỏi bảng route. |
+| SharedKernel, Customer và Operation | SharedKernel công bố contract, DTO, tên policy và cách đọc principal đã xác thực. Customer và Operation đăng ký provider tương ứng trong DI, giữ CRUD hồ sơ và trả dữ liệu qua contract. Cả sửa account ở Auth và sửa role/trạng thái ở Operation phải kiểm lại quyền trên đối tượng trong giao dịch với cùng khóa quản trị nhân viên. |
+| Host `PetSpa.Api` | Gọi `AddAuthModule` và `MapAuthModuleEndpoint` mỗi hàm một lần. Giữ `UseAuthentication`, `UseAuthorization` và `UseRateLimiter` trong pipeline. Thiết lập issuer, audience và khóa ký tối thiểu 32 byte qua cấu hình bí mật. Nếu chạy nhiều instance, dùng chung key ring Data Protection để mã kích hoạt do instance này cấp có thể dùng ở instance khác. |
+| Customer, Booking, Operation, Resource và Billing | Giữ phân quyền tài nguyên ở module sở hữu. Ví dụ, Booking lấy `customer_id` từ principal để lọc lịch của khách, các route `/api/me` của Operation dùng `staff_id`, Resource dùng policy cho thao tác ghi. Billing dùng cùng cơ chế khi mở endpoint cần xác thực. Các module này tiêu thụ danh tính đã xác thực qua middleware. Mật khẩu, khóa ký và thu hồi phiên thuộc Auth. |
 
+Các điểm vào để rà thay đổi là [host](src/PetSpa.Api/Program.cs), [đăng ký Auth](src/PetSpa.Modules/Auth/AuthModule.cs), [xử lý account](src/PetSpa.Modules/Auth/Application/AccountService.cs), [xử lý phiên](src/PetSpa.Modules/Auth/Application/LoginService.cs) và [quản trị hồ sơ nhân viên](src/PetSpa.Modules/Operation/Application/Services/StaffService.cs).
+
+### Khởi tạo cơ sở dữ liệu
+
+Bộ migration hiện tại đã được gộp để tạo mới schema theo model mới nhất, không còn các bước chuyển dữ liệu từ Identity hoặc credential cũ. Với database trống, làm theo [hướng dẫn khởi tạo Supabase](HUONG-DAN-CHAY.md#khởi-tạo-schema-trên-supabase), sau đó thiết lập hồ sơ và account admin ban đầu. Nếu cần giữ dữ liệu cũ, không áp dụng trực tiếp bộ migration mới; dùng bản sao lưu và lịch sử migration cũ để lập phương án chuyển đổi riêng.
+
+### Client WPF và tài liệu tích hợp
+
+| Thành phần | Việc cần làm |
+| --- | --- |
+| Đăng nhập WPF | Trong checkout `Animal-Spa`, `Services/ApiClient.cs` đã gửi `{ phone, password }` đến URL chung. `Views/LoginViews.xaml.cs` dùng cùng lời gọi cho hai nút User/Staff. `MainWindow.xaml.cs` chọn màn hình từ `session.Role`. Khi tích hợp bản cũ, bỏ việc chọn URL theo tab và giữ `user.id` là ID hồ sơ. |
+| Đăng ký và thao tác tại quầy | Lễ tân hoặc manager chọn hồ sơ khách trong cửa sổ **Cấp mã kích hoạt**. Khách nhập số, mật khẩu và mã trong cửa sổ đăng ký. Sau `201`, ứng dụng trở về đăng nhập. Trong cửa sổ **Tài khoản nhân viên**, manager/admin chọn hồ sơ rồi cấp account, đặt lại mật khẩu, khóa hoặc mở tài khoản. |
+| Phiên và đăng xuất | Nút **Đăng xuất** gửi Bearer của phiên hiện tại và body rỗng. Khi nhận `204` hoặc `401`, WPF đóng cửa sổ phiên hiện tại và trở về đăng nhập. Nếu server chưa xác nhận, WPF giữ phiên cục bộ để người dùng thử lại. Cửa sổ quản trị gửi cùng Bearer token và hiển thị thông báo nếu server trả `403`. |
+| Đặc tả và tài liệu bàn giao | Hai file `openapi.yaml` mô tả cùng các route Auth. Có thể chạy các ví dụ đăng ký, đăng nhập, đăng xuất và cấp/sửa tài khoản trong `PetSpa.Api.http`. Các tài liệu thiết kế cũ có liên kết về hướng dẫn hiện hành. |
 
 ## 7. Nghiệm thu
 
@@ -83,3 +105,14 @@ Migration Auth nhập tài khoản Identity đã liên kết cùng hash còn dù
 | Khách và nhân viên đăng nhập qua một URL | Cả hai nhận `200`, đúng role, ID nghiệp vụ và policy tương ứng. Số chưa đăng ký và mật khẩu sai cùng nhận `401`. |
 | Đăng nhập hai thiết bị rồi logout trên một thiết bị | Logout trả `204`. Cả hai JWT cũ nhận `401` khi gọi API bảo vệ. Đăng nhập lại thành công với phiên bản mới. |
 | Khóa account, chuyển hồ sơ sang INACTIVE hoặc hạ quyền nhân viên | JWT cũ bị từ chối ở request kế tiếp. Chỉ account và hồ sơ còn hoạt động mới đăng nhập lại được với quyền hiện tại. |
+| Kích hoạt lại hồ sơ khách hoặc khôi phục role nhân viên | JWT cấp trước lần thay đổi vẫn nhận `401`. Đăng nhập lại trả token với dấu hồ sơ mới. |
+| Số đăng nhập đã thuộc account loại khác | Cấp thêm account cùng số trả `409`. Tài khoản đã tồn tại tiếp tục đăng nhập với đúng ID và role. |
+| Phân quyền sau chuyển đổi | Khách A truy cập hồ sơ của khách B bị từ chối. Staff xem đúng công việc của mình. Manager thử khóa hoặc hạ quyền admin qua cả Auth lẫn Operation đều bị từ chối. |
+| Hợp đồng client | Kiểm tra danh sách route trong OpenAPI sinh từ host. Chỉ có một đường dẫn login. Qua WPF, đăng ký khách, đăng nhập khách và nhân viên trên cùng màn hình, thử thao tác có quyền rồi đăng xuất. |
+
+Để kiểm tra backend, đặt `PETSPA_AUTH_TEST_CONNECTION` trỏ tới một PostgreSQL thử nghiệm **trống, dùng riêng cho lần chạy**. Chương trình smoke tự áp dụng migration, chèn dữ liệu giả và gọi API qua HTTP. Từ thư mục gốc chạy các lệnh sau. [Bộ kiểm thử Auth](tests/PetSpa.IntegrationTests/Program.cs) · [Request thử thủ công](src/PetSpa.Api/PetSpa.Api.http)
+
+```powershell
+dotnet build PetSpa.slnx
+dotnet run --project tests/PetSpa.IntegrationTests/PetSpa.AuthenticationSmokeTests.csproj
+```

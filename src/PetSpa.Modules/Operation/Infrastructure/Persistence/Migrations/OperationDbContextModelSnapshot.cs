@@ -8,7 +8,7 @@ using PetSpa.Modules.Operation.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace PetSpa.Modules.Operation.Migrations
+namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(OperationDbContext))]
     partial class OperationDbContextModelSnapshot : ModelSnapshot
@@ -88,6 +88,10 @@ namespace PetSpa.Modules.Operation.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("booking_details_id");
 
+                    b.Property<long?>("BookingId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("booking_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -133,6 +137,8 @@ namespace PetSpa.Modules.Operation.Migrations
                     b.HasIndex("BookingDetailId")
                         .IsUnique();
 
+                    b.HasIndex("BookingId");
+
                     b.HasIndex("RoomId");
 
                     b.HasIndex("Status");
@@ -155,6 +161,12 @@ namespace PetSpa.Modules.Operation.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("AccessStamp")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValue(new Guid("00000000-0000-0000-0000-000000000000"))
+                        .HasColumnName("access_stamp");
 
                     b.Property<string>("AvatarUrl")
                         .HasColumnType("text")
@@ -261,6 +273,20 @@ namespace PetSpa.Modules.Operation.Migrations
                         .HasColumnName("assigned_at")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<long?>("ReplacedByAssignmentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("replaced_by_assignment_id");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
                     b.Property<long>("ServiceSessionId")
                         .HasColumnType("bigint")
                         .HasColumnName("service_session_id");
@@ -275,10 +301,86 @@ namespace PetSpa.Modules.Operation.Migrations
 
                     b.HasIndex("StaffId");
 
-                    b.HasIndex("ServiceSessionId", "StaffId")
-                        .IsUnique();
+                    b.HasIndex("ServiceSessionId", "IsActive");
 
-                    b.ToTable("staff_assignment", "operation");
+                    b.HasIndex("ServiceSessionId", "StaffId")
+                        .IsUnique()
+                        .HasFilter("is_active = TRUE");
+
+                    b.HasIndex("StaffId", "IsActive");
+
+                    b.ToTable("staff_assignment", "operation", t =>
+                        {
+                            t.HasCheckConstraint("ck_staff_assignment_active_state", "(is_active = TRUE AND revoked_at IS NULL) OR (is_active = FALSE AND revoked_at IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PetSpa.Modules.Operation.Domain.Entities.StaffNotification", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("message");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<long>("StaffAssignmentId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("staff_assignment_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("idempotency_key IS NOT NULL");
+
+                    b.HasIndex("StaffAssignmentId", "IsRead", "CreatedAt");
+
+                    b.ToTable("staff_notification", "operation", t =>
+                        {
+                            t.HasCheckConstraint("ck_staff_notification_read_state", "(is_read = FALSE AND read_at IS NULL) OR (is_read = TRUE AND read_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_staff_notification_type", "type IN ('ASSIGNED', 'REASSIGNED', 'REMINDER')");
+                        });
                 });
 
             modelBuilder.Entity("PetSpa.Modules.Operation.Domain.Entities.StaffShift", b =>
@@ -383,6 +485,18 @@ namespace PetSpa.Modules.Operation.Migrations
                     b.Navigation("ServiceSession");
 
                     b.Navigation("Staff");
+                });
+
+            modelBuilder.Entity("PetSpa.Modules.Operation.Domain.Entities.StaffNotification", b =>
+                {
+                    b.HasOne("PetSpa.Modules.Operation.Domain.Entities.StaffAssignment", "StaffAssignment")
+                        .WithMany()
+                        .HasForeignKey("StaffAssignmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_staff_notification_staff_assignment");
+
+                    b.Navigation("StaffAssignment");
                 });
 
             modelBuilder.Entity("PetSpa.Modules.Operation.Domain.Entities.StaffShift", b =>

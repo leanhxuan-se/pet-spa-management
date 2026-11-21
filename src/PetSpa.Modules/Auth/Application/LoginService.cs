@@ -18,6 +18,7 @@ internal sealed class LoginService(
 {
     internal const string AccountIdClaim = "account_id";
     internal const string TokenVersionClaim = "token_version";
+    private const string ProfileAccessStampClaim = "profile_access_stamp";
 
     public async Task<LoginResponse?> LoginAsync(string phone, string password, CancellationToken ct)
     {
@@ -49,7 +50,8 @@ internal sealed class LoginService(
             new(AuthClaimTypes.AccountType, type),
             new(account.CustomerId.HasValue ? AuthClaimTypes.CustomerId : AuthClaimTypes.StaffId, id),
             new(AccountIdClaim, account.Id.ToString(CultureInfo.InvariantCulture)),
-            new(TokenVersionClaim, account.TokenVersion.ToString(CultureInfo.InvariantCulture))
+            new(TokenVersionClaim, account.TokenVersion.ToString(CultureInfo.InvariantCulture)),
+            new(ProfileAccessStampClaim, profile.AccessStamp.ToString("D"))
         ]);
         return new(token, "Bearer", expiresAt, profile.Role, new(profile.Id, profile.FullName, profile.Phone));
     }
@@ -65,7 +67,9 @@ internal sealed class LoginService(
             return false;
 
         var profile = await GetActiveProfileAsync(account, ct);
-        return profile is not null && principal.IsInRole(profile.Role);
+        return profile is not null && principal.IsInRole(profile.Role) &&
+            principal.FindAll(ProfileAccessStampClaim).Select(x => x.Value).Take(2)
+                .SequenceEqual([profile.AccessStamp.ToString("D")]);
     }
 
     public async Task<bool> LogoutAsync(ClaimsPrincipal principal, CancellationToken ct)

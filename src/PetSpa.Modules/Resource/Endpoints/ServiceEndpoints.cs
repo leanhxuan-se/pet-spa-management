@@ -28,9 +28,6 @@ public static class ServiceEndpoints
             .Produces(StatusCodes.Status404NotFound).Produces(StatusCodes.Status409Conflict).RequireResourceManager();
         group.MapDelete("/{id:long}", DeleteAsync).WithName("DeleteService")
             .Produces(StatusCodes.Status204NoContent).Produces(StatusCodes.Status404NotFound).RequireResourceManager();
-        app.MapGet("/api/categories/{categoryId:long}/services", ListByCategoryAsync)
-            .WithTags("Services").WithName("GetServicesByCategory").Produces<IReadOnlyList<ServiceResponse>>()
-            .Produces(StatusCodes.Status404NotFound).AllowAnonymous();
         return app;
     }
 
@@ -39,11 +36,6 @@ public static class ServiceEndpoints
         long? categoryId, string? keyword, ServiceCatalogService service, CancellationToken ct, bool activeOnly = false)
         => (await service.ListAsync(categoryId, keyword, ct, activeOnly))
             .ToHttpResult(dtos => Results.Ok(dtos.Select(ToResponse).ToList()));
-
-    // Lấy danh sách dịch vụ theo danh mục.
-    public static Task<IResult> ListByCategoryAsync(
-        long categoryId, string? keyword, ServiceCatalogService service, CancellationToken ct, bool activeOnly = false)
-        => ListAsync(categoryId, keyword, service, ct, activeOnly);
 
     // Tìm đối tượng theo mã.
     public static async Task<IResult> GetByIdAsync(long id, ServiceCatalogService service, CancellationToken ct)

@@ -2,6 +2,7 @@ using PetSpa.Modules.Operation.Application.Abstractions;
 using PetSpa.Modules.Operation.Domain.Enums;
 using PetSpa.Modules.Operation.Endpoints.Responses;
 using PetSpa.Modules.Operation.Endpoints.Requests;
+using PetSpa.SharedKernel.Application.Abstractions;
 
 namespace PetSpa.OperationSmokeTests;
 
@@ -36,8 +37,14 @@ internal sealed class FakeRoomRepository(OperationTestStore store) : IRoomReposi
         Task.FromResult(store.AvailableRooms.Concat(store.UnavailableRooms).ToList());
     public Task<List<RoomResponse>> CreateAsync(CreateRoomRequest request, CancellationToken ct) =>
         throw new NotSupportedException();
-    public Task<List<RoomResponse>> UpdateAsync(long id, UpdateRoomRequest request, CancellationToken ct) =>
+    public Task<Result<List<RoomResponse>>> UpdateAsync(long id, UpdateRoomRequest request, CancellationToken ct) =>
         throw new NotSupportedException();
+
+    public Task<List<RoomResponse>> GetAvailableAtAsync(DateTime nowUtc, CancellationToken ct) =>
+        Task.FromResult(store.AvailableRooms.ToList());
+
+    public Task<List<RoomResponse>> GetUnAvailableAtAsync(DateTime nowUtc, CancellationToken ct) =>
+        Task.FromResult(store.UnavailableRooms.ToList());
 
     public Task<List<RoomResponse>> GetAvailableAsync(
         DateTime startTime,
@@ -64,15 +71,7 @@ internal sealed class FakeStaffRepository(OperationTestStore store) : IStaffRepo
     public Task<StaffResponse?> DeleteAsync(long id, CancellationToken ct) =>
         throw new NotSupportedException();
 
-    public Task<List<StaffResponse>> GetAvailableAsync(
-        DateTime startTime,
-        DateTime endTime,
-        CancellationToken ct)
-        => Task.FromResult(store.AvailableStaff.ToList());
-
-    public Task<List<StaffResponse>> GetUnAvailableAsync(
-        DateTime startTime,
-        DateTime endTime,
-        CancellationToken ct)
-        => Task.FromResult(store.UnavailableStaff.ToList());
+    public Task<List<StaffResponse>> GetAvailabilityAsync(
+        DateTime startUtc, DateTime? endUtc, bool available, CancellationToken ct)
+        => Task.FromResult((available ? store.AvailableStaff : store.UnavailableStaff).ToList());
 }

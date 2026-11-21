@@ -21,5 +21,5 @@ internal sealed class CustomerAuthProfiles(CustomerDbContext db) : ICustomerAuth
         Profiles(db.Customers.Where(x => x.Id == customerId)).SingleOrDefaultAsync(ct);
 
     private static IQueryable<AccountProfile> Profiles(IQueryable<CustomerRecord> query) => query.AsNoTracking().Select(x =>
-        new AccountProfile(x.Id, x.FullName, x.Phone, x.Status == CustomerStatus.ACTIVE, AccountRoles.Customer));
+        new AccountProfile(x.Id, x.FullName, x.Phone, x.Status == CustomerStatus.ACTIVE, AccountRoles.Customer, x.AccessStamp));
 }

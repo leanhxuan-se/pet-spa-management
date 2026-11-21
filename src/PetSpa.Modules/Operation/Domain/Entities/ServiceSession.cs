@@ -9,6 +9,7 @@ namespace PetSpa.Modules.Operation.Domain.Entities
         public long Id { get; set; } 
         // Cross-module reference: Booking owns this entity in a separate DbContext.
         public long BookingDetailId { get; set; }
+        public long? BookingId { get; set; }
         public long RoomId { get; set; }
         public Room Room { get; set; } = null!;
         public ServiceSessionStatus Status { get; set; } = ServiceSessionStatus.WAITING;

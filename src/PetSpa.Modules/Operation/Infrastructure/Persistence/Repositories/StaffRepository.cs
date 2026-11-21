@@ -64,11 +64,10 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
             staff.Email = request.Email ?? staff.Email;
             staff.Phone = request.Phone is null ? staff.Phone : AccountPhone.Normalize(request.Phone);
             staff.Position = request.Position ?? staff.Position;
-            staff.Role = request.Role ?? staff.Role;
             staff.HiredDate = request.HiredDate ?? staff.HiredDate;
             staff.AvatarUrl = request.AvatarUrl ?? staff.AvatarUrl;
             staff.Note = request.Note ?? staff.Note;
-            staff.Status = request.Status ?? staff.Status;
+            UpdateAccess(staff, request.Role ?? staff.Role, request.Status ?? staff.Status);
             await db.SaveChangesAsync(ct);
             return staff.Adapt<StaffResponse>();
         }
@@ -77,82 +76,55 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
             var staff = await db.Staffs.Where(x => x.Id == id).FirstOrDefaultAsync(ct);
             if (staff is null)
                 return null;
-            staff.Status = StaffStatus.INACTIVE;
+            UpdateAccess(staff, staff.Role, StaffStatus.INACTIVE);
             await db.SaveChangesAsync(ct);
             return staff.Adapt<StaffResponse>();
         }
         
-        public async Task<List<StaffResponse>> GetUnAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
+        private static void UpdateAccess(Staff staff, StaffRole role, StaffStatus status)
         {
-            var unavailableStaff = await db.ServiceSessions
-                .AsNoTracking()
-                .Where(x =>
-                    x.Status != ServiceSessionStatus.CANCELLED
-                    && x.Status != ServiceSessionStatus.COMPLETED
-                    && x.ExpectedStartAt < endTime
-                    && x.ExpectedFinishAt > startTime)
-                .SelectMany(x => x.StaffAssignments
-                            .Where(st => st.Staff.Status != StaffStatus.INACTIVE)
-                            .Select(st => new StaffResponse(
-                                st.Staff.Id,
-                                st.Staff.FullName,
-                                st.Staff.Gender,
-                                st.Staff.DateOfBirth,
-                                st.Staff.Email,
-                                st.Staff.Phone,
-                                st.Staff.Position,
-                                st.Staff.Role,
-                                st.Staff.HiredDate,
-                                st.Staff.AvatarUrl,
-                                st.Staff.Note,
-                                st.Staff.Status)))
-                .Distinct()
-                .ToListAsync(ct);
+            if (staff.Role == role && staff.Status == status)
+                return;
 
-            return unavailableStaff;
+            staff.Role = role;
+            staff.Status = status;
+            staff.AccessStamp = Guid.NewGuid();
         }
-        public async Task<List<StaffResponse>> GetAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
+
+        public Task<List<StaffResponse>> GetAvailabilityAsync(
+            DateTime startUtc, DateTime? endUtc, bool available, CancellationToken ct)
         {
-            var unAvailableStaff = await db.ServiceSessions
-                .AsNoTracking()
-                .Where(x =>
-                    x.Status != ServiceSessionStatus.CANCELLED
-                    && x.ExpectedStartAt < endTime
-                    && x.ExpectedFinishAt > startTime)
-                .SelectMany(x => x.StaffAssignments
-                            .Where(st => st.Staff.Status != StaffStatus.INACTIVE)
-                            .Select(st => st.Staff.Id))
-                .Distinct()
-                .ToListAsync(ct);
+            var assignments = db.StaffAssignments.Where(assignment => assignment.IsActive
+                && (assignment.ServiceSession.Status == ServiceSessionStatus.WAITING
+                    || assignment.ServiceSession.Status == ServiceSessionStatus.IN_PROGRESS));
+            var busyIds = endUtc is { } end
+                ? assignments.Where(assignment => assignment.ServiceSession.ExpectedStartAt < end
+                    && assignment.ServiceSession.ExpectedFinishAt > startUtc).Select(assignment => assignment.StaffId)
+                : assignments.Where(assignment => assignment.ServiceSession.Status == ServiceSessionStatus.IN_PROGRESS
+                    || (assignment.ServiceSession.ExpectedStartAt <= startUtc
+                        && assignment.ServiceSession.ExpectedFinishAt > startUtc)).Select(assignment => assignment.StaffId);
 
-            DateOnly date = DateOnly.FromDateTime(startTime);
-            TimeOnly start = TimeOnly.FromDateTime(startTime);
-            TimeOnly end = TimeOnly.FromDateTime(endTime);
+            var staff = db.Staffs.AsNoTracking().Where(person => person.Status == StaffStatus.ACTIVE);
+            if (!available)
+                return staff.Where(person => busyIds.Contains(person.Id)).OrderBy(person => person.Id)
+                    .ProjectToType<StaffResponse>().ToListAsync(ct);
 
-            var AvailableStaff = await db.StaffShifts
-                    .Where(x => x.Status == StaffShiftStatus.SCHEDULED
-                           && x.Staff.Status == StaffStatus.ACTIVE
-                           && x.StartTime < start
-                           && x.EndTime > end
-                           && x.ShiftDate == date
-                           && !unAvailableStaff.Contains(x.Staff.Id))
-                    .Select(st => new StaffResponse(
-                                 st.Staff.Id,
-                                st.Staff.FullName,
-                                st.Staff.Gender,
-                                st.Staff.DateOfBirth,
-                                st.Staff.Email,
-                                st.Staff.Phone,
-                                st.Staff.Position,
-                                st.Staff.Role,
-                                st.Staff.HiredDate,
-                                st.Staff.AvatarUrl,
-                                st.Staff.Note,
-                                st.Staff.Status))
-                    .Distinct()
-                    .ToListAsync(ct);
+            var shifts = db.StaffShifts.Where(shift => shift.Status == StaffShiftStatus.WORKING);
+            if (endUtc is { } endOfRange)
+            {
+                var date = DateOnly.FromDateTime(startUtc);
+                if (date != DateOnly.FromDateTime(endOfRange))
+                    return Task.FromResult(new List<StaffResponse>());
 
-            return AvailableStaff;
+                var startTime = TimeOnly.FromDateTime(startUtc);
+                var endTime = TimeOnly.FromDateTime(endOfRange);
+                shifts = db.StaffShifts.Where(shift =>
+                    (shift.Status == StaffShiftStatus.SCHEDULED || shift.Status == StaffShiftStatus.WORKING)
+                    && shift.ShiftDate == date && shift.StartTime <= startTime && shift.EndTime >= endTime);
+            }
+
+            return staff.Where(person => !busyIds.Contains(person.Id) && shifts.Any(shift => shift.StaffId == person.Id))
+                .OrderBy(person => person.Id).ProjectToType<StaffResponse>().ToListAsync(ct);
         }
     }
 }

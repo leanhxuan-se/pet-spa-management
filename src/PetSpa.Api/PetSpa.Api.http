@@ -5,6 +5,8 @@
 @frontDeskToken = paste-receptionist-or-manager-token
 @activationToken = paste-activation-token
 @customerId = 1
+@staffId = 2
+@managerOrAdminToken = paste-manager-or-admin-login-token
 
 GET {{PetSpa.Api_HostAddress}}/health
 
@@ -38,3 +40,29 @@ Content-Type: application/json
 
 POST {{PetSpa.Api_HostAddress}}/api/auth/logout
 Authorization: Bearer {{accessToken}}
+
+###
+
+GET {{PetSpa.Api_HostAddress}}/api/staff
+Authorization: Bearer {{managerOrAdminToken}}
+
+###
+
+POST {{PetSpa.Api_HostAddress}}/api/auth/staff-accounts
+Authorization: Bearer {{managerOrAdminToken}}
+Content-Type: application/json
+
+{
+  "staffId": {{staffId}},
+  "password": "{{password}}"
+}
+
+###
+
+PATCH {{PetSpa.Api_HostAddress}}/api/auth/staff-accounts/{{staffId}}
+Authorization: Bearer {{managerOrAdminToken}}
+Content-Type: application/json
+
+{
+  "isEnabled": false
+}

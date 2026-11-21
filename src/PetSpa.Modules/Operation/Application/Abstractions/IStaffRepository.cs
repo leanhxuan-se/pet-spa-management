@@ -10,8 +10,7 @@ namespace PetSpa.Modules.Operation.Application.Abstractions
         Task<StaffResponse> CreateAsync(CreateStaffRequest request, CancellationToken ct);
         Task<StaffResponse?> UpdateAsync(long id, UpdateStaffRequest request, CancellationToken ct);
         Task<StaffResponse?> DeleteAsync(long id, CancellationToken ct);
-        Task<List<StaffResponse>> GetAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct);
-        Task<List<StaffResponse>> GetUnAvailableAsync(DateTime startTime, DateTime endTime, CancellationToken ct);
+        Task<List<StaffResponse>> GetAvailabilityAsync(DateTime startUtc, DateTime? endUtc, bool available, CancellationToken ct);
 
 
     }

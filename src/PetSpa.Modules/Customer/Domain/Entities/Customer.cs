@@ -14,6 +14,7 @@ namespace PetSpa.Modules.Customer.Domain.Entities
         public string? AvtURL { get; set; }
         public string? Note { get; set; }
         public CustomerStatus Status { get; set; }
+        public Guid AccessStamp { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

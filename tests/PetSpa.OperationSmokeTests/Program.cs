@@ -10,6 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PetSpa.Modules.Operation;
 using PetSpa.Modules.Auth;
+using PetSpa.Modules.Billing;
+using PetSpa.Modules.Booking;
 using PetSpa.Modules.Operation.Application.Abstractions;
 using PetSpa.Modules.Operation.Application.Services;
 using PetSpa.OperationSmokeTests;
@@ -26,6 +28,8 @@ void Check(bool condition, string message)
 var builder = WebApplication.CreateBuilder();
 builder.WebHost.UseUrls("http://127.0.0.1:0");
 builder.Services.AddOperationModule(Connection);
+builder.Services.AddBookingModule(Connection);
+builder.Services.AddBillingModule(Connection);
 builder.Services.AddSingleton<OperationTestStore>();
 builder.Services.AddScoped<IRoomRepository, FakeRoomRepository>();
 builder.Services.AddScoped<IStaffRepository, FakeStaffRepository>();
@@ -68,25 +72,30 @@ async Task<JsonElement> SendAsync(
 const string ValidRange = "startTime=2027-05-01T12%3A00%3A00&endTime=2027-05-01T13%3A00%3A00";
 const string InvalidRange = "startTime=2027-05-01T12%3A00%3A00&endTime=2027-05-01T12%3A00%3A00";
 
-await SendAsync(HttpMethod.Get, $"/api/room/availability?{ValidRange}", HttpStatusCode.Unauthorized, staffRole: null);
+await SendAsync(HttpMethod.Get, $"/api/room/available?{ValidRange}", HttpStatusCode.Unauthorized, staffRole: null);
 var availableRooms = await SendAsync(
-    HttpMethod.Get, $"/api/room/availability?{ValidRange}", HttpStatusCode.OK);
+    HttpMethod.Get, $"/api/room/available?{ValidRange}", HttpStatusCode.OK);
 Check(availableRooms.GetArrayLength() == 1, "Room availability should return one available room");
 Check(availableRooms[0].GetProperty("roomName").GetString() == "Bath Room", "Available room name");
 
 var unavailableRooms = await SendAsync(
-    HttpMethod.Get, $"/api/room/unavailability?{ValidRange}", HttpStatusCode.OK);
+    HttpMethod.Get, $"/api/room/unavailable?{ValidRange}", HttpStatusCode.OK);
 Check(unavailableRooms.GetArrayLength() == 1, "Room unavailability should return one unavailable room");
 Check(unavailableRooms[0].GetProperty("roomName").GetString() == "Grooming Room", "Unavailable room name");
-await SendAsync(HttpMethod.Get, $"/api/room/availability?{InvalidRange}", HttpStatusCode.BadRequest);
+await SendAsync(HttpMethod.Get, $"/api/room/available?{InvalidRange}", HttpStatusCode.BadRequest);
 
 var availableStaff = await SendAsync(
-    HttpMethod.Get, $"/api/staff/availability?{ValidRange}", HttpStatusCode.OK);
+    HttpMethod.Get, $"/api/staff/available?{ValidRange}", HttpStatusCode.OK, staffRole: "RECEPTIONIST");
 Check(availableStaff.GetArrayLength() == 2, "Staff availability should return two available staff members");
 
 var unavailableStaff = await SendAsync(
-    HttpMethod.Get, $"/api/staff/unavailability?{ValidRange}", HttpStatusCode.OK);
+    HttpMethod.Get, $"/api/staff/unavailable?{ValidRange}", HttpStatusCode.OK);
 Check(unavailableStaff.GetArrayLength() == 1, "Staff unavailability should return one unavailable staff member");
+await SendAsync(HttpMethod.Get, "/api/staff/available", HttpStatusCode.OK);
+await SendAsync(HttpMethod.Get, "/api/staff/unavailable", HttpStatusCode.Forbidden, staffRole: "STAFF");
+await SendAsync(HttpMethod.Get, $"/api/staff/available?{InvalidRange}", HttpStatusCode.BadRequest);
+await SendAsync(HttpMethod.Get, "/api/staff/available?startTime=2027-05-01T12:00:00Z", HttpStatusCode.BadRequest);
+await SendAsync(HttpMethod.Get, "/api/staff/availability", HttpStatusCode.NotFound);
 
 await SendAsync(HttpMethod.Post, "/api/auth/staff/login", HttpStatusCode.NotFound);
 

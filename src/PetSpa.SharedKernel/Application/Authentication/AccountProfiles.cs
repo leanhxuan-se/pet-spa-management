@@ -2,7 +2,7 @@ using System.Security.Claims;
 
 namespace PetSpa.SharedKernel.Application.Authentication;
 
-public sealed record AccountProfile(long Id, string FullName, string Phone, bool IsActive, string Role);
+public sealed record AccountProfile(long Id, string FullName, string Phone, bool IsActive, string Role, Guid AccessStamp);
 
 public interface ICustomerAuthProfiles
 {

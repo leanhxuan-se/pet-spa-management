@@ -68,6 +68,8 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Configurations
                 .HasColumnType("timestamp with time zone")
                 .HasDefaultValueSql("now()");
 
+            builder.Property(x => x.AccessStamp).HasColumnName("access_stamp").HasDefaultValue(Guid.Empty);
+
             builder.Property(x => x.UpdatedAt)
                 .HasColumnName("updated_at")
                 .HasColumnType("timestamp with time zone")

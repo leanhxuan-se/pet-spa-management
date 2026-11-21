@@ -1,5 +1,7 @@
 # Kế hoạch refactor xác thực và phân quyền PetSpa
 
+> Tài liệu lịch sử. Xem [hướng dẫn Auth hiện hành](HUONG-DAN-AUTH.md) để triển khai đăng ký gắn hồ sơ, đăng nhập chung và đăng xuất.
+
 **Bản chờ duyệt · 20/11/2026.** Khách hàng tự đăng ký. Khách và nhân sự dùng chung một API đăng nhập bằng **tên tài khoản hoặc số điện thoại và mật khẩu**. Admin có thể cấp, thay hoặc thu hồi vai trò nội bộ của một tài khoản nhân sự. PetSpa tự xác thực, phát JWT và dùng PostgreSQL hiện có. Quên mật khẩu đã được gác lại theo yêu cầu. Đợt này cũng chưa cần refresh token hoặc dịch vụ xác thực bên ngoài.
 
 ## 1. Nghiệp vụ lấy từ diagram

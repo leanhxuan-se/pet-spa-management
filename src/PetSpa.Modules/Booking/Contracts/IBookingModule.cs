@@ -16,6 +16,9 @@ public interface IBookingModule
         long bookingId, long bookingDetailId, BookingDetailStatus status, DbTransaction transaction,
         CancellationToken ct = default);
 
+    Task<IReadOnlyList<BookingSessionGroup>> GetCurrentSessionGroupsAsync(long afterBookingId, int limit,
+        CancellationToken ct);
+
     Task<BookingContractResult<BillableBooking>> GetBillableBookingAsync(long bookingId, CancellationToken ct = default);
 
     // Billing gọi cùng giao dịch thu tiền. Bên gọi chịu trách nhiệm commit hoặc rollback.

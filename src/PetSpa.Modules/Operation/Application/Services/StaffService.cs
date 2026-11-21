@@ -105,54 +105,25 @@ namespace PetSpa.Modules.Operation.Application.Services
             AccountPhone.Normalize(phone).Length is > 0 and <= 30;
 
 
-        public async Task<Result<List<StaffResponse>>> GetAvailableStaffsAsync(DateTime startTime, DateTime endTime, ClaimsPrincipal currentUser, CancellationToken ct)
+        public async Task<Result<List<StaffResponse>>> GetAvailabilityAsync(
+            DateTime? startTime, DateTime? endTime, bool available, ClaimsPrincipal currentUser, CancellationToken ct)
         {
+            if (!currentUser.CanManageOperations())
+                return Result<List<StaffResponse>>.Forbidden("Chỉ nhân sự điều phối mới được tra cứu nhân viên.");
 
-            if (!currentUser.CanManageStaff())
-            {
+            if (startTime.HasValue != endTime.HasValue)
+                return Result<List<StaffResponse>>.BadRequest("time", "Cần truyền cả startTime và endTime hoặc bỏ trống cả hai.");
 
-                return Result<List<StaffResponse>>.BadRequest("message", "khách hàng, staff và receptionist không có quyền xem thông tin phòng ");
-            }
+            var startUtc = startTime.HasValue ? NormalizeUtc(startTime.Value) : DateTime.UtcNow;
+            DateTime? endUtc = endTime.HasValue ? NormalizeUtc(endTime.Value) : null;
+            if (startUtc >= endUtc)
+                return Result<List<StaffResponse>>.BadRequest("time", "Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.");
 
-            if (startTime >= endTime)
-            {
-                return Result<List<StaffResponse>>.TimeError("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!");
-
-            }
-
-            var availStaff = await  _staffRepository.GetAvailableAsync(startTime, endTime, ct);
-
-            if(availStaff is [] or null)
-            {
-                return Result<List<StaffResponse>>.NotFound("Không có nhân viên nào đang rảnh ở khoảng thời gian đã chọn!");
-
-            }
-
-            return Result<List<StaffResponse>>.Success(availStaff);
+            return Result<List<StaffResponse>>.Success(
+                await _staffRepository.GetAvailabilityAsync(startUtc, endUtc, available, ct));
         }
-        public async Task<Result<List<StaffResponse>>> GetUnAvailableStaffsAsync(DateTime startTime, DateTime endTime, ClaimsPrincipal currentUser, CancellationToken ct)
-        {
 
-
-            if (!currentUser.CanManageStaff())
-            {
-
-                return Result<List<StaffResponse>>.BadRequest("message", "khách hàng, staff và receptionist không có quyền xem thông tin phòng");
-            }
-            if (startTime >= endTime)
-            {
-                return Result<List<StaffResponse>>.TimeError("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!");
-
-            }
-
-            var unAvailStaff = await _staffRepository.GetUnAvailableAsync(startTime, endTime, ct);
-
-            if(unAvailStaff is [] or null)
-            {
-                return Result<List<StaffResponse>>.NotFound("Không có nhân viên nào đang bận ở khoảng thời gian đã chọn!");
-            }
-
-            return Result<List<StaffResponse>>.Success(unAvailStaff);
-        }
+        private static DateTime NormalizeUtc(DateTime value)
+            => value.Kind == DateTimeKind.Local ? value.ToUniversalTime() : DateTime.SpecifyKind(value, DateTimeKind.Utc);
     }
 }

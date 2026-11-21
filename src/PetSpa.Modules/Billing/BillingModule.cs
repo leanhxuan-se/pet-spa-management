@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using PetSpa.Modules.Billing.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
+using PetSpa.Modules.Billing.Contracts;
+using PetSpa.Modules.Billing.Infrastructure.Services;
 
 namespace PetSpa.Modules.Billing;
 
@@ -18,6 +20,7 @@ public static class BillingModule
                 npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "billing");
             });
         });
+        services.AddScoped<IBillingModule, BillingModuleContract>();
         return services;
     } 
 }

@@ -6,7 +6,7 @@ Set `PETSPA_AUTH_TEST_CONNECTION` to a fresh disposable PostgreSQL database. Run
 dotnet run --project tests/PetSpa.IntegrationTests/PetSpa.AuthenticationSmokeTests.csproj
 ```
 
-The executable applies the legacy migrations, inserts synthetic records, and upgrades them to the current schema. It exercises the production Auth routes, profile contracts, JWT validation, account management and staff-shift lifecycle over HTTP. It also verifies generated OpenAPI and the Customer, Pet, Booking and Resource authorization checks using test repositories. Use a fresh database for each run.
+The executable applies the current initial migrations and inserts synthetic records, including legacy password hashes to verify their upgrade on login. It exercises authentication, staff shifts, availability and service-session handoff, start, completion, cancellation and group tracking over HTTP. It also checks migration of an existing session and rollback across the Operation and Booking modules. Regression checks cover concurrent registration, phone collisions across account types, logout on multiple devices, and rejection of old tokens after restoring a profile or role. It also verifies generated OpenAPI and the Customer, Pet, Booking and Resource authorization checks using test repositories. Use a fresh database for each run.
 
 ## Operation smoke tests
 

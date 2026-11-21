@@ -1,8 +1,4 @@
 ﻿// Định nghĩa hợp đồng hoặc kết quả dùng chung: Result.
-
-
-
-
 namespace PetSpa.SharedKernel.Application.Abstractions
 {
 
@@ -17,6 +13,7 @@ namespace PetSpa.SharedKernel.Application.Abstractions
         UnActive,
         BadRequest,
         Duplicate,
+        Unauthorized,
         Forbidden,
         Conflict,
     }
@@ -68,6 +65,10 @@ namespace PetSpa.SharedKernel.Application.Abstractions
 
         public static Result<T> Duplicate(string key, string message) =>
             new(new Dictionary<string, string[]> { { key, [message] } }, ResultStatus.Duplicate);
+
+        // Tạo kết quả báo lỗi chưa xác thực (HTTP 401).
+        public static Result<T> Unauthorized(string message) =>
+            new(new Dictionary<string, string[]> { { "message", [message] } }, ResultStatus.Unauthorized);
 
         public static Result<T> Forbidden(string message) =>
             new(new Dictionary<string, string[]> { { "message", [message] } }, ResultStatus.Forbidden);

@@ -9,9 +9,9 @@ internal sealed class StaffAuthProfiles(OperationDbContext db) : IStaffAuthProfi
     public async Task<AccountProfile?> GetStaffForAuthAsync(long staffId, CancellationToken ct)
     {
         var staff = await db.Staffs.AsNoTracking().Where(x => x.Id == staffId)
-            .Select(x => new { x.Id, x.FullName, x.Phone, x.Status, x.Role }).SingleOrDefaultAsync(ct);
+            .Select(x => new { x.Id, x.FullName, x.Phone, x.Status, x.Role, x.AccessStamp }).SingleOrDefaultAsync(ct);
         return staff is null ? null : new(staff.Id, staff.FullName, staff.Phone,
-            staff.Status == StaffStatus.ACTIVE, staff.Role.ToString().ToLowerInvariant());
+            staff.Status == StaffStatus.ACTIVE, staff.Role.ToString().ToLowerInvariant(), staff.AccessStamp);
     }
 
     public Task<long[]> GetActiveAdminIdsAsync(CancellationToken ct) => db.Staffs.AsNoTracking()

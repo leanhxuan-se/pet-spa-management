@@ -2,7 +2,7 @@
 
 ## Hợp đồng HTTP cho WPF
 
-Dùng `POST /api/auth/staff/login` cho tài khoản nhân sự và `POST /api/auth/customer/login` cho khách. Lễ tân và quản lý thực hiện các thao tác tại quầy. Khách xem hồ sơ, thú cưng và lịch của mình, đồng thời có thể sửa hồ sơ cá nhân theo quyền. Chỉ lễ tân được gửi `specialNote` khi tạo hoặc sửa thú cưng, kể cả khi gửi `null` để xóa. Chỉ quản lý được ghi danh mục dịch vụ. [OpenAPI](openapi.yaml)
+Khách và nhân viên dùng chung `POST /api/auth/login` với số điện thoại và mật khẩu. Lễ tân và quản lý thực hiện các thao tác tại quầy. Khách xem hồ sơ, thú cưng và lịch của mình, đồng thời có thể sửa hồ sơ cá nhân theo quyền. Chỉ lễ tân được gửi `specialNote` khi tạo hoặc sửa thú cưng, kể cả khi gửi `null` để xóa. Chỉ quản lý được ghi danh mục dịch vụ. [Hướng dẫn Auth](HUONG-DAN-AUTH.md) · [OpenAPI](openapi.yaml)
 
 Để hiển thị tùy chọn có thể đặt, dùng `GET /api/services?categoryId=7&keyword=tam&activeOnly=true` và `GET /api/services/12/options?activeOnly=true&species=DOG&weight=5`. Bộ lọc cân nặng tính cả hai đầu khoảng. Khi tạo lịch, backend kiểm tra cặp khách và thú cưng đang ACTIVE, kiểm tra tùy chọn đang cung cấp và lưu bản sao liên hệ cùng đơn giá tại thời điểm đặt.
 

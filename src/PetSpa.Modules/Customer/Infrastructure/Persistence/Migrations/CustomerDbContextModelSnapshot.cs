@@ -31,6 +31,12 @@ namespace PetSpa.Modules.Customer.Infrastructure.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<Guid>("AccessStamp")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValue(new Guid("00000000-0000-0000-0000-000000000000"))
+                        .HasColumnName("access_stamp");
+
                     b.Property<string>("AvtURL")
                         .HasColumnType("text")
                         .HasColumnName("avatar_url");

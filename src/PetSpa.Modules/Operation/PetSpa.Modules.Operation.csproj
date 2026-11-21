@@ -29,6 +29,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\PetSpa.SharedKernel\PetSpa.SharedKernel.csproj" />
     <ProjectReference Include="..\Resource\PetSpa.Modules.Resource.csproj" />
+    <ProjectReference Include="..\Booking\PetSpa.Modules.Booking.csproj" />
+    <ProjectReference Include="..\Billing\PetSpa.Modules.Billing.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,7 @@
 # Kế hoạch triển khai Customer, Resource và Booking
 
+> Tài liệu lịch sử. Xem [hướng dẫn Auth hiện hành](HUONG-DAN-AUTH.md) để triển khai đăng ký gắn hồ sơ, đăng nhập chung và đăng xuất.
+
 **Mục tiêu nghiệm thu** là để lễ tân hoặc quản lý chọn đúng khách, thú cưng và dịch vụ, tạo lịch có giá đã chốt, tiếp nhận khách rồi chốt hoặc hủy lịch theo kết quả bàn giao. Agent phụ trách backend của ba module. Thành viên Operation phụ trách đăng nhập nhân sự, phòng, ca, phân công, phiên dịch vụ và màn hình theo dõi nhóm phiên. Billing phụ trách hóa đơn và thu tiền.
 
 **Đăng nhập trong đợt này** tiếp tục đi qua `POST /api/auth/customer/login` ở Customer và `POST /api/auth/staff/login` ở Operation. Host `PetSpa.Api` cấu hình JWT và phân quyền. Thư mục `src/PetSpa.Modules/Auth` có trong workspace nhưng chưa được host đăng ký. Việc tách Auth là một đợt riêng.

@@ -3,4 +3,5 @@ namespace PetSpa.Modules.Billing.Contracts;
 
 public interface IBillingModule
 {
+    Task<IReadOnlyList<long>> GetBookingIdsWithActiveInvoicesAsync(long[] bookingIds, CancellationToken ct);
 }

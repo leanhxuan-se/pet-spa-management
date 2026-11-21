@@ -18,6 +18,7 @@ namespace PetSpa.Modules.Operation.Domain.Entities
         public string? AvatarUrl { get; set; }
         public string? Note { get; set; }
         public StaffStatus Status { get; set; } = StaffStatus.ACTIVE;
+        public Guid AccessStamp { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public ICollection<StaffShift> StaffShifts { get; set; } = [];

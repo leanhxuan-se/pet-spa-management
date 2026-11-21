@@ -16,6 +16,9 @@ public sealed record BookingHandoffCandidate(long BookingId, long PetId, DateTim
 
 public sealed record BookingHandoff(long BookingId, DateTime SessionsCreatedAt, IReadOnlyList<long> BookingDetailIds);
 
+public sealed record BookingSessionGroup(long BookingId, BookingStatus Status,
+    DateTime? SessionsCreatedAt, IReadOnlyList<long> HandedOffDetailIds);
+
 public sealed record BookingSessionDetail(long BookingDetailId, long ServiceOptionId, BookingDetailStatus Status);
 
 public sealed record BillableBooking(long BookingId, long CustomerId, BookingStatus Status,
