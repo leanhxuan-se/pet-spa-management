@@ -10,4 +10,7 @@ internal sealed class Account
     public bool IsEnabled { get; set; } = true;
     public long TokenVersion { get; set; }
     public DateTimeOffset? LockedUntilUtc { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+    public DateTimeOffset? LastLoginAt { get; set; }
 }

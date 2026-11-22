@@ -6,7 +6,7 @@ using PetSpa.Modules.Booking.Contracts;
 using PetSpa.Modules.Booking.Domain.Entities;
 using PetSpa.Modules.Booking.Domain.Enums;
 using PetSpa.Modules.Booking.Infrastructure.Persistence;
-using PetSpa.Modules.Booking.Infrastructure.Repositories;
+using PetSpa.Modules.Booking.Infrastructure.Persistence.Repositories;
 using BookingEntity = PetSpa.Modules.Booking.Domain.Entities.Booking;
 
 namespace PetSpa.Modules.Booking.Infrastructure.Services;

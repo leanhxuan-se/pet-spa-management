@@ -1,6 +1,5 @@
 // Định nghĩa giao tiếp giữa các module: ICustomerContract.
 using PetSpa.Modules.Customer.Contracts.Dtos;
-using PetSpa.Modules.Customer.Endpoints.Responses;
 using PetSpa.SharedKernel.Application.Abstractions;
 
 namespace PetSpa.Modules.Customer.Contracts;

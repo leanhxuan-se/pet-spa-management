@@ -21,7 +21,7 @@ public static class PetEndpoints
             .Produces<List<PetResponse>>()
             .Produces(StatusCodes.Status404NotFound);
         customerPets.MapPost("/", CreatePetAsync).WithName("CreatePet")
-            .RequireAuthorization(AuthorizationPolicies.CustomerManagement)
+            .RequireAuthorization(policy => policy.RequireRole(AccountRoles.Receptionist))
             .Produces<PetResponse>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status403Forbidden)
@@ -33,15 +33,16 @@ public static class PetEndpoints
             .Produces<PetResponse>()
             .Produces(StatusCodes.Status404NotFound);
         group.MapPut("/{id:long}", UpdatePetAsync).WithName("UpdatePet")
-            .RequireAuthorization(AuthorizationPolicies.CustomerManagement)
+            .RequireAuthorization(policy => policy.RequireRole(AccountRoles.Receptionist))
             .Produces<PetResponse>(StatusCodes.Status201Created)
+            .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status403Forbidden)
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound);
         group.MapPut("/{id:long}/special-note", UpdatePetSpecialNoteAsync).WithName("UpdatePetSpecialNote")
-            .RequireAuthorization(AuthorizationPolicies.CustomerManagement)
-            .RequireAuthorization(policy => policy.RequireRole(AccountRoles.Receptionist))
+            .RequireAuthorization(policy => policy.RequireRole(AccountRoles.Receptionist, AccountRoles.Staff))
             .Produces<PetResponse>()
+            .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status422UnprocessableEntity);
@@ -91,12 +92,8 @@ public static class PetEndpoints
         long customerId,
         CreatePetRequest req,
         IPetServices petServices,
-        ClaimsPrincipal currentUser,
         CancellationToken ct)
     {
-        if (req.HasSpecialNote && !currentUser.IsInRole(AccountRoles.Receptionist))
-            return Results.Forbid();
-
         if (req.CustomersId != customerId)
             return Results.BadRequest(new { Message = "ID khách hàng trong URL và body phải giống nhau" });
 
@@ -107,12 +104,8 @@ public static class PetEndpoints
         long id,
         UpdatePetRequest req,
         IPetServices petServices,
-        ClaimsPrincipal currentUser,
         CancellationToken ct)
     {
-        if (req.HasSpecialNote && !currentUser.IsInRole(AccountRoles.Receptionist))
-            return Results.Forbid();
-
         var pet = await petServices.UpdateAsync(id, req, ct);
         return pet.Status == ResultStatus.ValidationFailed
             ? Results.ValidationProblem(pet.Errors!)

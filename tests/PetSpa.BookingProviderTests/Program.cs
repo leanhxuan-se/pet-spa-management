@@ -465,10 +465,27 @@ Require(empty.GetProperty("items").GetArrayLength() == 0 && Value(empty, "nextCu
 await Request(HttpStatusCode.BadRequest, HttpMethod.Get, $"{list}&cursor=invalid");
 
 await Request(HttpStatusCode.BadRequest, HttpMethod.Post, "/api/bookings", BookingBody([firstOption]));
-await Manager(HttpStatusCode.Created, HttpMethod.Put, $"/api/pets/{pet}", new { status = "INACTIVE" });
+var petPath = $"/api/pets/{pet}";
+var specialNotePath = $"{petPath}/special-note";
+await Manager(HttpStatusCode.Forbidden, HttpMethod.Post, $"/api/customers/{customer}/pets",
+    new { customersId = customer, name = "Other pet", species = "DOG" });
+await Manager(HttpStatusCode.Forbidden, HttpMethod.Put, petPath, new { status = "INACTIVE" });
+await Request(HttpStatusCode.Forbidden, HttpMethod.Put, petPath, new { name = "Changed" }, AccountRoles.Staff);
+await Manager(HttpStatusCode.Forbidden, HttpMethod.Put, specialNotePath, new { specialNote = "Manager note" });
+var notedPet = await Request(HttpStatusCode.OK, HttpMethod.Put, specialNotePath,
+    new { specialNote = "Staff note" }, AccountRoles.Staff);
+Require(Value(notedPet, "specialNote") == "Staff note", "Staff should be able to write the note for an active pet.");
+await Request(HttpStatusCode.BadRequest, HttpMethod.Put, petPath, new { status = "INACTIVE", specialNote = "New note" });
+Require(Value(await Get(petPath), "status") == "ACTIVE", "A rejected note update must preserve the pet status.");
+await Request(HttpStatusCode.Created, HttpMethod.Put, petPath, new { status = "INACTIVE" });
+await Request(HttpStatusCode.BadRequest, HttpMethod.Put, specialNotePath, new { specialNote = (string?)null }, AccountRoles.Staff);
+await Request(HttpStatusCode.BadRequest, HttpMethod.Put, petPath, new { status = "ACTIVE", specialNote = "New note" });
+Require(Value(await Get(petPath), "specialNote") == "Staff note", "A rejected note update must preserve the previous note.");
 await Request(HttpStatusCode.BadRequest, HttpMethod.Post, "/api/bookings", BookingBody([secondOption]));
 Require(Value(await ReadBooking(mainId), "status") == "PAID", "Inactive pet must not hide historical bookings.");
-await Manager(HttpStatusCode.Created, HttpMethod.Put, $"/api/pets/{pet}", new { status = "ACTIVE" });
+await Request(HttpStatusCode.Created, HttpMethod.Put, petPath, new { status = "ACTIVE" });
+var clearedPet = await Request(HttpStatusCode.OK, HttpMethod.Put, specialNotePath, new { specialNote = (string?)null });
+Require(Value(clearedPet, "specialNote") is null, "Receptionists should be able to clear the note for an active pet.");
 await Manager(HttpStatusCode.Created, HttpMethod.Put, $"/api/customers/{customer}", new { status = "INACTIVE" });
 await Request(HttpStatusCode.BadRequest, HttpMethod.Post, "/api/bookings", BookingBody([secondOption]));
 Require(Value(await ReadBooking(mainId), "status") == "PAID", "Inactive customer must not hide historical bookings.");

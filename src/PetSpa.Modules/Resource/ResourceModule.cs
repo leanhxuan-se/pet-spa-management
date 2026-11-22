@@ -6,7 +6,7 @@ using PetSpa.Modules.Resource.Application.Abstractions;
 using PetSpa.Modules.Resource.Application.Services;
 using PetSpa.Modules.Resource.Endpoints;
 using PetSpa.Modules.Resource.Infrastructure.Persistence;
-using PetSpa.Modules.Resource.Infrastructure.Repositories;
+using PetSpa.Modules.Resource.Infrastructure.Persistence.Repositories;
 using PetSpa.Modules.Resource.Contracts;
 using PetSpa.Modules.Resource.Infrastructure.Services;
 

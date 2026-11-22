@@ -115,12 +115,19 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
             }
 
             // 2. Lấy thông tin thú cưng từ cơ sở dữ liệu.
-            var pet = await db.Pets
-                .FirstOrDefaultAsync(x => x.Id == petId, ct);
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            var pet = await db.Pets.FromSql(
+                    $"""SELECT * FROM customer.pet WHERE "Id" = {petId} FOR UPDATE""")
+                .SingleOrDefaultAsync(ct);
             if (pet is null)
             {
                 return Result<PetResponse>.NotFound($"Pet with id {petId} not found");
             }
+            if (req.HasSpecialNote && (pet.Status == PetStatus.INACTIVE || req.Status == PetStatus.INACTIVE))
+            {
+                return Result<PetResponse>.UnActive("PetInactive", $"Pet with id {petId} is inactive");
+            }
+
             // 3. Cập nhật thông tin thú cưng.
             pet.Name = req.Name?.Trim() ?? pet.Name;
             pet.Species = req.Species ?? pet.Species;
@@ -135,6 +142,7 @@ namespace PetSpa.Modules.Customer.Application.Abstractions
 
             // 4. Lưu các thay đổi.
             await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
             // 5. Chuyển dữ liệu sang dạng trả về.
             var petResponse = pet.Adapt<PetResponse>();
 

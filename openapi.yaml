@@ -2,7 +2,7 @@ openapi: "3.0.3"
 info:
   title: "Pet Spa API"
   version: "1.0.0"
-  description: "API xác thực, khách hàng, thú cưng, danh mục dịch vụ, lịch hẹn và vận hành PetSpa. Gửi các mốc ngày giờ UTC với hậu tố Z. Xem BAO-CAO-DOI-CHIEU-API.md để biết phạm vi các luồng trong sơ đồ."
+  description: "API xác thực, khách hàng, thú cưng, danh mục dịch vụ, lịch hẹn và vận hành PetSpa. Gửi các mốc ngày giờ UTC với hậu tố Z. Xem docs/api/api-alignment.md để biết phạm vi các luồng trong sơ đồ."
 servers:
   - url: "http://localhost:5052"
     description: "Profile http"
@@ -278,7 +278,7 @@ paths:
       tags: ["Thú cưng"]
       summary: "Tạo hồ sơ thú cưng"
       operationId: CreatePet
-      description: "Dành cho receptionist và manager. Chủ phải ACTIVE và customerId trên URL phải khớp customersId trong body. Chỉ receptionist được gửi specialNote, kể cả null."
+      description: "Chỉ dành cho receptionist. Chủ phải ACTIVE và customerId trên URL phải khớp customersId trong body."
       requestBody:
         required: true
         content:
@@ -321,7 +321,7 @@ paths:
       tags: ["Thú cưng"]
       summary: "Cập nhật hồ sơ thú cưng"
       operationId: UpdatePet
-      description: "Dành cho receptionist và manager. Chỉ receptionist được gửi specialNote, kể cả null. Bỏ qua trường này để giữ ghi chú hiện tại."
+      description: "Chỉ dành cho receptionist. Gửi specialNote khi thú cưng đang ACTIVE và vẫn ACTIVE sau khi cập nhật. Gửi null để xóa ghi chú hoặc bỏ qua trường này để giữ nguyên."
       requestBody:
         required: true
         content:
@@ -349,7 +349,7 @@ paths:
       tags: ["Thú cưng"]
       summary: "Cập nhật ghi chú chăm sóc"
       operationId: UpdatePetSpecialNote
-      description: "Dành cho receptionist. Gửi specialNote null để xóa ghi chú."
+      description: "Dành cho receptionist và staff. Chỉ cập nhật ghi chú của thú cưng ACTIVE. Gửi specialNote null để xóa ghi chú."
       requestBody:
         required: true
         content:
@@ -950,7 +950,8 @@ paths:
       operationId: DeactivateStaff
       description: "Chuyển hồ sơ sang INACTIVE và giữ lịch sử. Áp dụng quyền quản lý vai trò và điều kiện giữ ít nhất một admin có thể đăng nhập."
       responses:
-        "200": { $ref: "#/components/responses/StaffDetails" }
+        "204":
+          description: "Đã vô hiệu hóa nhân viên."
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/OperationForbidden" }
         "404": { $ref: "#/components/responses/OperationNotFound" }

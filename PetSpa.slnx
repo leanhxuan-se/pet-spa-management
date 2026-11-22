@@ -11,7 +11,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/PetSpa.BookingProviderTests/PetSpa.BookingProviderTests.csproj" />
-    <Project Path="tests/PetSpa.IntegrationTests/PetSpa.AuthenticationSmokeTests.csproj" />
+    <Project Path="tests/PetSpa.AuthenticationSmokeTests/PetSpa.AuthenticationSmokeTests.csproj" />
     <Project Path="tests/PetSpa.OperationSmokeTests/PetSpa.OperationSmokeTests.csproj" />
   </Folder>
 </Solution>
