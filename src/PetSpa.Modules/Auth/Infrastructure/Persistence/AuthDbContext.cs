@@ -22,6 +22,9 @@ internal sealed class AuthDbContext(DbContextOptions<AuthDbContext> options) : D
         account.Property(x => x.IsEnabled).HasColumnName("is_enabled").HasDefaultValue(true);
         account.Property(x => x.TokenVersion).HasColumnName("token_version").HasDefaultValue(0L).IsConcurrencyToken();
         account.Property(x => x.LockedUntilUtc).HasColumnName("locked_until_utc");
+        account.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+        account.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+        account.Property(x => x.LastLoginAt).HasColumnName("last_login_at");
         account.HasIndex(x => x.LoginPhone).IsUnique();
         account.HasIndex(x => x.CustomerId).IsUnique();
         account.HasIndex(x => x.StaffId).IsUnique();

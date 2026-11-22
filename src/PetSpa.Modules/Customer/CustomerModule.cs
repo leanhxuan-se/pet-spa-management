@@ -8,8 +8,6 @@ using FluentValidation;
 using PetSpa.Modules.Customer.Application.Validators;
 using PetSpa.Modules.Customer.Application.Abstractions;
 using PetSpa.Modules.Customer.Application.Services;
-using PetSpa.Modules.Customer.Domain.Repositories;
-using PetSpa.Modules.Customer.Infrastructure.Persistence.Repositories;
 using PetSpa.Modules.Customer.Infrastructure.Services;
 using PetSpa.Modules.Customer.Contracts;
 using PetSpa.SharedKernel.Application.Authentication;
@@ -42,7 +40,6 @@ public static class CustomerModule
         services.AddScoped<ICustomerContract, CustomerContract>();
         services.AddScoped<IPetServices, PetServices>();
         services.AddScoped<ICustomerService, CustomerService>();
-        services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<ICustomerAuthProfiles, CustomerAuthProfiles>();
         services.AddScoped<ICustomerModule, CustomerModuleContract>();
         return services;

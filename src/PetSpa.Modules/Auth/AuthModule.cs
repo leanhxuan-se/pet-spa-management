@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
-using PetSpa.Modules.Auth.Application;
+using PetSpa.Modules.Auth.Application.Services;
 using PetSpa.Modules.Auth.Endpoints;
 using PetSpa.Modules.Auth.Infrastructure.Configuration;
 using PetSpa.Modules.Auth.Infrastructure.Persistence;

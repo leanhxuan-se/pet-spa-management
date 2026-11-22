@@ -9,6 +9,7 @@ using PetSpa.Modules.Operation.Application.Abstractions;
 
 using PetSpa.Modules.Operation.Application.Services;
 using PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories;
+using PetSpa.Modules.Operation.Infrastructure.Services;
 using PetSpa.SharedKernel.Application.Authentication;
 
 namespace PetSpa.Modules.Operation;

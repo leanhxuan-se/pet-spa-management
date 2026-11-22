@@ -7,7 +7,7 @@ using PetSpa.Modules.Booking.Application.Abstractions;
 using PetSpa.Modules.Booking.Application.Services;
 using PetSpa.Modules.Booking.Contracts;
 using PetSpa.Modules.Booking.Endpoints;
-using PetSpa.Modules.Booking.Infrastructure.Repositories;
+using PetSpa.Modules.Booking.Infrastructure.Persistence.Repositories;
 using PetSpa.Modules.Booking.Infrastructure.Services;
 
 namespace PetSpa.Modules.Booking;

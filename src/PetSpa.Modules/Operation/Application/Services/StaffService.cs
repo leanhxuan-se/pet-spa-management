@@ -63,8 +63,12 @@ namespace PetSpa.Modules.Operation.Application.Services
                 () => _staffRepository.UpdateAsync(id, request, ct), ct);
         }
 
-        public Task<Result<StaffResponse>> DeleteStaffAsync(long id, ClaimsPrincipal actor, CancellationToken ct) =>
-            ChangeStaffAsync(id, null, StaffStatus.INACTIVE, actor, () => _staffRepository.DeleteAsync(id, ct), ct);
+        public async Task<Result<StaffResponse>> DeleteStaffAsync(long id, ClaimsPrincipal actor, CancellationToken ct)
+        {
+            var result = await ChangeStaffAsync(id, null, StaffStatus.INACTIVE, actor,
+                () => _staffRepository.DeleteAsync(id, ct), ct);
+            return result.Status == ResultStatus.Success ? Result<StaffResponse>.NoContent() : result;
+        }
 
         private async Task<Result<StaffResponse>> ChangeStaffAsync(long id, StaffRole? role, StaffStatus? status,
             ClaimsPrincipal actor, Func<Task<StaffResponse?>> save, CancellationToken ct)

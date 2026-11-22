@@ -5,7 +5,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using PetSpa.Modules.Auth.Application;
+using PetSpa.Modules.Auth.Application.Services;
+using PetSpa.Modules.Auth.Endpoints.Requests;
 using PetSpa.SharedKernel.Application.Authentication;
 using PetSpa.SharedKernel.Application.Dtos;
 

@@ -1,0 +1,41 @@
+// Định nghĩa thao tác lưu trữ và truy vấn CategoryRepository.
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using PetSpa.Modules.Resource.Application.Abstractions;
+using PetSpa.Modules.Resource.Domain.Entities;
+
+namespace PetSpa.Modules.Resource.Infrastructure.Persistence.Repositories;
+
+public class CategoryRepository(ResourceDbContext db) : ICategoryRepository
+{
+    // Lấy danh sách đối tượng.
+    public async Task<IReadOnlyList<Category>> ListAsync(CancellationToken ct)
+        => await db.Categories.AsNoTracking()
+            .OrderBy(c => c.Name).ThenBy(c => c.Id).ToListAsync(ct);
+
+    // Tìm đối tượng theo mã.
+    public Task<Category?> GetByIdAsync(long id, CancellationToken ct)
+        => db.Categories.FirstOrDefaultAsync(c => c.Id == id, ct);
+
+    // Kiểm tra tên đã tồn tại.
+    public Task<bool> NameExistsAsync(string name, long? exceptId, CancellationToken ct)
+        => db.Categories.AnyAsync(c => c.Name == name && (!exceptId.HasValue || c.Id != exceptId.Value), ct);
+
+    // Thêm đối tượng mới.
+    public void Add(Category category) => db.Categories.Add(category);
+
+    // Thử lưu thay đổi vào cơ sở dữ liệu.
+    public async Task<bool> TrySaveChangesAsync(CancellationToken ct)
+    {
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException
+            { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: "IX_category_name" })
+        {
+            return false;
+        }
+    }
+}

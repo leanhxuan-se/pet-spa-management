@@ -9,11 +9,10 @@ using PetSpa.Modules.Resource;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddLocalEnvironmentFile(builder.Environment.ContentRootPath);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
-    throw new InvalidOperationException("Set ConnectionStrings__DefaultConnection in .env.local or in the process environment.");
+    throw new InvalidOperationException("Set ConnectionStrings:DefaultConnection in appsettings.json or in the process environment.");
 
 // Register Modules DbContexts
 builder.Services.AddBillingModule(connectionString);

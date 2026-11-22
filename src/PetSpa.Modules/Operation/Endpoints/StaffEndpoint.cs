@@ -26,7 +26,8 @@ namespace PetSpa.Modules.Operation.Endpoints
             management.MapGet("/{id:long}", GetStaffByIdAsync).WithName("GetStaffById");
             management.MapPost("", CreateStaffAsync).WithName("CreateStaff");
             management.MapPut("/{id:long}", UpdateStaffAsync).WithName("UpdateStaff");
-            management.MapDelete("/{id:long}", DeleteStaffAsync).WithName("DeactivateStaff");
+            management.MapDelete("/{id:long}", DeleteStaffAsync).WithName("DeactivateStaff")
+                .Produces(StatusCodes.Status204NoContent);
 
             return app;
         }
