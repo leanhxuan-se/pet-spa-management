@@ -25,6 +25,17 @@ namespace PetSpa.Modules.Operation.Application.Services
             [nameof(StaffShiftStatus.CANCELLED)] = StaffShiftStatus.CANCELLED,
         };
 
+
+        public async Task<Result<List<StaffShiftResponse>>> GetMyStaffShiftsAsync(
+            DateOnly date,
+            ClaimsPrincipal currentUser,
+            CancellationToken ct)
+        {
+            long? StaffId = currentUser.GetStaffId();
+            var staffShifts = await staffShiftRepository.GetStaffShiftsAsync(date, StaffId.Value, ct);
+            return Result<List<StaffShiftResponse>>.Success(staffShifts);
+        }
+
         /// <summary>
         /// OPS-03 &amp; OPS-03A: Lấy danh sách ca làm có lọc và phân trang bằng cursor.
         /// </summary>
@@ -414,6 +425,8 @@ namespace PetSpa.Modules.Operation.Application.Services
             }
         }
 
+        
+
         private static StaffShiftResponse ToResponse(StaffShift shift, string? staffName = null) =>
             new(
                 shift.Id,
@@ -427,5 +440,6 @@ namespace PetSpa.Modules.Operation.Application.Services
                 shift.Status,
                 shift.CreatedAt,
                 shift.UpdatedAt);
+        
     }
 }

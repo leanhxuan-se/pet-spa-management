@@ -19,7 +19,7 @@ namespace PetSpa.Modules.Operation.Endpoints
             group.MapPut("/{id:long}", UpdateStaffShiftAsync).WithName("UpdateStaffShift").RequireAuthorization();
             group.MapDelete("/{id:long}", CancelStaffShiftAsync).WithName("CancelStaffShift").RequireAuthorization();
             group.MapPost("/{id:long}/start", StartStaffShiftAsync).WithName("StartStaffShift").RequireAuthorization();
-            group.MapPost("/{id:long}/finish", FinishStaffShiftAsync).WithName("FinishStaffShift").RequireAuthorization();
+            group.MapPost("/{id:long}/finish", FinishStaffShiftAsync).WithName("FinishStaffShift").RequireAuthorization();  
 
             return app;
         }

@@ -52,6 +52,30 @@ namespace PetSpa.Modules.Operation.Infrastructure.Persistence.Repositories
                     x.UpdatedAt))
                 .ToListAsync(ct);
         }
+        public async Task<List<StaffShiftResponse>> GetStaffShiftsAsync(
+            DateOnly date,
+            long staffId,
+            CancellationToken ct)
+        {
+            return await db.StaffShifts
+                .AsNoTracking()
+                .Where(x=> x.ShiftDate >= date && x.StaffId == staffId)
+                .Select(x => new StaffShiftResponse(
+                    x.Id,
+                    x.StaffId,
+                    x.Staff.FullName,
+                    x.ShiftDate,
+                    x.StartTime,
+                    x.EndTime,
+                    x.StartedAt,
+                    x.FinishedAt,
+                    x.Status,
+                    x.CreatedAt,
+                    x.UpdatedAt))
+                .ToListAsync(ct);   
+
+                
+        }
 
         public async Task<StaffShiftStaffInfo?> GetStaffInfoAsync(long staffId, CancellationToken ct)
         {
