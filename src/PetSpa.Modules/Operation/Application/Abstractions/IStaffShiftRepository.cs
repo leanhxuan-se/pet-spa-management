@@ -17,7 +17,10 @@ namespace PetSpa.Modules.Operation.Application.Abstractions
             StaffShiftCursor? after,
             int limit,
             CancellationToken ct);
-
+        Task<List<StaffShiftResponse>> GetStaffShiftsAsync(
+            DateOnly date,
+            long staffId,
+            CancellationToken ct);
         Task<StaffShiftStaffInfo?> GetStaffInfoAsync(long staffId, CancellationToken ct);
 
         Task<bool> HasOverlappingShiftAsync(

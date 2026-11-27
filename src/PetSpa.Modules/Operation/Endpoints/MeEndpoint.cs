@@ -17,6 +17,7 @@ namespace PetSpa.Modules.Operation.Endpoints
             var group = app.MapGroup("/api/me").WithTags("Me");
 
             group.MapGet("/service-sessions", GetMyServiceSessionsAsync).WithName("GetMyServiceSessions").RequireAuthorization();
+            group.MapGet("/staff-Shifts", GetMyStaffShiftsAsync).WithName("GetMyStaffShifts").RequireAuthorization();
             group.MapGet("/notifications", GetMyNotificationsAsync).WithName("GetMyNotifications").RequireAuthorization();
             group.MapPut("/notifications/{id:long}/read", MarkNotificationAsReadAsync).WithName("MarkMyNotificationAsRead").RequireAuthorization();
 
@@ -29,6 +30,11 @@ namespace PetSpa.Modules.Operation.Endpoints
             ClaimsPrincipal currentUser,
             CancellationToken ct)
             => (await service.GetMyAssignedSessionsAsync(currentUser, ct)).ToHttpResult();
+        private static async Task<IResult> GetMyStaffShiftsAsync(
+            StaffShiftService service,
+            ClaimsPrincipal currentUser,
+            CancellationToken ct)
+            => (await service.GetMyStaffShiftsAsync(DateOnly.FromDateTime(DateTime.Now), currentUser, ct)).ToHttpResult();
 
         // OPS-07C & OPS-11: Lấy danh sách thông báo và số chưa đọc của nhân viên đăng nhập.
         private static async Task<IResult> GetMyNotificationsAsync(
